@@ -1,10 +1,25 @@
 #ifndef EDPUSH_H
 #define EDPUSH_H
 
-#include <maya/MPxDeformerNode.h>
-
 #include <vector>
+#include <iostream>
 
+
+#include <maya/MPxDeformerNode.h>
+#include <maya/MTypeId.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+
+#include <maya/MDataBlock.h>
+#include <maya/MDataHandle.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnDoubleArrayData.h>
+
+#include <maya/MPoint.h>
+#include <maya/MVector.h>
+#include <maya/MPlug.h>
+#include <maya/MItGeometry.h>
 
 class EdPush : public MPxDeformerNode {
     public:
@@ -17,4 +32,11 @@ class EdPush : public MPxDeformerNode {
 
         static void* creator();
         static MStatus initialize();
-}
+
+    public:
+        static MObject aOffset;
+        static MObject aWeights;
+        static MTypeId id;
+        static MString nodeName;
+};
+#endif

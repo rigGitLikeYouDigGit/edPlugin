@@ -7,22 +7,13 @@ point1 = point0 + normal * weight * distance
 
 */
 
-#include <maya/MFnPlugin.h>
-#include <MTypeId.h>
-
-#include <maya/MPoint.h>
-#include <maya/MVector.h>
-#include <maya/MDataBlock.h>
-#include <maya/MDataHandle.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnTypedAttribute.h>
-
 #include "edPush.h"
 
 MTypeId EdPush::id(0x00122C05);
-Mstring EdPush::nodeName( "edPush" );
+MString EdPush::nodeName( "edPush" );
 MObject EdPush::aOffset;
 MObject EdPush::aWeights;
+
 
 
 MStatus EdPush::initialize()
@@ -33,21 +24,20 @@ MStatus EdPush::initialize()
     MFnTypedAttribute tAttr;
 
     aOffset = nAttr.create( "offset", "off", MFnNumericData::kDouble, 0.0);
-    aOffset.setStorable(true);
-    aOffset.setWritable(true);
-
-    aWeights = tAttr.create( "weights", "wt", MFnData::kDoubleArray);
-    aWeights.setStorable(true);
-    aWeights.setWritable(true);
-    // only works for weights on one mesh input for now
-
+    nAttr.setStorable(true);
+    nAttr.setWritable(true);
     status = addAttribute(aOffset);
+
+    aWeights = tAttr.create( "mask", "msk", MFnData::kDoubleArray);
+    tAttr.setStorable(true);
+    tAttr.setWritable(true);
+    tAttr.setHidden(false);
+    // only works for weights on one mesh input for now
     status = addAttribute(aWeights);
 
     status = attributeAffects(aOffset, outputGeom);
     status = attributeAffects(aWeights, outputGeom);
 
-    MCheckStatus(status, "ERROR in setting up attributes on edPush \n"):
     return MStatus::kSuccess;
 }
 
@@ -87,7 +77,12 @@ MStatus EdPush::deform(
         MPoint newPos = origPos + normal * weightValue * envelopeVal;
         itGeo.setPosition( newPos );
     }
-
-
-
+    return MS::kSuccess;
 }
+
+void* EdPush::creator(){
+    return new EdPush;
+}
+
+EdPush::EdPush() {};
+EdPush::~EdPush() {};
