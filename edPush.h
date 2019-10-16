@@ -33,9 +33,15 @@ class EdPush : public MPxDeformerNode {
         static void* creator();
         static MStatus initialize();
 
+private:
+    //void initialiseMasks(int length, MDataBlock& data);
+    MDoubleArray initialiseMasks(int length, MDataBlock& data);
+    //void initialiseMasks(int length, MObject maskAttributes[]);
+    //void initialiseMasks(int length, std::vector maskAttributes);
+
     public:
         static MObject aOffset;
-        static MObject aWeights;
+        static MObject aMask;
         static MTypeId id;
         static MString nodeName;
 };
