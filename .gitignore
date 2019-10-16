@@ -1,0 +1,13 @@
+
+*.tlog
+*.log
+*.obj
+build/.vs/edPush/v15/.suo
+*.db
+*.opendb
+*.db-shm
+*.db-wal
+*.vcxproj
+*.filters
+*.user
+*.cmake
