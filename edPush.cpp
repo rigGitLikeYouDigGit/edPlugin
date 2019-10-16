@@ -1,6 +1,6 @@
 /*
 simple inflate deformer with dynamic weights
-check out how long it takes to get to actual deformation
+focus on the most efficient boilerplate
 
 point1 = point0 + normal * weight * distance
 
@@ -23,6 +23,9 @@ MStatus EdPush::initialize()
     MStatus status;
     MFnNumericAttribute nAttr;
     MFnTypedAttribute tAttr;
+    MDoubleArray defaultArr;
+    MObject defaultObj;
+    MFnDoubleArrayData defaultData;
 
     aOffset = nAttr.create( "offset", "off", MFnNumericData::kDouble, 0.0);
     nAttr.setStorable(true);
@@ -30,10 +33,15 @@ MStatus EdPush::initialize()
     nAttr.setKeyable(true);
     status = addAttribute(aOffset);
 
+    // mask default
+    // defaultArr = MDoubleArray(100, 1.0); // length, count
+    // defaultObj = defaultData.create(defaultArr);
+
     aMask = tAttr.create( "mask", "msk", MFnData::kDoubleArray);
     tAttr.setStorable(true);
     tAttr.setWritable(true);
     tAttr.setHidden(false);
+    //tAttr.setDefault( defaultObj );
     //tAttr.setArray(true);
     // only works for weights on one mesh input for now
     status = addAttribute(aMask);
@@ -44,22 +52,56 @@ MStatus EdPush::initialize()
     // make mask and weights paintable
     MGlobal::executeCommand("makePaintable -attrType multiFloat -sm deformer edPush weights");
     MGlobal::executeCommand("makePaintable -attrType doubleArray edPush mask");
+    // how best to initialise mask to 1.0?
 
     return MStatus::kSuccess;
+}
+
+
+/// ON CONNECTION MADE
+// crashes with total consistency
+MStatus EdPush::connectionMade( const MPlug& nodePlug, const MPlug& foreignPlug,
+    bool asSrc){
+
+
+    // // MItGeometry iter;
+    // MFnDependencyNode mfnDep;
+    // // initialise mask properly
+    // if (nodePlug.asMObject() == inputGeom){
+    //
+    //
+    //     MObject meshAttr = nodePlug.asMObject();
+    //     MItGeometry iter = MItGeometry( meshAttr );
+    //     int length = iter.count();
+    //
+    //     MObject node = nodePlug.node();
+    //     MFnDependencyNode mfnDep( node );
+    //     MPlug maskPlug = mfnDep.findPlug( aMask, false);
+    //     MDataHandle maskHandle = maskPlug.asMDataHandle();
+    //
+    //     initialiseMasks( length, maskHandle);
+    // }
+    MStatus result = MPxDeformerNode::connectionMade( nodePlug, foreignPlug, asSrc);
+    return result;
+
 }
 
 //void EdPush::initialiseMasks(int length, MObject maskAttributes[]){
 //void EdPush::initialiseMasks(int length, std::vector maskAttributes){
 // how would I construct and pass a vector of MObjects procedurally like this?
 
-MDoubleArray EdPush::initialiseMasks(int length, MDataBlock &data){
+// MDoubleArray EdPush::initialiseMasks(int length, MDataBlock &data){
+MDoubleArray EdPush::initialiseMasks(int length, MDataHandle &maskHandle){
 
-    MDataHandle maskHandle = data.inputValue( aMask );
+    //MDataHandle maskHandle = data.inputValue( aMask );
     MFnDoubleArrayData maskData( maskHandle.data());
     //MFnDoubleArrayData maskData( data.inputValue( aMask) );
     MDoubleArray mask = maskData.array();
     if (mask.length() < length){
         mask.setLength(length);
+        for( int n; n < length; n++){
+            mask[n] = 1.0;
+        }
     }
 
     return mask;
@@ -77,11 +119,12 @@ MStatus EdPush::deform(
 
     // set length of mask array
     int length = itGeo.count();
-    MDoubleArray mask = initialiseMasks(length, data);
+    MDataHandle maskHandle = data.inputValue(aMask);
+    MDoubleArray mask = initialiseMasks(length, maskHandle);
 
     // grab input parametres
     double offset = data.inputValue( aOffset ).asDouble();
-    double envelopeVal = data.inputValue( envelope ).asDouble();
+    double envelopeVal = data.inputValue( envelope ).asFloat();
     //
     // // check input weights are valid
     // MDataHandle maskHandle = data.inputValue( aMask, &status);
@@ -93,12 +136,12 @@ MStatus EdPush::deform(
     // MDoubleArray mData = maskData.array();
     //
     // check that current index can be found in weights
-    if ( mask.length() < length ){
-        MGlobal::displayError( "Weight array too short for edPush \n");
-        return MS::kFailure;
-    }
+    // if ( mask.length() < length ){
+    //     MGlobal::displayError( "Weight array too short for edPush \n");
+    //     return MS::kFailure;
+    // }
 
-    itGeo.reset();
+    //itGeo.reset();
     // deform points
     for ( int i=0; !itGeo.isDone(); itGeo.next() ){
         float weight = weightValue(data, mIndex, i);
@@ -106,7 +149,9 @@ MStatus EdPush::deform(
         MVector normal = itGeo.normal();
         // double maskValue = mData[ i ];
         // MPoint newPos = origPos + normal * maskValue * envelopeVal;
-        MPoint newPos = origPos + normal * offset * envelopeVal * weight * mask[i];
+        double distance = offset * envelopeVal * weight * mask[i];
+        //float distance = offset * envelopeVal * weight;
+        MPoint newPos = origPos + normal * distance;
         itGeo.setPosition( newPos );
         i++;
     }
@@ -114,7 +159,12 @@ MStatus EdPush::deform(
 }
 
 void* EdPush::creator(){
+    // stuff to initialise mask to 1
+    // EdPush created = new EdPush;
+    // MObject obj = created.thisMObject();
+    // return created;
     return new EdPush;
+
 }
 
 EdPush::EdPush() {};

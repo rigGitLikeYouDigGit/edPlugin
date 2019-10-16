@@ -15,6 +15,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnDependencyNode.h>
 
 #include <maya/MPoint.h>
 #include <maya/MVector.h>
@@ -30,12 +31,17 @@ class EdPush : public MPxDeformerNode {
             unsigned int MIndex
         );
 
+        virtual MStatus connectionMade(const MPlug& nodePlug, const MPlug& foreignPlug,
+            bool asSrc );
+
         static void* creator();
         static MStatus initialize();
 
 private:
     //void initialiseMasks(int length, MDataBlock& data);
-    MDoubleArray initialiseMasks(int length, MDataBlock& data);
+    // MDoubleArray initialiseMasks(int length, MDataBlock& data);
+    MDoubleArray initialiseMasks(int length, MDataHandle& maskHandle);
+
     //void initialiseMasks(int length, MObject maskAttributes[]);
     //void initialiseMasks(int length, std::vector maskAttributes);
 
