@@ -63,24 +63,6 @@ MStatus EdPush::initialize()
 MStatus EdPush::connectionMade( const MPlug& nodePlug, const MPlug& foreignPlug,
     bool asSrc){
 
-
-    // // MItGeometry iter;
-    // MFnDependencyNode mfnDep;
-    // // initialise mask properly
-    // if (nodePlug.asMObject() == inputGeom){
-    //
-    //
-    //     MObject meshAttr = nodePlug.asMObject();
-    //     MItGeometry iter = MItGeometry( meshAttr );
-    //     int length = iter.count();
-    //
-    //     MObject node = nodePlug.node();
-    //     MFnDependencyNode mfnDep( node );
-    //     MPlug maskPlug = mfnDep.findPlug( aMask, false);
-    //     MDataHandle maskHandle = maskPlug.asMDataHandle();
-    //
-    //     initialiseMasks( length, maskHandle);
-    // }
     MStatus result = MPxDeformerNode::connectionMade( nodePlug, foreignPlug, asSrc);
     return result;
 
@@ -125,21 +107,6 @@ MStatus EdPush::deform(
     // grab input parametres
     double offset = data.inputValue( aOffset ).asDouble();
     double envelopeVal = data.inputValue( envelope ).asFloat();
-    //
-    // // check input weights are valid
-    // MDataHandle maskHandle = data.inputValue( aMask, &status);
-    // MFnDoubleArrayData maskData( maskHandle.data(), &status );
-    // if (status != MS::kSuccess){
-    //     MGlobal::displayError( "Invalid mask data for edPush \n");
-    //     return MS::kFailure;
-    // }
-    // MDoubleArray mData = maskData.array();
-    //
-    // check that current index can be found in weights
-    // if ( mask.length() < length ){
-    //     MGlobal::displayError( "Weight array too short for edPush \n");
-    //     return MS::kFailure;
-    // }
 
     //itGeo.reset();
     // deform points
@@ -159,10 +126,7 @@ MStatus EdPush::deform(
 }
 
 void* EdPush::creator(){
-    // stuff to initialise mask to 1
-    // EdPush created = new EdPush;
-    // MObject obj = created.thisMObject();
-    // return created;
+
     return new EdPush;
 
 }
