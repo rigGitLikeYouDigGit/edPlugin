@@ -16,6 +16,7 @@ import maya.api.OpenMaya as om
 # import maya.api.OpenMayaMPx as omMPx
 import math
 import maya.cmds as cmds
+from edPlugin.lib.python import nodeio
 
 kPluginNodeName = "rmfPci"
 kPluginNodeId = om.MTypeId(0xDBD1)  # find way to replace with eyyyy
@@ -247,11 +248,7 @@ class rmfPci(om.MPxNode):
 		return normals, tangents, binormals
 
 	@staticmethod
-	def matrixFromVectors(tangent, normal, binormal):
-		# print ""
-		# print "matTangent is {}".format(tangent)
-		# print "matNormal is {}".format(normal)
-		# print "matBinormal is {}".format(binormal)
+	def matrixFromVectors(tangent, normal, binormal): # works
 		return om.MMatrix([tangent.x, tangent.y, tangent.z, 0.0,
 		                   normal.x, normal.y, normal.z, 0.0,
 		                   binormal.x, binormal.y, binormal.z, 0.0,
@@ -400,15 +397,7 @@ def nodeInitializer():
 	om.MPxNode.addAttribute(rmfPci.aIntCurve)
 
 	# bind switch to create the internal curve
-	bindAF = om.MFnEnumAttribute()
-	rmfPci.aBind = bindAF.create(
-		"bind", "bind", 1)
-	bindAF.addField("off", 0)
-	bindAF.addField("bind", 1)
-	bindAF.addField("bound", 2)
-	bindAF.keyable = True
-	bindAF.hidden = False
-	om.MPxNode.addAttribute(rmfPci.aBind)
+	nodeio.makeBindAttr(rmfPci, extras=None)
 
 	# switch to use percentage for u lookup
 	percentAttrFn = om.MFnNumericAttribute()
