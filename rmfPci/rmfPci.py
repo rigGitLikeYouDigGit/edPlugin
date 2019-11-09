@@ -24,7 +24,6 @@ kPluginNodeId = om.MTypeId(0xDBD1)  # find way to replace with eyyyy
 
 class rmfPci(om.MPxNode):
 	# define everything
-	id = om.MTypeId(0xDBD1)
 
 	def __init__(self):
 		om.MPxNode.__init__(self)
