@@ -44,33 +44,53 @@ class generalIk(om.MPxNode):
 			inJntArrayDH = pData.inputArrayValue(generalIk.aJnts)
 			inLength = inJntArrayDH.__len__()
 			worldInputs = [None] * inLength
+			orients = [None] * inLength
 			for i in range(inLength):
 				inJntArrayDH.jumpToPhysicalElement(i)
 				childCompDH = inJntArrayDH.inputValue()
 				worldInputs[i] = childCompDH.child(
 					generalIk.aJntMat).asMatrix()
 
+				# orient = childCompDH.child(
+				# 	generalIk.aOrientRot).asDouble3()
+				# orients[i] = om.MEulerRotation(
+				# 	[math.degrees(j) for j in orient] )
+				# seems to convert automatically, makes no difference
+
+					# list of euler transforms
+					# add rotateOrder support here
+
+				orients[i] = om.MEulerRotation(childCompDH.child(
+					generalIk.aOrientRot).asDouble3())
+
+
+
 			# from world inputs, reconstruct localised chain
-			localMatrices = buildChain(worldInputs, length=inLength)
+			# remove joint orients, then reapply
+			localMatrices = buildChain(worldInputs, orients, length=inLength)
 
 			# main loop
 			n = 0
 			tol = 100
 			# localise end first
 			endLocalMat = endMat * worldInputs[-1].inverse()
+			#endLocalMat = endMat
+
 			targetLocalMat = targetMat * worldInputs[0].inverse()
+			#targetLocalMat = targetMat
+
 
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
-				# results = iterateChain(results, length=inLength,
-				#              targetMat=targetLocalMat, endMat=endLocalMat)
 				results = iterateChain(results, length=inLength,
-				             targetMat=targetMat, endMat=endLocalMat)
+				             targetMat=targetLocalMat, endMat=endLocalMat)
+
 				n += 1
 
 
 			# convert jntArray of matrices to useful rotation values
 			outArrayDH = pData.outputArrayValue(generalIk.aOutArray)
+
 
 			for i in range(inLength):
 				outArrayDH.jumpToPhysicalElement(i)
@@ -80,30 +100,43 @@ class generalIk(om.MPxNode):
 				outRxDH = outRotDH.child(generalIk.aOutRx)
 				outRyDH = outRotDH.child(generalIk.aOutRy)
 				outRzDH = outRotDH.child(generalIk.aOutRz)
+				#
+				# outMat = om.MTransformationMatrix(
+				# 	results[i] ).rotateBy( orients[i].inverse(), 4 )
 
-				outRotVals = om.MTransformationMatrix(results[i]).rotation()
+				""" NB : jointOrient does not distort the
+				current world matrix - 
+				it distorts its *children*
+				"""
+
+				outMat = om.MTransformationMatrix(results[i])
+
+				outRotVals = outMat.rotation()
 				# unitConversions bring SHAME on family
 				xAngle = om.MAngle(outRotVals[0])
 				yAngle = om.MAngle(outRotVals[1])
 				zAngle = om.MAngle(outRotVals[2])
-				# xAngle = outRotVals[0]
-				# yAngle = outRotVals[1]
-				# zAngle = outRotVals[2]
+
 				outRxDH.setMAngle( xAngle )
 				outRyDH.setMAngle( yAngle )
 				outRzDH.setMAngle( zAngle )
 
 			outArrayDH.setAllClean()
 
+
 			pData.setClean(pPlug)
 
-def buildChain(worldChain, length=1, endMat=None):
+def buildChain(worldChain, orients, length=1):
 	""" reconstruct a chain of ordered local matrices
 	from random world inputs"""
 
 	chain = [None] * length # root to tip
 	for i in range(length):
-		inMat = worldChain[i]
+
+		# inMat = om.MTransformationMatrix(
+		# 	worldChain[i] ).rotateBy( orients[i], 1 ).asMatrix()
+		inMat = worldChain[i] # world matrices already account for orient
+
 		if i == 0:
 			localMat = inMat
 		else:
@@ -140,16 +173,24 @@ def iterateChain(localChain, tolerance=None, length=1,
 		index = length - 1 - i
 		inMat = localChain[ index ]
 
+		# find rotation of active joint to end, THEN
+		# rotation from that to target
+		#print "endMat {}".format(endMat)
+		endOrient = lookAt(inMat, endMat)
 
-		orientMat = lookAt(endMat, targetMat) # this does not
+		orientMat = lookAt(inMat, targetMat) * endOrient.inverse() # this does not
+		#print "orientMat {}".format(orientMat)
+		#print()
 
-		#temp
-		orientMat = lookAt(om.MMatrix(), targetMat) # this works
+		# this all now works, taking account of end and target position
+
 		localChain[index] = orientMat
 	return localChain
 
 
 def lookAt(base, target, up = (0, 1, 0)):
+	""" NB : takes no account of initial base orientation
+	only depends on vector from base to target"""
 	# axes one by one, code shamelessly copied from somewhere
 	# convert to quat someday?
 
@@ -166,12 +207,12 @@ def lookAt(base, target, up = (0, 1, 0)):
 	y.normalize()
 
 	aim = om.MMatrix([
+		#x.x, x.y, x.z, 0,
 		y.x, y.y, y.z, 0,
 		x.x, x.y, x.z, 0,
 		z.x, z.y, z.z, 0,
 		0, 0, 0, 1
 	])
-
 	return aim
 
 def nodeInitializer():
@@ -238,6 +279,32 @@ def nodeInitializer():
 	jntMatAttrFn.cached = False # prevent ghost influences from staying
 	# om.MPxNode.addAttribute(generalIk.aJntMat)
 
+	# joint orients
+	orientRxAttrFn = om.MFnUnitAttribute()
+	generalIk.aOrientRx = orientRxAttrFn.create("orientX", "orientX", 1, 0.0)
+	orientRxAttrFn.writable = True
+	orientRxAttrFn.keyable = False
+
+	orientRyAttrFn = om.MFnUnitAttribute()
+	generalIk.aOrientRy = orientRyAttrFn.create("orientY", "orientY", 1, 0.0)
+	orientRyAttrFn.writable = True
+	orientRyAttrFn.keyable = False
+
+	orientRzAttrFn = om.MFnUnitAttribute()
+	generalIk.aOrientRz = orientRzAttrFn.create("orientZ", "orientZ", 1, 0.0)
+	orientRzAttrFn.writable = True
+	orientRzAttrFn.keyable = False
+
+	orientRotAttrFn = om.MFnCompoundAttribute()
+	generalIk.aOrientRot = orientRotAttrFn.create("orient", "orient")
+	orientRotAttrFn.storable = False
+	orientRotAttrFn.writable = True
+	orientRotAttrFn.keyable = False
+	orientRotAttrFn.addChild(generalIk.aOrientRx)
+	orientRotAttrFn.addChild(generalIk.aOrientRy)
+	orientRotAttrFn.addChild(generalIk.aOrientRz)
+
+
 	# eye on the sky
 	jntUpMatAttrFn = om.MFnMatrixAttribute()
 	generalIk.aJntUpMat = jntUpMatAttrFn.create("upMatrix",
@@ -283,6 +350,7 @@ def nodeInitializer():
 	jntArrayAttrFn.addChild(generalIk.aJntMat)
 	jntArrayAttrFn.addChild(generalIk.aJntUpMat)
 	jntArrayAttrFn.addChild(generalIk.aJntWeight)
+	jntArrayAttrFn.addChild(generalIk.aOrientRot)
 	# add limits later
 	om.MPxNode.addAttribute(generalIk.aJnts)
 
