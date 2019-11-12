@@ -25,30 +25,39 @@ cmds.setAttr(target + ".translateZ", 3)
 
 base = cmds.createNode("joint", n="templateBase")
 end = cmds.createNode("joint", n="templateEnd")
+up = cmds.spaceLocator(n="up")[0]
+cmds.setAttr(up + ".translateZ", 5)
 cmds.setAttr(end + ".translateY", 5)
 cmds.parent(end, base)
-#cmds.makeIdentity(base, apply=True, jo=True)
-cmds.joint(base, e=True, oj="xyz", secondaryAxisOrient="zup")
+
+# cmds.joint(base, e=True, oj="xyz", secondaryAxisOrient="zup", zso=True)
+
 
 output = cmds.duplicate(base, n="output", rc=True)[0]
+for i in base, output:
+	continue
+	#cmds.joint(i, e=True, oj="xyz", secondaryAxisOrient="zup", zso=True)
+#cmds.makeIdentity(base, apply=False, jo=True)
+
 for i in "XYZ":
 	cmds.setAttr(output + ".jointOrient" + i, 0)
 generalIk = cmds.createNode("generalIk")
 
 cmds.connectAttr( base + ".worldMatrix[0]", generalIk + ".joints[0].matrix")
 cmds.connectAttr( base + ".jointOrient", generalIk + ".joints[0].orient")
+cmds.connectAttr( base + ".jointOrient", output + ".jointOrient")
+cmds.connectAttr( base + ".rotateOrder", output + ".rotateOrder")
+cmds.connectAttr( base + ".rotateOrder", generalIk + ".joints[0].rotateOrder")
 cmds.connectAttr( end + ".worldMatrix[0]", generalIk + ".endMatrix")
 cmds.connectAttr( target + ".worldMatrix[0]", generalIk + ".targetMatrix")
+cmds.connectAttr( up + ".worldMatrix[0]", generalIk + ".joints[0].upMatrix")
 cmds.setAttr( generalIk + ".maxIterations", 1)
 
 cmds.connectAttr( generalIk + ".outputArray[0].outputRotate",
                   output + ".rotate")
 cmds.connectAttr( generalIk + ".outputArray[0].outputTranslate",
                   output + ".translate")
+
+#cmds.parent(end, world=True)
 cmds.hide(base)
 
-# template = None
-# output = None
-# for i in range(1): # start
-# 	template = cmds.createNode("joint", n="template{}_jnt".format(i))
-# 	output = cmds.createNode("joint", n="output{}_jnt".format(i))

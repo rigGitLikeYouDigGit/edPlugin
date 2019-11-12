@@ -45,11 +45,14 @@ class generalIk(om.MPxNode):
 			inLength = inJntArrayDH.__len__()
 			worldInputs = [None] * inLength
 			orients = [None] * inLength
+			ups = [None] * inLength
 			for i in range(inLength):
 				inJntArrayDH.jumpToPhysicalElement(i)
 				childCompDH = inJntArrayDH.inputValue()
 				worldInputs[i] = childCompDH.child(
 					generalIk.aJntMat).asMatrix()
+				ups[i] = childCompDH.child(
+					generalIk.aJntUpMat).asMatrix()
 
 				# orient = childCompDH.child(
 				# 	generalIk.aOrientRot).asDouble3()
@@ -83,7 +86,8 @@ class generalIk(om.MPxNode):
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
 				results = iterateChain(results, length=inLength,
-				             targetMat=targetLocalMat, endMat=endLocalMat)
+				             targetMat=targetLocalMat, endMat=endLocalMat,
+				                       upMatrices=ups)
 
 				n += 1
 
@@ -140,12 +144,13 @@ def buildChain(worldChain, orients, length=1):
 		if i == 0:
 			localMat = inMat
 		else:
+			print("calculating inverse")
 			localMat = inMat * worldChain[ i-1 ].inverse()
 		chain[i] = localMat
 	return chain
 
 def iterateChain(localChain, tolerance=None, length=1,
-                 targetMat=None, endMat=None):
+                 targetMat=None, endMat=None, upMatrices=None):
 	"""performs one complete iteration of the chain,
 	may be possible to keep this solver-agnostic"""
 	"""
@@ -172,36 +177,59 @@ def iterateChain(localChain, tolerance=None, length=1,
 	for i in range(length):  # i from TIP TO ROOT
 		index = length - 1 - i
 		inMat = localChain[ index ]
+		upMat = upMatrices[ index ]
+
+		endMat = endMat * inMat.inverse()
 
 		# find rotation of active joint to end, THEN
 		# rotation from that to target
 		#print "endMat {}".format(endMat)
-		endOrient = lookAt(inMat, endMat)
+		endOrient = lookAt(inMat, endMat, upMat=upMat)
 
-		orientMat = lookAt(inMat, targetMat) * endOrient.inverse() # this does not
-		#print "orientMat {}".format(orientMat)
-		#print()
 
+		orientMat = endOrient.inverse() *\
+		            lookAt(inMat, targetMat, upMat=upMat) \
+
+		# orientMat = lookAt(inMat, targetMat).inverse() * endOrient
+		# orientMat = endOrient * lookAt(inMat, targetMat)
+		# orientMat = lookAt(inMat, targetMat, upMat=upMat)
+
+		# orientMat = testLookAt(baseMat=inMat, endMat=endMat,
+		#                        targetMat=targetMat)
+
+		#orientMat = endOrient
 		# this all now works, taking account of end and target position
 
 		localChain[index] = orientMat
 	return localChain
 
+def testLookAt(baseMat, endMat, targetMat, factor=1.0):
+	toEnd = vectorBetweenMatrices(baseMat, endMat)
+	toTarget = vectorBetweenMatrices(baseMat, targetMat)
+	return om.MQuaternion(toEnd, toTarget, factor).asMatrix()
 
-def lookAt(base, target, up = (0, 1, 0)):
+def vectorBetweenMatrices(fromMat, toMat):
+	return om.MVector( toMat[12] - fromMat[12],
+	                   toMat[13] - fromMat[13],
+	                   toMat[14] - fromMat[14] )
+
+def lookAt(base, target, up = (0, 0.5, 0.5), upMat=None):
 	""" NB : takes no account of initial base orientation
 	only depends on vector from base to target"""
 	# axes one by one, code shamelessly copied from somewhere
 	# convert to quat someday?
+	if upMat:
+		up = om.MVector( upMat[12] - base[12],
+		                 upMat[13] - base[13],
+		                 upMat[14] - base[14]).normalize()
 
 	# x is vector between base and target
 	x = om.MVector(target[12 ] -base[12],
 	               target[13 ] -base[13],
-	               target[14 ] -base[14])
+	               target[14 ] -base[14]).normalize()
 
-	x.normalize()
 
-	z = x ^ om.MVector(-up[0], -up[1], up[2])
+	z = x ^ om.MVector(up)
 	z.normalize()
 	y = x ^ z
 	y.normalize()
@@ -304,6 +332,10 @@ def nodeInitializer():
 	orientRotAttrFn.addChild(generalIk.aOrientRy)
 	orientRotAttrFn.addChild(generalIk.aOrientRz)
 
+	# rotate order
+	rotOrderAttrFn = om.MFnNumericAttribute()
+	generalIk.aRotOrder = rotOrderAttrFn.create("rotateOrder", "rotateOrder",
+	                                            om.MFnNumericData.kLong, 0)
 
 	# eye on the sky
 	jntUpMatAttrFn = om.MFnMatrixAttribute()
@@ -351,6 +383,7 @@ def nodeInitializer():
 	jntArrayAttrFn.addChild(generalIk.aJntUpMat)
 	jntArrayAttrFn.addChild(generalIk.aJntWeight)
 	jntArrayAttrFn.addChild(generalIk.aOrientRot)
+	jntArrayAttrFn.addChild(generalIk.aRotOrder)
 	# add limits later
 	om.MPxNode.addAttribute(generalIk.aJnts)
 
