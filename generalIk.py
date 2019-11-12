@@ -356,21 +356,21 @@ def nodeInitializer():
 	jntWeightAttrFn.setMin(0)
 	# om.MPxNode.addAttribute(generalIk.aJntWeight)
 
+	limitAttrFn = om.MFnCompoundAttribute()
+	generalIk.aLimits = limitAttrFn.create("limits", "limits")
+
 	# like really know them
 	rxMaxAttrFn = om.MFnNumericAttribute()
 	generalIk.aRxMax = rxMaxAttrFn.create("maxRotateX", "maxRx",
 	                                      om.MFnNumericData.kFloat, 0)
-	rxMaxAttrFn.storable = True
-	rxMaxAttrFn.keyable = True
-	#om.MPxNode.addAttribute(generalIk.aRxMax)
-
 	# how low can you go
 	rxMinAttrFn = om.MFnNumericAttribute()
 	generalIk.aRxMin = rxMinAttrFn.create("minRotateX", "minRx",
 	                                      om.MFnNumericData.kFloat, 0)
-	rxMinAttrFn.storable = True
-	rxMinAttrFn.keyable = True
-	#om.MPxNode.addAttribute(generalIk.aRxMin)
+	limitAttrFn.addChild(generalIk.aRxMax)
+	limitAttrFn.addChild(generalIk.aRxMin)
+
+
 
 	## there is more to be done here
 
@@ -384,6 +384,7 @@ def nodeInitializer():
 	jntArrayAttrFn.addChild(generalIk.aJntWeight)
 	jntArrayAttrFn.addChild(generalIk.aOrientRot)
 	jntArrayAttrFn.addChild(generalIk.aRotOrder)
+	jntArrayAttrFn.addChild(generalIk.aLimits)
 	# add limits later
 	om.MPxNode.addAttribute(generalIk.aJnts)
 
