@@ -16,6 +16,13 @@ kPluginNodeId = om.MTypeId( 0xDAA1 )
 
 # ChainData = namedtuple("ChainData", ["matrices"])
 
+""" STUFF TO BE AWARE OF:
+for the most part this is robust to dynamically changing proportions
+and positions in the start chain - the 'outputEnd' translate and rotate
+attributes are convenience only, and only pass through local transformations
+of the original end matrix"""
+
+
 class generalIk(om.MPxNode):
 	# define everything
 	id = om.MTypeId( 0xDAA1)
@@ -70,7 +77,8 @@ class generalIk(om.MPxNode):
 
 			# from world inputs, reconstruct localised chain
 			# remove joint orients, then reapply
-			localMatrices = buildChain(worldInputs, orients, length=inLength)
+			localMatrices, localUpMatrices = buildChain(
+				worldInputs, orients, ups, length=inLength)
 
 			# main loop
 			n = 0
@@ -79,8 +87,8 @@ class generalIk(om.MPxNode):
 			endLocalMat = endMat * worldInputs[-1].inverse()
 			#endLocalMat = endMat
 
-			targetLocalMat = targetMat * worldInputs[0].inverse()
-			#targetLocalMat = targetMat
+			#targetLocalMat = targetMat * worldInputs[0].inverse()
+			targetLocalMat = targetMat
 
 
 			results = localMatrices
@@ -108,46 +116,51 @@ class generalIk(om.MPxNode):
 				# outMat = om.MTransformationMatrix(
 				# 	results[i] ).rotateBy( orients[i].inverse(), 4 )
 
-				""" NB : jointOrient does not distort the
-				current world matrix - 
-				it distorts its *children*
-				"""
-
 				outMat = om.MTransformationMatrix(results[i])
 
-				outRotVals = outMat.rotation()
+				outRot = outMat.rotation()
 				# unitConversions bring SHAME on family
-				xAngle = om.MAngle(outRotVals[0])
-				yAngle = om.MAngle(outRotVals[1])
-				zAngle = om.MAngle(outRotVals[2])
-
+				xAngle = om.MAngle(outRot[0])
+				yAngle = om.MAngle(outRot[1])
+				zAngle = om.MAngle(outRot[2])
 				outRxDH.setMAngle( xAngle )
 				outRyDH.setMAngle( yAngle )
 				outRzDH.setMAngle( zAngle )
+
+				outTranslate = (results[i][12], results[i][13], results[i][14])
+				outTransDH = outCompDH.child(generalIk.aOutTrans)
+				#print("outTranslate {}".format(outTranslate))
+				outTransDH.set3Double( *outTranslate )
 
 			outArrayDH.setAllClean()
 
 
 			pData.setClean(pPlug)
 
-def buildChain(worldChain, orients, length=1):
+def buildChain(worldChain, orients, ups, length=1):
 	""" reconstruct a chain of ordered local matrices
 	from random world inputs"""
 
 	chain = [None] * length # root to tip
+	localUps = [None] * length
 	for i in range(length):
 
 		# inMat = om.MTransformationMatrix(
 		# 	worldChain[i] ).rotateBy( orients[i], 1 ).asMatrix()
 		inMat = worldChain[i] # world matrices already account for orient
 
-		if i == 0:
-			localMat = inMat
-		else:
-			print("calculating inverse")
-			localMat = inMat * worldChain[ i-1 ].inverse()
+		# if i == 0:
+		# 	localMat = inMat
+		# else:
+		# 	print("calculating inverse")
+		# 	localMat = inMat * worldChain[ i-1 ].inverse()
+		""" we don't need local matrices
+		we just need EVERYTHING ELSE localised into each world matrix"""
+		localMat = inMat
+		localUps[i] = ups[i] * inMat.inverse()
 		chain[i] = localMat
-	return chain
+
+	return chain, localUps
 
 def iterateChain(localChain, tolerance=None, length=1,
                  targetMat=None, endMat=None, upMatrices=None):
@@ -175,32 +188,33 @@ def iterateChain(localChain, tolerance=None, length=1,
 	# HERE we need knowledge of the live end position
 
 	for i in range(length):  # i from TIP TO ROOT
-		index = length - 1 - i
+		index = - 1 - i
 		inMat = localChain[ index ]
 		upMat = upMatrices[ index ]
 
 		endMat = endMat * inMat.inverse()
 
+
 		# find rotation of active joint to end, THEN
 		# rotation from that to target
-		#print "endMat {}".format(endMat)
 		endOrient = lookAt(inMat, endMat, upMat=upMat)
+		#targetMat = endOrient.inverse() * targetMat
+		#targetMat = inMat.inverse() * targetMat
+		targetMat = inMat.inverse() * targetMat
 
 
 		orientMat = endOrient.inverse() *\
 		            lookAt(inMat, targetMat, upMat=upMat) \
 
-		# orientMat = lookAt(inMat, targetMat).inverse() * endOrient
-		# orientMat = endOrient * lookAt(inMat, targetMat)
-		# orientMat = lookAt(inMat, targetMat, upMat=upMat)
-
-		# orientMat = testLookAt(baseMat=inMat, endMat=endMat,
-		#                        targetMat=targetMat)
-
-		#orientMat = endOrient
 		# this all now works, taking account of end and target position
-
+		# transfer original translate attributes to new matrix
+		for i in range(12, 15):
+			orientMat[i] = inMat[i]
 		localChain[index] = orientMat
+
+		# find new end position
+		endMat = orientMat * endMat
+
 	return localChain
 
 def testLookAt(baseMat, endMat, targetMat, factor=1.0):
@@ -444,6 +458,29 @@ def nodeInitializer():
 	outArrayAttrFn.addChild(generalIk.aOutTrans)
 	om.MPxNode.addAttribute(generalIk.aOutArray)
 	# investigate rolling this into the input hierarchy
+
+	# convenience end attributes for babies
+	outEndTransFn = om.MFnNumericAttribute()
+	generalIk.aOutEndTrans = outEndTransFn.create(
+		"outputEndTranslate", "outputEndTranslate", om.MFnNumericData.k3Double)
+	outEndTransFn.writable = False
+	om.MPxNode.addAttribute(generalIk.aOutEndTrans)
+
+	outEndRotFn = om.MFnCompoundAttribute()
+	generalIk.aOutEndRot = outEndRotFn.create(
+		"outputEndRotate", "outputEndRotate"	)
+	outEndRotFn.writable = False
+	outEndRxAttrFn = om.MFnUnitAttribute()
+	generalIk.aOutEndRx = outEndRxAttrFn.create("outputEndRotateX", "outEndRx", 1, 0.0)
+	outEndRotFn.addChild(generalIk.aOutEndRx)
+	outEndRyAttrFn = om.MFnUnitAttribute()
+	generalIk.aOutEndRy = outEndRyAttrFn.create("outputEndRotateY", "outEndRy", 1, 0.0)
+	outEndRotFn.addChild(generalIk.aOutEndRy)
+	outEndRzAttrFn = om.MFnUnitAttribute()
+	generalIk.aOutEndRz = outEndRzAttrFn.create("outputEndRotateZ", "outEndRz", 1, 0.0)
+	outEndRotFn.addChild(generalIk.aOutEndRz)
+	om.MPxNode.addAttribute(generalIk.aOutEndRot)
+
 
 	# everyone's counting on you
 	generalIk.attributeAffects(generalIk.aTargetMat, generalIk.aOutArray)

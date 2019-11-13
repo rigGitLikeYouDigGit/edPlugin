@@ -34,6 +34,7 @@ cmds.parent(end, base)
 
 
 output = cmds.duplicate(base, n="output", rc=True)[0]
+outputEnd = cmds.listRelatives(output, children=True)[0]
 for i in base, output:
 	continue
 	#cmds.joint(i, e=True, oj="xyz", secondaryAxisOrient="zup", zso=True)
@@ -41,6 +42,8 @@ for i in base, output:
 
 for i in "XYZ":
 	cmds.setAttr(output + ".jointOrient" + i, 0)
+	cmds.connectAttr(end + ".translate" + i,
+	                 outputEnd + ".translate" + i)
 generalIk = cmds.createNode("generalIk")
 
 cmds.connectAttr( base + ".worldMatrix[0]", generalIk + ".joints[0].matrix")
@@ -59,5 +62,6 @@ cmds.connectAttr( generalIk + ".outputArray[0].outputTranslate",
                   output + ".translate")
 
 #cmds.parent(end, world=True)
-cmds.hide(base)
+#cmds.hide(base)
+cmds.setAttr(base + ".translateX", 1)
 
