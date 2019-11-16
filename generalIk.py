@@ -114,17 +114,19 @@ class generalIk(om.MPxNode):
 				results = data["results"]
 				tol = data["tolerance"]
 				activeEnd = data["end"]
+				targetMat = data["target"]
 
 				n += 1
 
 			#activeEnd = activeEnd * worldInputs[0].inverse()
 
-			spaceConstant = 1
-
-			worldSpaceTarget = targetIkSpace * worldInputs[0]
+			#worldSpaceTarget = targetIkSpace * worldInputs[0]
 			worldSpaceTarget = targetMat
 
 			# outputs
+
+			spaceConstant = 1
+
 			outDebugDH = pData.outputValue(generalIk.aDebugTarget)
 			outDebugDH.setMMatrix(worldSpaceTarget)
 			outDebugOffsetDH = pData.outputValue(generalIk.aDebugOffset)
@@ -241,10 +243,6 @@ def iterateChain(localChain, tolerance=None, length=1,
 								factor=1.0)
 
 		orientMat = inMat * quatMat
-		#orientMat = inMat * quatMat
-
-		rawMat = om.MMatrix(orientMat)
-
 
 		# this all now works, taking account of end and target position
 		# transfer original translate attributes to new matrix
@@ -256,19 +254,21 @@ def iterateChain(localChain, tolerance=None, length=1,
 		end must be multiplied out to ik space to find span to target"""
 
 		# find current offset
-		ikSpaceEnd = quatMat * localEnd
+		ikSpaceEnd = localEnd * orientMat
 		ikSpaceTarget = quatMat * targetMat
 		#ikSpaceEnd = localEnd
 		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, ikSpaceTarget)
 		tolerance = endTargetVec.length()
 		#print("tolerance {}".format(tolerance))
 		endMat = localEnd
+		targetMat = targetMat
 
 
 	return {
 		"results" : localChain,
 		"tolerance" : tolerance,
-		"end" : endMat
+		"end" : endMat,
+		"target" : targetMat
 	}
 
 def neutraliseRotations(mat):
