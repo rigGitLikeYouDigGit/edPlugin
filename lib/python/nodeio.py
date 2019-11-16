@@ -22,3 +22,8 @@ def makeBindAttr(nodeClass, extras=None):
 	bindFn.hidden = False
 	om.MPxNode.addAttribute(nodeClass.aBind)
 	return nodeClass.aBind
+
+def setAttributeAffects( driverList, drivenList, nodeObject ):
+	for i in driverList:
+		for j in drivenList:
+			nodeObject.attributeAffects(i, j)

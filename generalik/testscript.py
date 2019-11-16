@@ -40,11 +40,22 @@ for i in base, output:
 	#cmds.joint(i, e=True, oj="xyz", secondaryAxisOrient="zup", zso=True)
 #cmds.makeIdentity(base, apply=False, jo=True)
 
-for i in "XYZ":
-	cmds.setAttr(output + ".jointOrient" + i, 0)
-	cmds.connectAttr(end + ".translate" + i,
-	                 outputEnd + ".translate" + i)
+# for i in "XYZ":
+# 	cmds.setAttr(output + ".jointOrient" + i, 0)
+# 	cmds.connectAttr(end + ".translate" + i,
+# 	                 outputEnd + ".translate" + i)
 generalIk = cmds.createNode("generalIk")
+
+debugTarget = cmds.spaceLocator(n="debugOut")[0]
+debugOffset = cmds.polyCube(ch=0)[0]
+cmds.setAttr(debugOffset + ".translateZ", -2)
+
+decomp = cmds.createNode("decomposeMatrix")
+cmds.connectAttr(generalIk + ".debugTarget", decomp + ".inputMatrix")
+cmds.connectAttr(decomp + ".outputTranslate", debugTarget + ".translate")
+cmds.connectAttr(decomp + ".outputRotate", debugTarget + ".rotate")
+
+cmds.connectAttr(generalIk + ".debugOffset", debugOffset + ".translateY")
 
 cmds.connectAttr( base + ".worldMatrix[0]", generalIk + ".joints[0].matrix")
 cmds.connectAttr( base + ".jointOrient", generalIk + ".joints[0].orient")
@@ -56,16 +67,15 @@ cmds.connectAttr( target + ".worldMatrix[0]", generalIk + ".targetMatrix")
 cmds.connectAttr( up + ".worldMatrix[0]", generalIk + ".joints[0].upMatrix")
 cmds.setAttr( generalIk + ".maxIterations", 1)
 
+cmds.connectAttr( generalIk + ".outputEndTranslate", outputEnd + ".translate")
+cmds.connectAttr( generalIk + ".outputEndRotate", outputEnd + ".rotate")
+
 cmds.connectAttr( generalIk + ".outputArray[0].outputRotate",
                   output + ".rotate")
 cmds.connectAttr( generalIk + ".outputArray[0].outputTranslate",
                   output + ".translate")
 
-debugTarget = cmds.spaceLocator(n="debugOut")[0]
-decomp = cmds.createNode("decomposeMatrix")
-cmds.connectAttr(generalIk + ".debugTarget", decomp + ".inputMatrix")
-cmds.connectAttr(decomp + ".outputTranslate", debugTarget + ".translate")
-cmds.connectAttr(decomp + ".outputRotate", debugTarget + ".rotate")
+
 
 #cmds.parent(end, world=True)
 #cmds.hide(base)

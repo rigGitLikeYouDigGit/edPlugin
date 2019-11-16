@@ -10,6 +10,7 @@ import maya.api.OpenMaya as om
 import math
 import maya.cmds as cmds
 from collections import namedtuple
+from edPlugin.lib.python import nodeio
 
 kPluginNodeName = "generalIk"
 kPluginNodeId = om.MTypeId( 0xDAA1 )
@@ -92,7 +93,7 @@ class generalIk(om.MPxNode):
 			n = 0
 			tol = 100
 
-			endLocalMat = endMat
+			activeEnd = endMat
 
 			targetMat = neutraliseRotations(targetMat)
 
@@ -100,15 +101,32 @@ class generalIk(om.MPxNode):
 
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
-				results, tol = iterateChain(results, length=inLength,
-				             targetMat=targetLocalMat, endMat=endLocalMat,
+				data = iterateChain(results, length=inLength,
+				             targetMat=targetLocalMat, endMat=activeEnd,
 				                       upMatrices=ups)
+				results = data["results"]
+				tol = data["tolerance"]
+				activeEnd = data["end"]
 
 				n += 1
+
+			#activeEnd = activeEnd * worldInputs[0].inverse()
+
+			spaceConstant = 1
 
 			# outputs
 			outDebugDH = pData.outputValue(generalIk.aDebugTarget)
 			outDebugDH.setMMatrix(targetLocalMat)
+			outDebugOffsetDH = pData.outputValue(generalIk.aDebugOffset)
+			outDebugOffsetDH.setDouble(tol)
+
+			# end transform
+			endTfMat = om.MTransformationMatrix(activeEnd)
+			#print("activeEnd {}".format(activeEnd))
+			outEndTransDH = pData.outputValue(generalIk.aOutEndTrans)
+			# translate = endTfMat.translation( spaceConstant )
+			# print("translate {}".format(translate))
+			outEndTransDH.set3Double( *endTfMat.translation( spaceConstant ) )
 
 			# convert jntArray of matrices to useful rotation values
 			outArrayDH = pData.outputArrayValue(generalIk.aOutArray)
@@ -126,7 +144,7 @@ class generalIk(om.MPxNode):
 
 				# apply jointOrient
 				outMat = om.MTransformationMatrix(
-					results[i] ).rotateBy( orients[i].inverse(), 1 )
+					results[i] ).rotateBy( orients[i].inverse(), spaceConstant )
 
 
 				outRot = outMat.rotation()
@@ -201,20 +219,20 @@ def iterateChain(localChain, tolerance=None, length=1,
 		inMat = localChain[ index ]
 		upMat = upMatrices[ index ]
 
+		localEnd = endMat * inMat.inverse()
+
 		# find rotation of active joint to end, THEN
 		# rotation from that to target
-		endOrient = lookAt(inMat, endMat, upMat=upMat)
-		endAim = endOrient
 
-		targetAim = lookAt(inMat, targetMat, upMat=upMat)
 
-		quatMat = testLookAt(#baseMat=om.MMatrix(),
-		                       baseMat=inMat,
+		quatMat = testLookAt( baseMat=inMat,
 		                       endMat=endMat,
 		                       targetMat=targetMat,
 								factor=1.0)
 
 		orientMat = inMat * quatMat
+
+		rawMat = om.MMatrix(orientMat)
 
 
 		# this all now works, taking account of end and target position
@@ -223,12 +241,21 @@ def iterateChain(localChain, tolerance=None, length=1,
 			orientMat[i] = inMat[i]
 		localChain[index] = orientMat
 
+		"""output translation values for end must match exactly ref chain
+		end must be multiplied out to ik space to find span to target"""
+
 		# find current offset
-		endTargetVec = vectorBetweenMatrices(endMat, targetMat)
+		endMat = localEnd
+		ikSpaceEnd = localEnd * rawMat
+		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, targetMat)
 		tolerance = endTargetVec.length()
 		#print("tolerance {}".format(tolerance))
 
-	return localChain, tolerance
+	return {
+		"results" : localChain,
+		"tolerance" : tolerance,
+		"end" : endMat
+	}
 
 def neutraliseRotations(mat):
 	""" return mmatrix containing only its original translations"""
@@ -320,6 +347,7 @@ def nodeInitializer():
 	                                              "targetMat", 1)
 	targetMatAttrFn.storable = True
 	targetMatAttrFn.readable = False
+	targetMatAttrFn.keyable = False
 	targetMatAttrFn.writable = True
 	targetMatAttrFn.cached = True
 	om.MPxNode.addAttribute(generalIk.aTargetMat)
@@ -329,6 +357,7 @@ def nodeInitializer():
 	generalIk.aEndMat = endMatAttrFn.create("endMatrix", "endMat", 1)
 	endMatAttrFn.storable = True
 	endMatAttrFn.readable = False
+	endMatAttrFn.keyable = False
 	endMatAttrFn.writable = True
 	endMatAttrFn.cached = True
 	om.MPxNode.addAttribute(generalIk.aEndMat)
@@ -373,6 +402,10 @@ def nodeInitializer():
 	generalIk.aDebugTarget = debugTargetFn.create("debugTarget", "debugTarget", 1)
 	om.MPxNode.addAttribute(generalIk.aDebugTarget)
 
+	debugOffset = om.MFnNumericAttribute()
+	generalIk.aDebugOffset = debugOffset.create("debugOffset", "debugOffset",
+	                                            om.MFnNumericData.kDouble, 0)
+	om.MPxNode.addAttribute(generalIk.aDebugOffset)
 
 	# rotate order
 	rotOrderAttrFn = om.MFnNumericAttribute()
@@ -511,15 +544,12 @@ def nodeInitializer():
 
 
 	# everyone's counting on you
-	generalIk.attributeAffects(generalIk.aTargetMat, generalIk.aOutArray)
-	generalIk.attributeAffects(generalIk.aMaxIter, generalIk.aOutArray)
-	generalIk.attributeAffects(generalIk.aTolerance, generalIk.aOutArray)
+	drivers = [generalIk.aTargetMat, generalIk.aEndMat, generalIk.aJnts]
+	driven = [generalIk.aOutArray, generalIk.aOutEndTrans, generalIk.aOutEndRot,
+	          generalIk.aDebugTarget, generalIk.aDebugOffset]
 
-	generalIk.attributeAffects(generalIk.aEndMat, generalIk.aOutArray)
-	generalIk.attributeAffects(generalIk.aJnts, generalIk.aOutArray)
+	nodeio.setAttributeAffects(drivers, driven, generalIk)
 
-	generalIk.attributeAffects(generalIk.aJnts, generalIk.aDebugTarget)
-	generalIk.attributeAffects(generalIk.aTargetMat, generalIk.aDebugTarget)
 
 
 def nodeCreator():
