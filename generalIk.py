@@ -20,7 +20,23 @@ kPluginNodeId = om.MTypeId( 0xDAA1 )
 for the most part this is robust to dynamically changing proportions
 and positions in the start chain - the 'outputEnd' translate and rotate
 attributes are convenience only, and only pass through local transformations
-of the original end matrix"""
+of the original end matrix
+
+- get inputs
+- check if matrix chain is dirty
+	- if yes: 
+		- rebuild local chain from worlds
+		- localise target and up matrices into ik space through the
+		root world matrix
+	- if no, reload cached local chain from inputs
+
+- process local chain from root to tip
+	- at tip joint, active space matrix is found through multiplying
+	all precedent joints from root to tip
+		- local target is ikSpace target, multiplied by inverse of this
+
+
+"""
 
 
 class generalIk(om.MPxNode):
@@ -33,6 +49,8 @@ class generalIk(om.MPxNode):
 	def compute(self, pPlug, pData):
 
 		# only compute if output is in out array
+		if not pPlug.isChild:
+			return
 		if(pPlug.parent() == generalIk.aOutArray):
 			# descend into coordinated cycles
 			# inputs
@@ -61,18 +79,8 @@ class generalIk(om.MPxNode):
 				ups[i] = childCompDH.child(
 					generalIk.aJntUpMat).asMatrix()
 
-				# orient = childCompDH.child(
-				# 	generalIk.aOrientRot).asDouble3()
-				# orients[i] = om.MEulerRotation(
-				# 	[math.degrees(j) for j in orient] )
-				# seems to convert automatically, makes no difference
-
-					# list of euler transforms
-					# add rotateOrder support here
-
 				orients[i] = om.MEulerRotation(childCompDH.child(
 					generalIk.aOrientRot).asDouble3())
-
 
 
 			# from world inputs, reconstruct localised chain
@@ -83,22 +91,24 @@ class generalIk(om.MPxNode):
 			# main loop
 			n = 0
 			tol = 100
-			# localise end first
-			endLocalMat = endMat * worldInputs[-1].inverse()
-			#endLocalMat = endMat
 
-			#targetLocalMat = targetMat * worldInputs[0].inverse()
-			targetLocalMat = targetMat
+			endLocalMat = endMat
 
+			targetMat = neutraliseRotations(targetMat)
+
+			targetLocalMat = worldInputs[0].inverse() * targetMat
 
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
-				results = iterateChain(results, length=inLength,
+				results, tol = iterateChain(results, length=inLength,
 				             targetMat=targetLocalMat, endMat=endLocalMat,
 				                       upMatrices=ups)
 
 				n += 1
 
+			# outputs
+			outDebugDH = pData.outputValue(generalIk.aDebugTarget)
+			outDebugDH.setMMatrix(targetLocalMat)
 
 			# convert jntArray of matrices to useful rotation values
 			outArrayDH = pData.outputArrayValue(generalIk.aOutArray)
@@ -113,10 +123,11 @@ class generalIk(om.MPxNode):
 				outRyDH = outRotDH.child(generalIk.aOutRy)
 				outRzDH = outRotDH.child(generalIk.aOutRz)
 				#
-				# outMat = om.MTransformationMatrix(
-				# 	results[i] ).rotateBy( orients[i].inverse(), 4 )
 
-				outMat = om.MTransformationMatrix(results[i])
+				# apply jointOrient
+				outMat = om.MTransformationMatrix(
+					results[i] ).rotateBy( orients[i].inverse(), 1 )
+
 
 				outRot = outMat.rotation()
 				# unitConversions bring SHAME on family
@@ -129,7 +140,6 @@ class generalIk(om.MPxNode):
 
 				outTranslate = (results[i][12], results[i][13], results[i][14])
 				outTransDH = outCompDH.child(generalIk.aOutTrans)
-				#print("outTranslate {}".format(outTranslate))
 				outTransDH.set3Double( *outTranslate )
 
 			outArrayDH.setAllClean()
@@ -145,19 +155,17 @@ def buildChain(worldChain, orients, ups, length=1):
 	localUps = [None] * length
 	for i in range(length):
 
-		# inMat = om.MTransformationMatrix(
-		# 	worldChain[i] ).rotateBy( orients[i], 1 ).asMatrix()
 		inMat = worldChain[i] # world matrices already account for orient
 
-		# if i == 0:
-		# 	localMat = inMat
-		# else:
-		# 	print("calculating inverse")
-		# 	localMat = inMat * worldChain[ i-1 ].inverse()
+
 		""" we don't need local matrices
-		we just need EVERYTHING ELSE localised into each world matrix"""
+		we just need EVERYTHING ELSE localised into each world matrix
+		then later we do need to construct the local chain though
+		BUT world matrix will not be valid across iterations, 
+		needs to be regenerated
+		"""
 		localMat = inMat
-		localUps[i] = ups[i] * inMat.inverse()
+		localUps[i] = ups[i] #* inMat.inverse()
 		chain[i] = localMat
 
 	return chain, localUps
@@ -186,25 +194,28 @@ def iterateChain(localChain, tolerance=None, length=1,
 	# hierarchy, so all rotations are inherited rigidly
 	"""
 	# HERE we need knowledge of the live end position
+	endMat = neutraliseRotations(endMat)
 
 	for i in range(length):  # i from TIP TO ROOT
 		index = - 1 - i
 		inMat = localChain[ index ]
 		upMat = upMatrices[ index ]
 
-		endMat = endMat * inMat.inverse()
-
-
 		# find rotation of active joint to end, THEN
 		# rotation from that to target
 		endOrient = lookAt(inMat, endMat, upMat=upMat)
-		#targetMat = endOrient.inverse() * targetMat
-		#targetMat = inMat.inverse() * targetMat
-		targetMat = inMat.inverse() * targetMat
+		endAim = endOrient
 
+		targetAim = lookAt(inMat, targetMat, upMat=upMat)
 
-		orientMat = endOrient.inverse() *\
-		            lookAt(inMat, targetMat, upMat=upMat) \
+		quatMat = testLookAt(#baseMat=om.MMatrix(),
+		                       baseMat=inMat,
+		                       endMat=endMat,
+		                       targetMat=targetMat,
+								factor=1.0)
+
+		orientMat = inMat * quatMat
+
 
 		# this all now works, taking account of end and target position
 		# transfer original translate attributes to new matrix
@@ -212,14 +223,31 @@ def iterateChain(localChain, tolerance=None, length=1,
 			orientMat[i] = inMat[i]
 		localChain[index] = orientMat
 
-		# find new end position
-		endMat = orientMat * endMat
+		# find current offset
+		endTargetVec = vectorBetweenMatrices(endMat, targetMat)
+		tolerance = endTargetVec.length()
+		#print("tolerance {}".format(tolerance))
 
-	return localChain
+	return localChain, tolerance
+
+def neutraliseRotations(mat):
+	""" return mmatrix containing only its original translations"""
+	newMat = om.MMatrix()
+	for i in range(16):
+		if any( i == n for n in range(12, 16)):
+			newMat[i] = mat[i]
+			continue
+		newMat[i] = 0.0
+	newMat[15] = 1.0
+	return newMat
+
+def positionFromMatrix(mat):
+	""" return only translation component of matrix as MVector"""
+	return om.MVector( mat[12], mat[13], mat[14])
 
 def testLookAt(baseMat, endMat, targetMat, factor=1.0):
-	toEnd = vectorBetweenMatrices(baseMat, endMat)
-	toTarget = vectorBetweenMatrices(baseMat, targetMat)
+	toEnd = vectorBetweenMatrices(baseMat, endMat).normalize()
+	toTarget = vectorBetweenMatrices(baseMat, targetMat).normalize()
 	return om.MQuaternion(toEnd, toTarget, factor).asMatrix()
 
 def vectorBetweenMatrices(fromMat, toMat):
@@ -233,15 +261,10 @@ def lookAt(base, target, up = (0, 0.5, 0.5), upMat=None):
 	# axes one by one, code shamelessly copied from somewhere
 	# convert to quat someday?
 	if upMat:
-		up = om.MVector( upMat[12] - base[12],
-		                 upMat[13] - base[13],
-		                 upMat[14] - base[14]).normalize()
+		up = positionFromMatrix(upMat).normalize()
 
 	# x is vector between base and target
-	x = om.MVector(target[12 ] -base[12],
-	               target[13 ] -base[13],
-	               target[14 ] -base[14]).normalize()
-
+	x = vectorBetweenMatrices(base, target).normalize()
 
 	z = x ^ om.MVector(up)
 	z.normalize()
@@ -249,7 +272,6 @@ def lookAt(base, target, up = (0, 0.5, 0.5), upMat=None):
 	y.normalize()
 
 	aim = om.MMatrix([
-		#x.x, x.y, x.z, 0,
 		y.x, y.y, y.z, 0,
 		x.x, x.y, x.z, 0,
 		z.x, z.y, z.z, 0,
@@ -345,6 +367,12 @@ def nodeInitializer():
 	orientRotAttrFn.addChild(generalIk.aOrientRx)
 	orientRotAttrFn.addChild(generalIk.aOrientRy)
 	orientRotAttrFn.addChild(generalIk.aOrientRz)
+
+	# debug
+	debugTargetFn = om.MFnMatrixAttribute()
+	generalIk.aDebugTarget = debugTargetFn.create("debugTarget", "debugTarget", 1)
+	om.MPxNode.addAttribute(generalIk.aDebugTarget)
+
 
 	# rotate order
 	rotOrderAttrFn = om.MFnNumericAttribute()
@@ -487,25 +515,12 @@ def nodeInitializer():
 	generalIk.attributeAffects(generalIk.aMaxIter, generalIk.aOutArray)
 	generalIk.attributeAffects(generalIk.aTolerance, generalIk.aOutArray)
 
-
-	# following are reference chain - trigger rebuild only when these change
-	# generalIk.attributeAffects(generalIk.aRootMat, generalIk.aOutArray)
 	generalIk.attributeAffects(generalIk.aEndMat, generalIk.aOutArray)
 	generalIk.attributeAffects(generalIk.aJnts, generalIk.aOutArray)
 
-#     # TRY THIS OUT LATER:
-#     refMatArrayFn = om.MFnMatrixAttribute()
-#     generalIk.aRefArray = refMatArrayFn.create("refMatArray")
-#     refMatArrayFn.array = True
-#     refMatArrayFn.internal = True
-#     refMatArrayFn.cached = True
-#     refMatArrayFn.storable = True
-#     # do we need arrayDataBuilder?
-#     om.MPxNode.addAttribute(generalIk.aRefArray)
-# this would be constructed of the joints' relative matrices, and then store the outputs
-# of the node across iterations - basically its memory
-# if the reference skeleton changes RELATIVE TO THE ROOT, this would need to be recalculated
-# a battle for another day
+	generalIk.attributeAffects(generalIk.aJnts, generalIk.aDebugTarget)
+	generalIk.attributeAffects(generalIk.aTargetMat, generalIk.aDebugTarget)
+
 
 def nodeCreator():
 	# creates node, returns to maya as pointer
@@ -529,11 +544,3 @@ def uninitializePlugin( mobject ):
 	# 	sys.stderr.write("failed to unregister node, you're stuck with generalIk forever lol")
 	# 	raise
 	mPlugin.deregisterNode(kPluginNodeId)
-
-# roadmap:
-# get it working
-# get it working with constraints
-# find way to cache matrix chain unless reference chain rebuilds
-# get different solvers working - maybe fabrik, but i want to try the quat splice
-# rebuild in c++ if it really needs it?
-# make cmd to attach joints automatically

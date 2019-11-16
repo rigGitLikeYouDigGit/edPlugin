@@ -61,7 +61,15 @@ cmds.connectAttr( generalIk + ".outputArray[0].outputRotate",
 cmds.connectAttr( generalIk + ".outputArray[0].outputTranslate",
                   output + ".translate")
 
+debugTarget = cmds.spaceLocator(n="debugOut")[0]
+decomp = cmds.createNode("decomposeMatrix")
+cmds.connectAttr(generalIk + ".debugTarget", decomp + ".inputMatrix")
+cmds.connectAttr(decomp + ".outputTranslate", debugTarget + ".translate")
+cmds.connectAttr(decomp + ".outputRotate", debugTarget + ".rotate")
+
 #cmds.parent(end, world=True)
 #cmds.hide(base)
 cmds.setAttr(base + ".translateX", 1)
+cmds.setAttr(end + ".translateZ", 2)
+
 
