@@ -37,6 +37,10 @@ of the original end matrix
 		- local target is ikSpace target, multiplied by inverse of this
 
 
+terminology:
+ - ikSpace: space with root joint of input chain as origin
+ - activeSpace: space with currently mobile joint link as origin
+
 """
 
 
@@ -97,12 +101,15 @@ class generalIk(om.MPxNode):
 
 			targetMat = neutraliseRotations(targetMat)
 
-			targetLocalMat = worldInputs[0].inverse() * targetMat
+			""" localise target into ikSpace """
+
+			targetIkSpace = worldInputs[0].inverse() * targetMat
+			targetIkSpace = targetMat
 
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
 				data = iterateChain(results, length=inLength,
-				             targetMat=targetLocalMat, endMat=activeEnd,
+				             targetMat=targetIkSpace, endMat=activeEnd,
 				                       upMatrices=ups)
 				results = data["results"]
 				tol = data["tolerance"]
@@ -114,9 +121,12 @@ class generalIk(om.MPxNode):
 
 			spaceConstant = 1
 
+			worldSpaceTarget = targetIkSpace * worldInputs[0]
+			worldSpaceTarget = targetMat
+
 			# outputs
 			outDebugDH = pData.outputValue(generalIk.aDebugTarget)
-			outDebugDH.setMMatrix(targetLocalMat)
+			outDebugDH.setMMatrix(worldSpaceTarget)
 			outDebugOffsetDH = pData.outputValue(generalIk.aDebugOffset)
 			outDebugOffsetDH.setDouble(tol)
 
@@ -231,6 +241,7 @@ def iterateChain(localChain, tolerance=None, length=1,
 								factor=1.0)
 
 		orientMat = inMat * quatMat
+		#orientMat = inMat * quatMat
 
 		rawMat = om.MMatrix(orientMat)
 
@@ -245,11 +256,14 @@ def iterateChain(localChain, tolerance=None, length=1,
 		end must be multiplied out to ik space to find span to target"""
 
 		# find current offset
-		endMat = localEnd
-		ikSpaceEnd = localEnd * rawMat
-		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, targetMat)
+		ikSpaceEnd = quatMat * localEnd
+		ikSpaceTarget = quatMat * targetMat
+		#ikSpaceEnd = localEnd
+		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, ikSpaceTarget)
 		tolerance = endTargetVec.length()
 		#print("tolerance {}".format(tolerance))
+		endMat = localEnd
+
 
 	return {
 		"results" : localChain,
@@ -263,9 +277,7 @@ def neutraliseRotations(mat):
 	for i in range(16):
 		if any( i == n for n in range(12, 16)):
 			newMat[i] = mat[i]
-			continue
-		newMat[i] = 0.0
-	newMat[15] = 1.0
+
 	return newMat
 
 def positionFromMatrix(mat):
