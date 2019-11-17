@@ -95,6 +95,7 @@ class generalIk(om.MPxNode):
 			localMatrices = chainData["localMatrices"]
 			localUpMatrices = chainData["localUpMatrices"]
 			ikSpaceMatrices = chainData["ikSpaceMatrices"]
+			print("localMatrices {}".format(localMatrices))
 
 			# main loop
 			n = 0
@@ -106,28 +107,40 @@ class generalIk(om.MPxNode):
 
 			""" localise target into ikSpace """
 			targetIkSpace = worldInputs[0].inverse() * targetMat
-			targetIkSpace =  targetMat * worldInputs[0].inverse()
+			#targetIkSpace =  targetMat * worldInputs[0].inverse()
 			#targetIkSpace = targetMat
 
 			results = ikSpaceMatrices
 			while n < maxIter and tol > tolerance:
-				data = iterateChain(results, length=inLength,
-				             targetMat=targetIkSpace, endMat=endIkSpace,
-				                       upMatrices=ups)
-				results = data["results"]
+				data = iterateChain(
+					worldMatrices=worldInputs,
+					ikSpaceMatrices=ikSpaceMatrices,
+					localMatrices=localMatrices,
+					length=inLength,
+					targetMat=targetIkSpace,
+					endMat=endIkSpace,
+					upMatrices=ups)
+				localMatrices = data["results"]
 				tol = data["tolerance"]
 				endIkSpace = data["end"]
 				targetMat = data["target"]
 
 				n += 1
 
+			results = localMatrices
+
 			#activeEnd = activeEnd * worldInputs[0].inverse()
 
 			worldSpaceTarget = targetIkSpace * worldInputs[0]
 			#worldSpaceTarget = worldInputs[0] * targetIkSpace
 
+			ikSpaceOutputs = [
+				multiplyMatrices(localMatrices[:i]) for i in range(inLength)]
+			endLocalSpace = ikSpaceOutputs[-1].inverse() * endIkSpace
+
 			# restore world space root position
 			results[0] = results[0] * worldInputs[0]
+
 
 			# outputs
 
@@ -139,11 +152,8 @@ class generalIk(om.MPxNode):
 			outDebugOffsetDH.setDouble(tol)
 
 			# end transform
-			endTfMat = om.MTransformationMatrix(endIkSpace)
-			#print("activeEnd {}".format(activeEnd))
+			endTfMat = om.MTransformationMatrix(endLocalSpace)
 			outEndTransDH = pData.outputValue(generalIk.aOutEndTrans)
-			# translate = endTfMat.translation( spaceConstant )
-			# print("translate {}".format(translate))
 			outEndTransDH.set3Double( *endTfMat.translation( spaceConstant ) )
 
 			# convert jntArray of matrices to useful rotation values
@@ -180,7 +190,6 @@ class generalIk(om.MPxNode):
 
 			outArrayDH.setAllClean()
 
-
 			pData.setClean(pPlug)
 
 def buildChains(worldChain, orients, ups, length=1):
@@ -194,12 +203,14 @@ def buildChains(worldChain, orients, ups, length=1):
 
 		inMat = worldChain[i] # world matrices already account for orient
 
-
 		""" 
 		"""
-		localMat = inMat
+		if i:
+			localMat = worldChain[ i - 1].inverse() * inMat
+		else:
+			localMat = om.MMatrix()
 		localUps[i] = ups[i] #* inMat.inverse()
-		chain[i] = localMat
+		chain[i] = localMat # matrix TO index FROM previous
 		ikSpaceChain[i] = worldChain[0].inverse() * inMat
 
 	return {
@@ -209,7 +220,16 @@ def buildChains(worldChain, orients, ups, length=1):
 		"ikSpaceTarget" : None,
 	}
 
-def iterateChain(localChain, tolerance=None, length=1,
+def multiplyMatrices(mats):
+	out = om.MMatrix()
+	for i in mats:
+		out = i * out
+	return out
+
+def iterateChain(worldMatrices=None,
+                 ikSpaceMatrices=None,
+                 localMatrices=None,
+                 tolerance=None, length=1,
                  targetMat=None, endMat=None, upMatrices=None):
 	"""performs one complete iteration of the chain,
 	may be possible to keep this solver-agnostic"""
@@ -235,47 +255,60 @@ def iterateChain(localChain, tolerance=None, length=1,
 	# HERE we need knowledge of the live end position
 	endMat = neutraliseRotations(endMat)
 
+
 	for i in range(length):  # i from TIP TO ROOT
+		print
+
 		index = - 1 - i
-		inMat = localChain[ index ]
-		upMat = upMatrices[ index ]
 
-		localEnd = endMat
+		print("index {}".format(index))
 
-		# find rotation of active joint to end, THEN
-		# rotation from that to target
+		# matrices from root to index
+		toIndex = localMatrices[ :index ]
+		print( "toIndex {}".format(toIndex))
+		activeMat = multiplyMatrices( toIndex )
+
+		print( "activeMat {}".format(activeMat))
+
+		# matrices to end from index
+		toEnd = localMatrices[ index: ]
+		toEndMat = multiplyMatrices(toEnd)
+		print( "toEndMat {}".format(toEndMat))
+
+		# localise end and target
+		activeEnd = activeMat.inverse() * endMat
+		activeTarget = activeMat.inverse () * targetMat
 
 
-		quatMat = testLookAt( baseMat=inMat,
-		                       endMat=endMat,
-		                       targetMat=targetMat,
+		quatMat = testLookAt( baseMat=om.MMatrix(),
+		                       endMat=activeEnd,
+		                       targetMat=activeTarget,
 								factor=1.0)
 
-		#orientMat = inMat * quatMat
 		orientMat = quatMat
+
+		""" now multiply end back out into ikspace """
 
 		# this all now works, taking account of end and target position
 		# transfer original translate attributes to new matrix
-		for i in range(12, 15):
-			orientMat[i] = inMat[i]
-		localChain[index] = orientMat
+		for n in range(12, 15):
+			orientMat[n] = localMatrices[index][n]
+		localMatrices[index] = orientMat
 
-		"""output translation values for end must match exactly ref chain
-		end must be multiplied out to ik space to find span to target"""
+		activeEnd = activeEnd * orientMat
+		ikSpaceEnd = activeMat * activeEnd
+		print("ikSpaceEnd {}".format(ikSpaceEnd))
 
-		# find current offset
-		ikSpaceEnd = localEnd * orientMat
-		ikSpaceTarget = quatMat * targetMat
-		#ikSpaceEnd = localEnd
-		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, ikSpaceTarget)
+		""" with end and target now in ikSpace, calculate offset """
+
+		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, targetMat)
 		tolerance = endTargetVec.length()
 		#print("tolerance {}".format(tolerance))
-		endMat = localEnd
-		targetMat = targetMat
+		endMat = ikSpaceEnd
 
 
 	return {
-		"results" : localChain,
+		"results" : localMatrices,
 		"tolerance" : tolerance,
 		"end" : endMat,
 		"target" : targetMat
@@ -376,7 +409,7 @@ def nodeInitializer():
 
 	# compare and contrast
 	endMatAttrFn = om.MFnMatrixAttribute()
-	generalIk.aEndMat = endMatAttrFn.create("endMatrix", "endMat", 1)
+	generalIk.aEndMat = endMatAttrFn.create("inputEndMatrix", "endMat", 1)
 	endMatAttrFn.storable = True
 	endMatAttrFn.readable = False
 	endMatAttrFn.keyable = False
@@ -473,7 +506,7 @@ def nodeInitializer():
 
 	# you will never break the chain
 	jntArrayAttrFn = om.MFnCompoundAttribute()
-	generalIk.aJnts = jntArrayAttrFn.create("joints", "joints")
+	generalIk.aJnts = jntArrayAttrFn.create("inputJoints", "inputJoints")
 	jntArrayAttrFn.array = True
 	jntArrayAttrFn.usesArrayDataBuilder = True
 	jntArrayAttrFn.addChild(generalIk.aJntMat)
@@ -487,20 +520,20 @@ def nodeInitializer():
 
 	# fruits of labour
 	outRxAttrFn = om.MFnUnitAttribute()
-	generalIk.aOutRx = outRxAttrFn.create("outputRotateX", "outRx", 1, 0.0)
+	generalIk.aOutRx = outRxAttrFn.create("rotateX", "outRx", 1, 0.0)
 	outRxAttrFn.writable = False
 	outRxAttrFn.keyable = False
 	# om.MPxNode.addAttribute(generalIk.aOutRx)
 
 
 	outRyAttrFn = om.MFnUnitAttribute()
-	generalIk.aOutRy = outRyAttrFn.create("outputRotateY", "outRy", 1, 0.0)
+	generalIk.aOutRy = outRyAttrFn.create("rotateY", "outRy", 1, 0.0)
 	outRyAttrFn.writable = False
 	outRyAttrFn.keyable = False
 	# om.MPxNode.addAttribute(generalIk.aOutRy)
 
 	outRzAttrFn = om.MFnUnitAttribute()
-	generalIk.aOutRz = outRzAttrFn.create("outputRotateZ", "outRz", 1, 0.0)
+	generalIk.aOutRz = outRzAttrFn.create("rotateZ", "outRz", 1, 0.0)
 	outRzAttrFn.writable = False
 	outRzAttrFn.keyable = False
 	# om.MPxNode.addAttribute(generalIk.aOutRz)
@@ -508,7 +541,7 @@ def nodeInitializer():
 	outRotAttrFn = om.MFnCompoundAttribute()
 	# generalIk.aOutRot = outRotAttrFn.create("outputRotate", "outRot",
 	#     om.MFnNumericData.k3Double)
-	generalIk.aOutRot = outRotAttrFn.create("outputRotate", "outRot")
+	generalIk.aOutRot = outRotAttrFn.create("rotate", "outRot")
 	outRotAttrFn.storable = False
 	outRotAttrFn.writable = False
 	outRotAttrFn.keyable = False
@@ -521,7 +554,7 @@ def nodeInitializer():
 	# # add smooth jazz
 
 	outTransAttrFn = om.MFnNumericAttribute()
-	generalIk.aOutTrans = outTransAttrFn.create("outputTranslate", "outTrans",
+	generalIk.aOutTrans = outTransAttrFn.create("translate", "outTrans",
 	                                            om.MFnNumericData.k3Double)
 	outTransAttrFn.storable = False
 	outTransAttrFn.writable = False
@@ -531,7 +564,7 @@ def nodeInitializer():
 
 	# all that the sun touches
 	outArrayAttrFn = om.MFnCompoundAttribute()
-	generalIk.aOutArray = outArrayAttrFn.create("outputArray", "out")
+	generalIk.aOutArray = outArrayAttrFn.create("outputJoints", "out")
 	outArrayAttrFn.array = True
 	outArrayAttrFn.usesArrayDataBuilder = True
 	outArrayAttrFn.storable = False
