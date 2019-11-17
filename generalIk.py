@@ -90,38 +90,44 @@ class generalIk(om.MPxNode):
 
 			# from world inputs, reconstruct localised chain
 			# remove joint orients, then reapply
-			localMatrices, localUpMatrices = buildChain(
+			chainData = buildChains(
 				worldInputs, orients, ups, length=inLength)
+			localMatrices = chainData["localMatrices"]
+			localUpMatrices = chainData["localUpMatrices"]
+			ikSpaceMatrices = chainData["ikSpaceMatrices"]
 
 			# main loop
 			n = 0
 			tol = 100
 
-			activeEnd = endMat
+			endIkSpace = worldInputs[0].inverse() * endMat
 
 			targetMat = neutraliseRotations(targetMat)
 
 			""" localise target into ikSpace """
-
 			targetIkSpace = worldInputs[0].inverse() * targetMat
-			targetIkSpace = targetMat
+			targetIkSpace =  targetMat * worldInputs[0].inverse()
+			#targetIkSpace = targetMat
 
-			results = localMatrices
+			results = ikSpaceMatrices
 			while n < maxIter and tol > tolerance:
 				data = iterateChain(results, length=inLength,
-				             targetMat=targetIkSpace, endMat=activeEnd,
+				             targetMat=targetIkSpace, endMat=endIkSpace,
 				                       upMatrices=ups)
 				results = data["results"]
 				tol = data["tolerance"]
-				activeEnd = data["end"]
+				endIkSpace = data["end"]
 				targetMat = data["target"]
 
 				n += 1
 
 			#activeEnd = activeEnd * worldInputs[0].inverse()
 
-			#worldSpaceTarget = targetIkSpace * worldInputs[0]
-			worldSpaceTarget = targetMat
+			worldSpaceTarget = targetIkSpace * worldInputs[0]
+			#worldSpaceTarget = worldInputs[0] * targetIkSpace
+
+			# restore world space root position
+			results[0] = results[0] * worldInputs[0]
 
 			# outputs
 
@@ -133,7 +139,7 @@ class generalIk(om.MPxNode):
 			outDebugOffsetDH.setDouble(tol)
 
 			# end transform
-			endTfMat = om.MTransformationMatrix(activeEnd)
+			endTfMat = om.MTransformationMatrix(endIkSpace)
 			#print("activeEnd {}".format(activeEnd))
 			outEndTransDH = pData.outputValue(generalIk.aOutEndTrans)
 			# translate = endTfMat.translation( spaceConstant )
@@ -177,28 +183,31 @@ class generalIk(om.MPxNode):
 
 			pData.setClean(pPlug)
 
-def buildChain(worldChain, orients, ups, length=1):
+def buildChains(worldChain, orients, ups, length=1):
 	""" reconstruct a chain of ordered local matrices
 	from random world inputs"""
 
 	chain = [None] * length # root to tip
 	localUps = [None] * length
+	ikSpaceChain = [None] * length
 	for i in range(length):
 
 		inMat = worldChain[i] # world matrices already account for orient
 
 
-		""" we don't need local matrices
-		we just need EVERYTHING ELSE localised into each world matrix
-		then later we do need to construct the local chain though
-		BUT world matrix will not be valid across iterations, 
-		needs to be regenerated
+		""" 
 		"""
 		localMat = inMat
 		localUps[i] = ups[i] #* inMat.inverse()
 		chain[i] = localMat
+		ikSpaceChain[i] = worldChain[0].inverse() * inMat
 
-	return chain, localUps
+	return {
+		"localMatrices" : chain,
+		"localUpMatrices" : localUps,
+		"ikSpaceMatrices" : ikSpaceChain,
+		"ikSpaceTarget" : None,
+	}
 
 def iterateChain(localChain, tolerance=None, length=1,
                  targetMat=None, endMat=None, upMatrices=None):
@@ -231,7 +240,7 @@ def iterateChain(localChain, tolerance=None, length=1,
 		inMat = localChain[ index ]
 		upMat = upMatrices[ index ]
 
-		localEnd = endMat * inMat.inverse()
+		localEnd = endMat
 
 		# find rotation of active joint to end, THEN
 		# rotation from that to target
@@ -242,7 +251,8 @@ def iterateChain(localChain, tolerance=None, length=1,
 		                       targetMat=targetMat,
 								factor=1.0)
 
-		orientMat = inMat * quatMat
+		#orientMat = inMat * quatMat
+		orientMat = quatMat
 
 		# this all now works, taking account of end and target position
 		# transfer original translate attributes to new matrix
