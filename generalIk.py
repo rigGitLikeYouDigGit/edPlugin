@@ -95,22 +95,31 @@ class generalIk(om.MPxNode):
 			localMatrices = chainData["localMatrices"]
 			localUpMatrices = chainData["localUpMatrices"]
 			ikSpaceMatrices = chainData["ikSpaceMatrices"]
-			print("localMatrices {}".format(localMatrices))
+			# print("localMatrices {}".format(localMatrices))
+			# print("ikMatrices {}".format(ikSpaceMatrices))
+			# ikSpace and local matrices are correct
 
 			# main loop
 			n = 0
 			tol = 100
 
-			endIkSpace = worldInputs[0].inverse() * endMat
+			#endIkSpace = worldInputs[0].inverse() * endMat
+			endIkSpace = endMat * worldInputs[0].inverse()
+			# print "initial endIkSpace {}".format(
+			# 	(endIkSpace[12], endIkSpace[13], endIkSpace[14]) )
+			# endIkSpace is correct
 
 			targetMat = neutraliseRotations(targetMat)
 
 			""" localise target into ikSpace """
-			targetIkSpace = worldInputs[0].inverse() * targetMat
-			#targetIkSpace =  targetMat * worldInputs[0].inverse()
-			#targetIkSpace = targetMat
+			#targetIkSpace = worldInputs[0].inverse() * targetMat
+			targetIkSpace =  targetMat * worldInputs[0].inverse()
+			print("targetIkSpace {}".format( (
+				targetIkSpace[12], targetIkSpace[13], targetIkSpace[14])
+			))
+			# targetIkSpace is correct
 
-			results = ikSpaceMatrices
+			results = localMatrices
 			while n < maxIter and tol > tolerance:
 				data = iterateChain(
 					worldMatrices=worldInputs,
@@ -131,12 +140,16 @@ class generalIk(om.MPxNode):
 
 			#activeEnd = activeEnd * worldInputs[0].inverse()
 
-			worldSpaceTarget = targetIkSpace * worldInputs[0]
-			#worldSpaceTarget = worldInputs[0] * targetIkSpace
+
+			#worldSpaceTarget = worldInputs[0] * targetIkSpace # correct
+			worldSpaceTarget = worldInputs[0] * targetMat
 
 			ikSpaceOutputs = [
-				multiplyMatrices(localMatrices[:i]) for i in range(inLength)]
-			endLocalSpace = ikSpaceOutputs[-1].inverse() * endIkSpace
+				multiplyMatrices(localMatrices[:i + 1]) for i in range(inLength)]
+			print("ikSpaceOutputs {}".format(ikSpaceOutputs))
+			endLocalSpace = endIkSpace * ikSpaceOutputs[-1].inverse()
+			print("endLocalSpace {}".format(
+				( endLocalSpace[12], endLocalSpace[13], endLocalSpace[14] ) ))
 
 			# restore world space root position
 			results[0] = results[0] * worldInputs[0]
@@ -203,15 +216,14 @@ def buildChains(worldChain, orients, ups, length=1):
 
 		inMat = worldChain[i] # world matrices already account for orient
 
-		""" 
-		"""
 		if i:
-			localMat = worldChain[ i - 1].inverse() * inMat
+			#localMat = worldChain[ i - 1].inverse() * inMat
+			localMat = inMat * worldChain[ i - 1].inverse()
 		else:
 			localMat = om.MMatrix()
 		localUps[i] = ups[i] #* inMat.inverse()
 		chain[i] = localMat # matrix TO index FROM previous
-		ikSpaceChain[i] = worldChain[0].inverse() * inMat
+		ikSpaceChain[i] = inMat * worldChain[0].inverse()
 
 	return {
 		"localMatrices" : chain,
@@ -220,10 +232,13 @@ def buildChains(worldChain, orients, ups, length=1):
 		"ikSpaceTarget" : None,
 	}
 
-def multiplyMatrices(mats):
+def multiplyMatrices(mats, reverse=False):
 	out = om.MMatrix()
 	for i in mats:
-		out = i * out
+		if reverse:
+			out = out * i
+		else:
+			out = i * out
 	return out
 
 def iterateChain(worldMatrices=None,
@@ -255,29 +270,37 @@ def iterateChain(worldMatrices=None,
 	# HERE we need knowledge of the live end position
 	endMat = neutraliseRotations(endMat)
 
+	#print("localMatrices len {}".format(len(localMatrices)))
+	#print("localMatrices {}".format(localMatrices))
+
+	step = 0 # check iteration order
 
 	for i in range(length):  # i from TIP TO ROOT
 		print
+		step += 1
 
-		index = - 1 - i
+		index = length - 1 - i
 
-		print("index {}".format(index))
+		print("index {}, step {}".format(index, step))
 
 		# matrices from root to index
-		toIndex = localMatrices[ :index ]
-		print( "toIndex {}".format(toIndex))
+		toIndex = localMatrices[ :index + 1 ]
+		#print( "toIndex {}".format(toIndex))
 		activeMat = multiplyMatrices( toIndex )
 
-		print( "activeMat {}".format(activeMat))
+		#print( "activeMat {}".format(activeMat))
 
 		# matrices to end from index
 		toEnd = localMatrices[ index: ]
-		toEndMat = multiplyMatrices(toEnd)
-		print( "toEndMat {}".format(toEndMat))
+		toEndMat = multiplyMatrices( toEnd, reverse=True )
+		print( "toEndMat {}".format(toEndMat)) # not updating correctly
 
 		# localise end and target
-		activeEnd = activeMat.inverse() * endMat
-		activeTarget = activeMat.inverse () * targetMat
+		activeEnd = endMat * activeMat.inverse()
+		activeTarget = targetMat * activeMat.inverse ()
+
+		print( "activeEnd {}".format(activeEnd))
+		print( "activeTarget {}".format(activeTarget))
 
 
 		quatMat = testLookAt( baseMat=om.MMatrix(),
@@ -286,18 +309,32 @@ def iterateChain(worldMatrices=None,
 								factor=1.0)
 
 		orientMat = quatMat
+		#print "orientMat {}".format(orientMat)
 
 		""" now multiply end back out into ikspace """
 
-		# this all now works, taking account of end and target position
-		# transfer original translate attributes to new matrix
+		#activeEnd = orientMat * activeEnd
+		#activeEnd = activeEnd * orientMat
+		#activeEnd = toEndMat * orientMat
+		#activeEnd = orientMat * toEndMat
+
+		print("orientedActiveEnd {}".format( positionFromMatrix(activeEnd)))
+		# length still preserved
+
+		# # transfer original translate attributes to new matrix
 		for n in range(12, 15):
 			orientMat[n] = localMatrices[index][n]
+		# localMatrices[index] = localMatrices[index] * orientMat
+		# localMatrices[index] = orientMat * localMatrices[index]
+
 		localMatrices[index] = orientMat
 
-		activeEnd = activeEnd * orientMat
-		ikSpaceEnd = activeMat * activeEnd
-		print("ikSpaceEnd {}".format(ikSpaceEnd))
+		# ikSpaceEnd = activeEnd * activeMat
+		# ikSpaceEnd = activeMat * activeEnd
+		#ikSpaceEnd = activeMat * toEndMat
+		ikSpaceEnd = toEndMat * activeMat
+		#ikSpaceEnd = activeEnd
+		print("ikSpaceEnd final {}".format(ikSpaceEnd))
 
 		""" with end and target now in ikSpace, calculate offset """
 
@@ -305,6 +342,8 @@ def iterateChain(worldMatrices=None,
 		tolerance = endTargetVec.length()
 		#print("tolerance {}".format(tolerance))
 		endMat = ikSpaceEnd
+
+		endMat = neutraliseRotations(endMat)
 
 
 	return {

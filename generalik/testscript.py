@@ -46,6 +46,7 @@ outputChain = []
 for i in range(chainLength):
 	base = cmds.createNode("joint", n="base_{}_jnt".format(i))
 	cmds.setAttr(base + ".translateY", i * 5)
+
 	out = cmds.duplicate(base, n="output_{}_jnt".format(i))[0]
 	cmds.connectAttr(base + ".jointOrient", out + ".jointOrient")
 	cmds.connectAttr(base + ".rotateOrder", out + ".rotateOrder")
@@ -55,6 +56,10 @@ for i in range(chainLength):
 	if i:
 		cmds.parent(base, baseChain[i-1])
 		cmds.parent(out, outputChain[i-1])
+
+
+cmds.setAttr(baseChain[0] + ".translateX", 3)
+cmds.setAttr(baseChain[0] + ".rotateZ", 20)
 
 for i in range(chainLength):
 	if i < chainLength - 1:
