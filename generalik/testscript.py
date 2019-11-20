@@ -23,6 +23,10 @@ def connectInputJoint(joint, ik, index):
 	                 ik + ".inputJoints[{}].matrix".format(index))
 	cmds.connectAttr(joint + ".jointOrient",
 	                 ik + ".inputJoints[{}].orient".format(index))
+	cmds.connectAttr(joint + ".rotateOrder",
+	                 ik + ".inputJoints[{}].rotateOrder".format(index))
+	cmds.connectAttr(joint + ".radius",
+	                 ik + ".inputJoints[{}].weight".format(index))
 
 def connectOutputJoint(ik, joint, index):
 	cmds.connectAttr(ik + ".outputJoints[{}].translate".format(index),
@@ -37,13 +41,15 @@ cmds.setAttr(target + ".translateZ", 3)
 
 
 generalIk = cmds.createNode("generalIk")
-cmds.setAttr( generalIk + ".maxIterations", 2)
+cmds.setAttr( generalIk + ".maxIterations", 5)
+cmds.setAttr( generalIk + ".tolerance", 0.5)
 
 
 chainLength = 4
 baseChain = []
 outputChain = []
 for i in range(chainLength):
+	# create and connect joints
 	base = cmds.createNode("joint", n="base_{}_jnt".format(i))
 	cmds.setAttr(base + ".translateY", i * 5)
 

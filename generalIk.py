@@ -63,6 +63,7 @@ class generalIk(om.MPxNode):
 			solver = pData.inputValue(generalIk.aSolver).asInt()
 			maxIter = pData.inputValue(generalIk.aMaxIter).asInt()
 			tolerance = pData.inputValue(generalIk.aTolerance).asDouble()
+			globalWeight = pData.inputValue(generalIk.aGlobalWeight).asDouble
 
 			# target
 			targetMat = pData.inputValue(generalIk.aTargetMat).asMatrix()
@@ -70,12 +71,14 @@ class generalIk(om.MPxNode):
 			# end
 			endMat = pData.inputValue(generalIk.aEndMat).asMatrix()
 
+
 			# extract input world matrices from array then leave it alone
 			inJntArrayDH = pData.inputArrayValue(generalIk.aJnts)
 			inLength = inJntArrayDH.__len__()
 			worldInputs = [None] * inLength
 			orients = [None] * inLength
 			ups = [None] * inLength
+			jointData = [None] * inLength # ARRAY OF STRUCTS REEEEEEEE
 			for i in range(inLength):
 				inJntArrayDH.jumpToPhysicalElement(i)
 				childCompDH = inJntArrayDH.inputValue()
@@ -86,6 +89,13 @@ class generalIk(om.MPxNode):
 
 				orients[i] = om.MEulerRotation(childCompDH.child(
 					generalIk.aOrientRot).asDouble3())
+
+				# extra data
+				weight = childCompDH.child(generalIk.aWeight).asDouble()
+				jointData[i] = {
+					"weight" : weight,
+
+				}
 
 
 			# from world inputs, reconstruct localised chain
@@ -122,9 +132,9 @@ class generalIk(om.MPxNode):
 			""" localise target into ikSpace """
 			#targetIkSpace = worldInputs[0].inverse() * targetMat
 			targetIkSpace =  targetMat * worldInputs[0].inverse()
-			print("targetIkSpace {}".format( (
-				targetIkSpace[12], targetIkSpace[13], targetIkSpace[14])
-			))
+			#print("targetIkSpace {}".format( (
+			# 	targetIkSpace[12], targetIkSpace[13], targetIkSpace[14])
+			# ))
 			# targetIkSpace is correct
 
 			results = localMatrices
@@ -146,12 +156,9 @@ class generalIk(om.MPxNode):
 				n += 1
 
 				if tol < tolerance:
-					print("found peace")
+					print("found peace on pass {}".format(n))
 
 			results = localMatrices
-
-			#activeEnd = activeEnd * worldInputs[0].inverse()
-
 
 			#worldSpaceTarget = worldInputs[0] * targetIkSpace # correct
 			worldSpaceTarget = worldInputs[0] * targetMat
@@ -161,8 +168,8 @@ class generalIk(om.MPxNode):
 			#print("ikSpaceOutputs {}".format(ikSpaceOutputs))
 			endLocalSpace = endIkSpace * ikSpaceOutputs[-1].inverse()
 
-			print("endLocalSpace {}".format(
-				( endLocalSpace[12], endLocalSpace[13], endLocalSpace[14] ) ))
+			# print("endLocalSpace {}".format(
+			# 	( endLocalSpace[12], endLocalSpace[13], endLocalSpace[14] ) ))
 
 			# restore world space root position
 			results[0] = results[0] * worldInputs[0]
@@ -286,20 +293,16 @@ def iterateChainCCD(worldMatrices=None,
 
 	localEnd = localEndMat
 
-	#print("localEnd {}".format(localEnd))
-
 	step = 0 # check iteration order
 
 	for i in range(length):  # i from TIP TO ROOT
-		print
+		#print
 		step += 1
 
 		index = length - 1 - i
 
-		print("index {}, step {}".format(index, step))
+		#print("index {}, step {}".format(index, step))
 		#
-		# print("initial endMat {}".format(positionFromMatrix(endMat)))
-		# print("initial local endMat {}".format(positionFromMatrix(localEndMat)))
 
 		# matrices from root to index
 		toIndex = localMatrices[ :index + 1 ]
@@ -318,22 +321,17 @@ def iterateChainCCD(worldMatrices=None,
 		activeEnd = endMat * activeMat.inverse()
 		activeTarget = targetMat * activeMat.inverse ()
 
-		#print( "activeEnd {}".format(activeEnd))
-		#print( "activeTarget {}".format(activeTarget))
-
-
 		quatMat = testLookAt( baseMat=om.MMatrix(),
 		                       endMat=activeEnd,
 		                       targetMat=activeTarget,
 								factor=1.0)
 
 		orientMat = quatMat
+		oldMat = localMatrices[index]
 		#print "orientMat {}".format(orientMat)
 
-		""" now multiply end back out into ikspace """
+		""" HERE is where we apply constraints, weight blending etc"""
 
-		# print("orientedActiveEnd {}".format( positionFromMatrix(activeEnd)))
-		# length still preserved
 
 		# # transfer original translate attributes to new matrix
 		for n in range(12, 15):
@@ -341,14 +339,8 @@ def iterateChainCCD(worldMatrices=None,
 
 		localMatrices[index] = orientMat
 
-
 		ikSpaceEnd = toEndMat * orientMat #* activeEnd
 
-
-
-		""" ENDMAT is identity because of localMatrices offset,
-		toEndMat is one step too far 
-		"""
 
 		# print("ikSpaceEnd final {}".format(ikSpaceEnd))
 
@@ -359,19 +351,9 @@ def iterateChainCCD(worldMatrices=None,
 		#print("tolerance {}".format(tolerance))
 		endMat = ikSpaceEnd
 
-		#endMat = neutraliseRotations(endMat)
-
-		#print "final endMat {}".format(positionFromMatrix(endMat))
-
 		ikChainEnd = multiplyMatrices(localMatrices)
-		#print("ikChainEnd {}".format(ikChainEnd))
-		#localEndMat = endMat * ikChainEnd.inverse()
+
 		localEndMat = ikChainEnd.inverse() * endMat
-		#print "final local end mat {}".format(localEndMat)
-
-
-
-
 
 	return {
 		"results" : localMatrices,
@@ -403,29 +385,6 @@ def vectorBetweenMatrices(fromMat, toMat):
 	                   toMat[13] - fromMat[13],
 	                   toMat[14] - fromMat[14] )
 
-def lookAt(base, target, up = (0, 0.5, 0.5), upMat=None):
-	""" NB : takes no account of initial base orientation
-	only depends on vector from base to target"""
-	# axes one by one, code shamelessly copied from somewhere
-	# convert to quat someday?
-	if upMat:
-		up = positionFromMatrix(upMat).normalize()
-
-	# x is vector between base and target
-	x = vectorBetweenMatrices(base, target).normalize()
-
-	z = x ^ om.MVector(up)
-	z.normalize()
-	y = x ^ z
-	y.normalize()
-
-	aim = om.MMatrix([
-		y.x, y.y, y.z, 0,
-		x.x, x.y, x.z, 0,
-		z.x, z.y, z.z, 0,
-		0, 0, 0, 1
-	])
-	return aim
 
 def nodeInitializer():
 	# create attributes
@@ -454,13 +413,19 @@ def nodeInitializer():
 	# how far will you go for perfection
 	toleranceAttrFn = om.MFnNumericAttribute()
 	generalIk.aTolerance = toleranceAttrFn.create("tolerance", "tol",
-	                                              om.MFnNumericData.kDouble, 0.01)
+	                                              om.MFnNumericData.kDouble, 0.1)
 	toleranceAttrFn.storable = True
 	toleranceAttrFn.keyable = True
 	toleranceAttrFn.readable = False
 	toleranceAttrFn.writable = True
 	toleranceAttrFn.setMin(0)
 	om.MPxNode.addAttribute(generalIk.aTolerance)
+
+	# weight of the world
+	globalWeightAttrFn = om.MFnNumericAttribute()
+	generalIk.aGlobalWeight = globalWeightAttrFn.create("globalWeight", "globalWeight",
+	                                              om.MFnNumericData.kDouble, 0.8)
+	om.MPxNode.addAttribute(generalIk.aGlobalWeight)
 
 	# what are your goals in life
 	targetMatAttrFn = om.MFnMatrixAttribute()
@@ -544,7 +509,7 @@ def nodeInitializer():
 
 	# who is the heftiest boi
 	jntWeightAttrFn = om.MFnNumericAttribute()
-	generalIk.aJntWeight = jntWeightAttrFn.create("weight", "jntWeight",
+	generalIk.aWeight = jntWeightAttrFn.create("weight", "jntWeight",
 	                                              om.MFnNumericData.kFloat, 1)
 	jntWeightAttrFn.storable = True
 	jntWeightAttrFn.keyable = True
@@ -577,7 +542,7 @@ def nodeInitializer():
 	jntArrayAttrFn.usesArrayDataBuilder = True
 	jntArrayAttrFn.addChild(generalIk.aJntMat)
 	jntArrayAttrFn.addChild(generalIk.aJntUpMat)
-	jntArrayAttrFn.addChild(generalIk.aJntWeight)
+	jntArrayAttrFn.addChild(generalIk.aWeight)
 	jntArrayAttrFn.addChild(generalIk.aOrientRot)
 	jntArrayAttrFn.addChild(generalIk.aRotOrder)
 	jntArrayAttrFn.addChild(generalIk.aLimits)
@@ -665,7 +630,8 @@ def nodeInitializer():
 
 
 	# everyone's counting on you
-	drivers = [generalIk.aTargetMat, generalIk.aEndMat, generalIk.aJnts]
+	drivers = [generalIk.aTargetMat, generalIk.aEndMat, generalIk.aJnts,
+	           generalIk.aMaxIter, generalIk.aGlobalWeight, generalIk.aTolerance]
 	driven = [generalIk.aOutArray, generalIk.aOutEndTrans, generalIk.aOutEndRot,
 	          generalIk.aDebugTarget, generalIk.aDebugOffset]
 
