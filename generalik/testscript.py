@@ -37,7 +37,7 @@ cmds.setAttr(target + ".translateZ", 3)
 
 
 generalIk = cmds.createNode("generalIk")
-cmds.setAttr( generalIk + ".maxIterations", 1)
+cmds.setAttr( generalIk + ".maxIterations", 2)
 
 
 chainLength = 4
@@ -59,7 +59,7 @@ for i in range(chainLength):
 
 
 cmds.setAttr(baseChain[0] + ".translateX", 3)
-cmds.setAttr(baseChain[0] + ".rotateZ", 20)
+#cmds.setAttr(baseChain[0] + ".rotateZ", 20)
 
 for i in range(chainLength):
 	if i < chainLength - 1:

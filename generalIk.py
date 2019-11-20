@@ -99,6 +99,13 @@ class generalIk(om.MPxNode):
 			# print("ikMatrices {}".format(ikSpaceMatrices))
 			# ikSpace and local matrices are correct
 
+			""" I don't think there is any point in treating the end
+			matrix separately - it only adds a special case at every turn
+			
+			refactor to include it in normal local matrices
+			
+			"""
+
 			# main loop
 			n = 0
 			tol = 100
@@ -110,6 +117,7 @@ class generalIk(om.MPxNode):
 			# endIkSpace is correct
 
 			targetMat = neutraliseRotations(targetMat)
+			endLocalSpace = endMat * worldInputs[-1].inverse()
 
 			""" localise target into ikSpace """
 			#targetIkSpace = worldInputs[0].inverse() * targetMat
@@ -121,13 +129,14 @@ class generalIk(om.MPxNode):
 
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
-				data = iterateChain(
+				data = iterateChainCCD(
 					worldMatrices=worldInputs,
 					ikSpaceMatrices=ikSpaceMatrices,
 					localMatrices=localMatrices,
 					length=inLength,
 					targetMat=targetIkSpace,
 					endMat=endIkSpace,
+					localEndMat=endLocalSpace,
 					upMatrices=ups)
 				localMatrices = data["results"]
 				tol = data["tolerance"]
@@ -135,6 +144,9 @@ class generalIk(om.MPxNode):
 				targetMat = data["target"]
 
 				n += 1
+
+				if tol < tolerance:
+					print("found peace")
 
 			results = localMatrices
 
@@ -146,8 +158,9 @@ class generalIk(om.MPxNode):
 
 			ikSpaceOutputs = [
 				multiplyMatrices(localMatrices[:i + 1]) for i in range(inLength)]
-			print("ikSpaceOutputs {}".format(ikSpaceOutputs))
+			#print("ikSpaceOutputs {}".format(ikSpaceOutputs))
 			endLocalSpace = endIkSpace * ikSpaceOutputs[-1].inverse()
+
 			print("endLocalSpace {}".format(
 				( endLocalSpace[12], endLocalSpace[13], endLocalSpace[14] ) ))
 
@@ -241,11 +254,12 @@ def multiplyMatrices(mats, reverse=False):
 			out = i * out
 	return out
 
-def iterateChain(worldMatrices=None,
-                 ikSpaceMatrices=None,
-                 localMatrices=None,
-                 tolerance=None, length=1,
-                 targetMat=None, endMat=None, upMatrices=None):
+def iterateChainCCD(worldMatrices=None,
+                    ikSpaceMatrices=None,
+                    localMatrices=None,
+                    tolerance=None, length=1,
+                    targetMat=None, endMat=None,
+                    localEndMat=None, upMatrices=None):
 	"""performs one complete iteration of the chain,
 	may be possible to keep this solver-agnostic"""
 	"""
@@ -270,8 +284,9 @@ def iterateChain(worldMatrices=None,
 	# HERE we need knowledge of the live end position
 	endMat = neutraliseRotations(endMat)
 
-	#print("localMatrices len {}".format(len(localMatrices)))
-	#print("localMatrices {}".format(localMatrices))
+	localEnd = localEndMat
+
+	#print("localEnd {}".format(localEnd))
 
 	step = 0 # check iteration order
 
@@ -282,6 +297,9 @@ def iterateChain(worldMatrices=None,
 		index = length - 1 - i
 
 		print("index {}, step {}".format(index, step))
+		#
+		# print("initial endMat {}".format(positionFromMatrix(endMat)))
+		# print("initial local endMat {}".format(positionFromMatrix(localEndMat)))
 
 		# matrices from root to index
 		toIndex = localMatrices[ :index + 1 ]
@@ -291,16 +309,17 @@ def iterateChain(worldMatrices=None,
 		#print( "activeMat {}".format(activeMat))
 
 		# matrices to end from index
-		toEnd = localMatrices[ index: ]
-		toEndMat = multiplyMatrices( toEnd, reverse=True )
-		print( "toEndMat {}".format(toEndMat)) # not updating correctly
+		toEnd = localMatrices[ index+1: ]
+		#toEnd = [localEnd] + localMatrices[ index: ]
+		toEndMat = localEnd * multiplyMatrices( toEnd, reverse=False )
+		#print( "toEndMat {}".format(toEndMat)) # not updating correctly
 
 		# localise end and target
 		activeEnd = endMat * activeMat.inverse()
 		activeTarget = targetMat * activeMat.inverse ()
 
-		print( "activeEnd {}".format(activeEnd))
-		print( "activeTarget {}".format(activeTarget))
+		#print( "activeEnd {}".format(activeEnd))
+		#print( "activeTarget {}".format(activeTarget))
 
 
 		quatMat = testLookAt( baseMat=om.MMatrix(),
@@ -313,28 +332,25 @@ def iterateChain(worldMatrices=None,
 
 		""" now multiply end back out into ikspace """
 
-		#activeEnd = orientMat * activeEnd
-		#activeEnd = activeEnd * orientMat
-		#activeEnd = toEndMat * orientMat
-		#activeEnd = orientMat * toEndMat
-
-		print("orientedActiveEnd {}".format( positionFromMatrix(activeEnd)))
+		# print("orientedActiveEnd {}".format( positionFromMatrix(activeEnd)))
 		# length still preserved
 
 		# # transfer original translate attributes to new matrix
 		for n in range(12, 15):
 			orientMat[n] = localMatrices[index][n]
-		# localMatrices[index] = localMatrices[index] * orientMat
-		# localMatrices[index] = orientMat * localMatrices[index]
 
 		localMatrices[index] = orientMat
 
-		# ikSpaceEnd = activeEnd * activeMat
-		# ikSpaceEnd = activeMat * activeEnd
-		#ikSpaceEnd = activeMat * toEndMat
-		ikSpaceEnd = toEndMat * activeMat
-		#ikSpaceEnd = activeEnd
-		print("ikSpaceEnd final {}".format(ikSpaceEnd))
+
+		ikSpaceEnd = toEndMat * orientMat #* activeEnd
+
+
+
+		""" ENDMAT is identity because of localMatrices offset,
+		toEndMat is one step too far 
+		"""
+
+		# print("ikSpaceEnd final {}".format(ikSpaceEnd))
 
 		""" with end and target now in ikSpace, calculate offset """
 
@@ -343,14 +359,26 @@ def iterateChain(worldMatrices=None,
 		#print("tolerance {}".format(tolerance))
 		endMat = ikSpaceEnd
 
-		endMat = neutraliseRotations(endMat)
+		#endMat = neutraliseRotations(endMat)
+
+		#print "final endMat {}".format(positionFromMatrix(endMat))
+
+		ikChainEnd = multiplyMatrices(localMatrices)
+		#print("ikChainEnd {}".format(ikChainEnd))
+		#localEndMat = endMat * ikChainEnd.inverse()
+		localEndMat = ikChainEnd.inverse() * endMat
+		#print "final local end mat {}".format(localEndMat)
+
+
+
 
 
 	return {
 		"results" : localMatrices,
 		"tolerance" : tolerance,
 		"end" : endMat,
-		"target" : targetMat
+		"target" : targetMat,
+		"localEnd" : localEndMat
 	}
 
 def neutraliseRotations(mat):
@@ -359,7 +387,6 @@ def neutraliseRotations(mat):
 	for i in range(16):
 		if any( i == n for n in range(12, 16)):
 			newMat[i] = mat[i]
-
 	return newMat
 
 def positionFromMatrix(mat):
