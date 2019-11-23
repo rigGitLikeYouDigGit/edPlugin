@@ -63,7 +63,7 @@ class generalIk(om.MPxNode):
 			solver = pData.inputValue(generalIk.aSolver).asInt()
 			maxIter = pData.inputValue(generalIk.aMaxIter).asInt()
 			tolerance = pData.inputValue(generalIk.aTolerance).asDouble()
-			globalWeight = pData.inputValue(generalIk.aGlobalWeight).asDouble
+			globalWeight = pData.inputValue(generalIk.aGlobalWeight).asDouble()
 
 			# target
 			targetMat = pData.inputValue(generalIk.aTargetMat).asMatrix()
@@ -91,10 +91,11 @@ class generalIk(om.MPxNode):
 					generalIk.aOrientRot).asDouble3())
 
 				# extra data
-				weight = childCompDH.child(generalIk.aWeight).asDouble()
+				weight = childCompDH.child(generalIk.aJntWeight).asDouble()
+				upDir = childCompDH.child(generalIk.aJntUpDir).asDouble3()
 				jointData[i] = {
 					"weight" : weight,
-
+					"upDir" : upDir,
 				}
 
 
@@ -147,7 +148,10 @@ class generalIk(om.MPxNode):
 					targetMat=targetIkSpace,
 					endMat=endIkSpace,
 					localEndMat=endLocalSpace,
-					upMatrices=ups)
+					upMatrices=ups,
+					jointData=jointData,
+					globalWeight=globalWeight,
+				)
 				localMatrices = data["results"]
 				tol = data["tolerance"]
 				endIkSpace = data["end"]
@@ -266,7 +270,8 @@ def iterateChainCCD(worldMatrices=None,
                     localMatrices=None,
                     tolerance=None, length=1,
                     targetMat=None, endMat=None,
-                    localEndMat=None, upMatrices=None):
+                    localEndMat=None, upMatrices=None,
+                    jointData=None, globalWeight=None):
 	"""performs one complete iteration of the chain,
 	may be possible to keep this solver-agnostic"""
 	"""
@@ -298,8 +303,8 @@ def iterateChainCCD(worldMatrices=None,
 	for i in range(length):  # i from TIP TO ROOT
 		#print
 		step += 1
-
 		index = length - 1 - i
+		data = jointData[index]
 
 		#print("index {}, step {}".format(index, step))
 		#
@@ -317,25 +322,58 @@ def iterateChainCCD(worldMatrices=None,
 		toEndMat = localEnd * multiplyMatrices( toEnd, reverse=False )
 		#print( "toEndMat {}".format(toEndMat)) # not updating correctly
 
+		# info from previous iteration
+		oldMat = localMatrices[index]
+		oldRot = neutraliseTranslations(oldMat)
+
+
 		# localise end and target
 		activeEnd = endMat * activeMat.inverse()
 		activeTarget = targetMat * activeMat.inverse ()
 
-		quatMat = testLookAt( baseMat=om.MMatrix(),
+		# aim from end to target
+		aimQuat = testLookAt( baseMat=om.MMatrix(),
 		                       endMat=activeEnd,
 		                       targetMat=activeTarget,
 								factor=1.0)
+		#print("aimQuat {}".format(aimQuat))
 
-		orientMat = quatMat
-		oldMat = localMatrices[index]
-		#print "orientMat {}".format(orientMat)
+		# previous quaternion
+		oldQuat = om.MQuaternion()
+		oldQuat.setValue(oldRot)
+		oldQuat.normalizeIt()
+
+		# don't breathe this
+		weight = min(data["weight"] * globalWeight, 0.999)
+		#weight = data["weight"]
+
+		# print("oldQuat {}".format(oldQuat))
+		# print("weight {}".format(weight))
+
+
+		outQuat = om.MQuaternion.slerp( oldQuat, aimQuat, weight, spin=0)
+
+		#print("outQuat {}".format(outQuat))
 
 		""" HERE is where we apply constraints, weight blending etc"""
 
 
+
+		orientMat = outQuat.asMatrix()
+
+		# process upVector
+		upDir = jointData[index]["upDir"]
+		if upDir == (0, 0, 0):
+			upDir = (0, 1, 0)
+
 		# # transfer original translate attributes to new matrix
 		for n in range(12, 15):
 			orientMat[n] = localMatrices[index][n]
+
+
+
+
+
 
 		localMatrices[index] = orientMat
 
@@ -375,10 +413,16 @@ def positionFromMatrix(mat):
 	""" return only translation component of matrix as MVector"""
 	return om.MVector( mat[12], mat[13], mat[14])
 
+def neutraliseTranslations(mat):
+	newMat = om.MMatrix(mat)
+	for i in range(12, 15):
+		newMat[i] = 0
+	return newMat
+
 def testLookAt(baseMat, endMat, targetMat, factor=1.0):
 	toEnd = vectorBetweenMatrices(baseMat, endMat).normalize()
 	toTarget = vectorBetweenMatrices(baseMat, targetMat).normalize()
-	return om.MQuaternion(toEnd, toTarget, factor).asMatrix()
+	return om.MQuaternion(toEnd, toTarget, factor) # .asMatrix()
 
 def vectorBetweenMatrices(fromMat, toMat):
 	return om.MVector( toMat[12] - fromMat[12],
@@ -425,6 +469,8 @@ def nodeInitializer():
 	globalWeightAttrFn = om.MFnNumericAttribute()
 	generalIk.aGlobalWeight = globalWeightAttrFn.create("globalWeight", "globalWeight",
 	                                              om.MFnNumericData.kDouble, 0.8)
+	globalWeightAttrFn.writable = True
+	globalWeightAttrFn.keyable = True
 	om.MPxNode.addAttribute(generalIk.aGlobalWeight)
 
 	# what are your goals in life
@@ -461,18 +507,12 @@ def nodeInitializer():
 	# joint orients
 	orientRxAttrFn = om.MFnUnitAttribute()
 	generalIk.aOrientRx = orientRxAttrFn.create("orientX", "orientX", 1, 0.0)
-	orientRxAttrFn.writable = True
-	orientRxAttrFn.keyable = False
 
 	orientRyAttrFn = om.MFnUnitAttribute()
 	generalIk.aOrientRy = orientRyAttrFn.create("orientY", "orientY", 1, 0.0)
-	orientRyAttrFn.writable = True
-	orientRyAttrFn.keyable = False
 
 	orientRzAttrFn = om.MFnUnitAttribute()
 	generalIk.aOrientRz = orientRzAttrFn.create("orientZ", "orientZ", 1, 0.0)
-	orientRzAttrFn.writable = True
-	orientRzAttrFn.keyable = False
 
 	orientRotAttrFn = om.MFnCompoundAttribute()
 	generalIk.aOrientRot = orientRotAttrFn.create("orient", "orient")
@@ -507,10 +547,15 @@ def nodeInitializer():
 	jntUpMatAttrFn.cached = True
 	# om.MPxNode.addAttribute(generalIk.aJntUpMat)
 
+	# but which way is up
+	jntUpDirAttrFn = om.MFnNumericAttribute()
+	generalIk.aJntUpDir = jntUpDirAttrFn.create("upDir", "upDir",
+	                                            om.MFnNumericData.k3Double)
+
 	# who is the heftiest boi
 	jntWeightAttrFn = om.MFnNumericAttribute()
-	generalIk.aWeight = jntWeightAttrFn.create("weight", "jntWeight",
-	                                              om.MFnNumericData.kFloat, 1)
+	generalIk.aJntWeight = jntWeightAttrFn.create("weight", "jntWeight",
+	                                              om.MFnNumericData.kDouble, 1)
 	jntWeightAttrFn.storable = True
 	jntWeightAttrFn.keyable = True
 	jntWeightAttrFn.writable = True
@@ -523,11 +568,11 @@ def nodeInitializer():
 	# like really know them
 	rxMaxAttrFn = om.MFnNumericAttribute()
 	generalIk.aRxMax = rxMaxAttrFn.create("maxRotateX", "maxRx",
-	                                      om.MFnNumericData.kFloat, 0)
+	                                      om.MFnNumericData.kDouble, 0)
 	# how low can you go
 	rxMinAttrFn = om.MFnNumericAttribute()
 	generalIk.aRxMin = rxMinAttrFn.create("minRotateX", "minRx",
-	                                      om.MFnNumericData.kFloat, 0)
+	                                      om.MFnNumericData.kDouble, 0)
 	limitAttrFn.addChild(generalIk.aRxMax)
 	limitAttrFn.addChild(generalIk.aRxMin)
 
@@ -542,7 +587,8 @@ def nodeInitializer():
 	jntArrayAttrFn.usesArrayDataBuilder = True
 	jntArrayAttrFn.addChild(generalIk.aJntMat)
 	jntArrayAttrFn.addChild(generalIk.aJntUpMat)
-	jntArrayAttrFn.addChild(generalIk.aWeight)
+	jntArrayAttrFn.addChild(generalIk.aJntUpDir)
+	jntArrayAttrFn.addChild(generalIk.aJntWeight)
 	jntArrayAttrFn.addChild(generalIk.aOrientRot)
 	jntArrayAttrFn.addChild(generalIk.aRotOrder)
 	jntArrayAttrFn.addChild(generalIk.aLimits)
@@ -631,7 +677,8 @@ def nodeInitializer():
 
 	# everyone's counting on you
 	drivers = [generalIk.aTargetMat, generalIk.aEndMat, generalIk.aJnts,
-	           generalIk.aMaxIter, generalIk.aGlobalWeight, generalIk.aTolerance]
+	           generalIk.aMaxIter, generalIk.aGlobalWeight, generalIk.aTolerance,
+	           generalIk.aJntWeight]
 	driven = [generalIk.aOutArray, generalIk.aOutEndTrans, generalIk.aOutEndRot,
 	          generalIk.aDebugTarget, generalIk.aDebugOffset]
 

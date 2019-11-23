@@ -1,3 +1,4 @@
+from __future__ import division
 from maya import cmds
 import sys
 for i in sys.modules:
@@ -41,7 +42,7 @@ cmds.setAttr(target + ".translateZ", 3)
 
 
 generalIk = cmds.createNode("generalIk")
-cmds.setAttr( generalIk + ".maxIterations", 5)
+cmds.setAttr( generalIk + ".maxIterations", 20)
 cmds.setAttr( generalIk + ".tolerance", 0.5)
 
 
@@ -51,7 +52,10 @@ outputChain = []
 for i in range(chainLength):
 	# create and connect joints
 	base = cmds.createNode("joint", n="base_{}_jnt".format(i))
-	cmds.setAttr(base + ".translateY", i * 5)
+	cmds.setAttr(base + ".translateX", i * 5)
+	cmds.setAttr( base + ".radius", 1 / ( chainLength - i ) )
+
+
 
 	out = cmds.duplicate(base, n="output_{}_jnt".format(i))[0]
 	cmds.connectAttr(base + ".jointOrient", out + ".jointOrient")
