@@ -106,9 +106,29 @@ class generalIk(om.MPxNode):
 			localMatrices = chainData["localMatrices"]
 			localUpMatrices = chainData["localUpMatrices"]
 			ikSpaceMatrices = chainData["ikSpaceMatrices"]
+			ikSpaceUpMatrices = chainData["ikSpaceUpMatrices"]
 			# print("localMatrices {}".format(localMatrices))
 			# print("ikMatrices {}".format(ikSpaceMatrices))
 			# ikSpace and local matrices are correct
+
+			# extract cached matrices from previous graph evaluation
+			cacheMatrices = pData.inputValue(generalIk.aCacheMatrices)
+			cacheArray = om.MFnMatrixArrayData(cacheMatrices.data()).array()
+
+			if len(cacheArray) != inLength:
+				print "cache length different, invalid"
+				cacheArray.clear()
+				for n in localMatrices : cacheArray.append(n)
+			# for now check translations are valid -
+			# this will need more complexity
+			if any( positionFromMatrix(j) != positionFromMatrix(k)
+			        for j, k in zip(localMatrices, cacheArray)):
+				cacheArray.clear()
+				for n in localMatrices : cacheArray.append(n)
+
+
+			""" we cannot just check if the input matrices are dirty - 
+			since they all take the world matrix, dirty does not mean modified """
 
 			""" I don't think there is any point in treating the end
 			matrix separately - it only adds a special case at every turn
@@ -151,6 +171,7 @@ class generalIk(om.MPxNode):
 					upMatrices=ups,
 					jointData=jointData,
 					globalWeight=globalWeight,
+					ikSpaceUpMatrices=ikSpaceUpMatrices,
 				)
 				localMatrices = data["results"]
 				tol = data["tolerance"]
@@ -225,6 +246,11 @@ class generalIk(om.MPxNode):
 				outTransDH = outCompDH.child(generalIk.aOutTrans)
 				outTransDH.set3Double( *outTranslate )
 
+			# save cached matrices for next evaluation
+			cacheArray.clear()
+			for i in localMatrices:
+				cacheArray.append(i)
+
 			outArrayDH.setAllClean()
 
 			pData.setClean(pPlug)
@@ -236,6 +262,7 @@ def buildChains(worldChain, orients, ups, length=1):
 	chain = [None] * length # root to tip
 	localUps = [None] * length
 	ikSpaceChain = [None] * length
+	ikSpaceUps = [None] * length
 	for i in range(length):
 
 		inMat = worldChain[i] # world matrices already account for orient
@@ -248,13 +275,16 @@ def buildChains(worldChain, orients, ups, length=1):
 		localUps[i] = ups[i] #* inMat.inverse()
 		chain[i] = localMat # matrix TO index FROM previous
 		ikSpaceChain[i] = inMat * worldChain[0].inverse()
+		ikSpaceUps[i] = ups[i] * worldChain[0].inverse()
 
 	return {
 		"localMatrices" : chain,
 		"localUpMatrices" : localUps,
 		"ikSpaceMatrices" : ikSpaceChain,
 		"ikSpaceTarget" : None,
+		"ikSpaceUpMatrices" : ikSpaceUps
 	}
+
 
 def multiplyMatrices(mats, reverse=False):
 	out = om.MMatrix()
@@ -271,7 +301,8 @@ def iterateChainCCD(worldMatrices=None,
                     tolerance=None, length=1,
                     targetMat=None, endMat=None,
                     localEndMat=None, upMatrices=None,
-                    jointData=None, globalWeight=None):
+                    jointData=None, globalWeight=None,
+                    ikSpaceUpMatrices=None):
 	"""performs one complete iteration of the chain,
 	may be possible to keep this solver-agnostic"""
 	"""
@@ -301,12 +332,12 @@ def iterateChainCCD(worldMatrices=None,
 	step = 0 # check iteration order
 
 	for i in range(length):  # i from TIP TO ROOT
-		#print
 		step += 1
 		index = length - 1 - i
 		data = jointData[index]
 
-		#print("index {}, step {}".format(index, step))
+		# print
+		# print("index {}, step {}".format(index, step))
 		#
 
 		# matrices from root to index
@@ -318,40 +349,57 @@ def iterateChainCCD(worldMatrices=None,
 
 		# matrices to end from index
 		toEnd = localMatrices[ index+1: ]
-		#toEnd = [localEnd] + localMatrices[ index: ]
 		toEndMat = localEnd * multiplyMatrices( toEnd, reverse=False )
-		#print( "toEndMat {}".format(toEndMat)) # not updating correctly
+
+
 
 		# info from previous iteration
 		oldMat = localMatrices[index]
 		oldRot = neutraliseTranslations(oldMat)
 
 
-		# localise end and target
+		# localise end, target and upMatrix
 		activeEnd = endMat * activeMat.inverse()
-		activeTarget = targetMat * activeMat.inverse ()
+		activeTarget = targetMat * activeMat.inverse()
+		activeUp = ikSpaceUpMatrices[ index ] * activeMat.inverse()
+
+
+		# process upVector
+		upDir = jointData[index]["upDir"]
+		if upDir == (0, 0, 0):
+			upDir = (0, 1, 0)
+		upVector = positionFromMatrix(activeUp)
+		#dot = upVector * (activeMat * om.MVector(upDir) )
+		dot = upVector * ( om.MVector(upDir) * activeMat )
+
 
 		# aim from end to target
 		aimQuat = testLookAt( baseMat=om.MMatrix(),
 		                       endMat=activeEnd,
 		                       targetMat=activeTarget,
-								factor=1.0)
+								factor=1.0,
+		                    )
 		#print("aimQuat {}".format(aimQuat))
+		""" counter strange immobility of root joint """
+		if index == 0 :
+			#print "index 0"
+			outQuat = aimQuat
 
-		# previous quaternion
-		oldQuat = om.MQuaternion()
-		oldQuat.setValue(oldRot)
-		oldQuat.normalizeIt()
+		else:
+			# previous quaternion
+			oldQuat = om.MQuaternion()
+			oldQuat.setValue(oldRot)
+			#oldQuat.normalizeIt()
 
-		# don't breathe this
-		weight = min(data["weight"] * globalWeight, 0.999)
-		#weight = data["weight"]
+			# don't breathe this
+			weight = min(data["weight"] * globalWeight, 0.999)
+			#weight = data["weight"]
 
-		# print("oldQuat {}".format(oldQuat))
-		# print("weight {}".format(weight))
+			# print("oldQuat {}".format(oldQuat))
+			# print("weight {}".format(weight))
 
 
-		outQuat = om.MQuaternion.slerp( oldQuat, aimQuat, weight, spin=0)
+			outQuat = om.MQuaternion.slerp( oldQuat, aimQuat, weight, spin=0)
 
 		#print("outQuat {}".format(outQuat))
 
@@ -361,18 +409,10 @@ def iterateChainCCD(worldMatrices=None,
 
 		orientMat = outQuat.asMatrix()
 
-		# process upVector
-		upDir = jointData[index]["upDir"]
-		if upDir == (0, 0, 0):
-			upDir = (0, 1, 0)
 
 		# # transfer original translate attributes to new matrix
 		for n in range(12, 15):
 			orientMat[n] = localMatrices[index][n]
-
-
-
-
 
 
 		localMatrices[index] = orientMat
@@ -523,16 +563,6 @@ def nodeInitializer():
 	orientRotAttrFn.addChild(generalIk.aOrientRy)
 	orientRotAttrFn.addChild(generalIk.aOrientRz)
 
-	# debug
-	debugTargetFn = om.MFnMatrixAttribute()
-	generalIk.aDebugTarget = debugTargetFn.create("debugTarget", "debugTarget", 1)
-	om.MPxNode.addAttribute(generalIk.aDebugTarget)
-
-	debugOffset = om.MFnNumericAttribute()
-	generalIk.aDebugOffset = debugOffset.create("debugOffset", "debugOffset",
-	                                            om.MFnNumericData.kDouble, 0)
-	om.MPxNode.addAttribute(generalIk.aDebugOffset)
-
 	# rotate order
 	rotOrderAttrFn = om.MFnNumericAttribute()
 	generalIk.aRotOrder = rotOrderAttrFn.create("rotateOrder", "rotateOrder",
@@ -628,6 +658,7 @@ def nodeInitializer():
 	om.MPxNode.addAttribute(generalIk.aOutRot)
 
 
+
 	# # add smooth jazz
 
 	outTransAttrFn = om.MFnNumericAttribute()
@@ -673,6 +704,28 @@ def nodeInitializer():
 	generalIk.aOutEndRz = outEndRzAttrFn.create("outputEndRotateZ", "outEndRz", 1, 0.0)
 	outEndRotFn.addChild(generalIk.aOutEndRz)
 	om.MPxNode.addAttribute(generalIk.aOutEndRot)
+
+
+	# debug
+	debugTargetFn = om.MFnMatrixAttribute()
+	generalIk.aDebugTarget = debugTargetFn.create("debugTarget", "debugTarget", 1)
+	om.MPxNode.addAttribute(generalIk.aDebugTarget)
+
+	debugOffset = om.MFnNumericAttribute()
+	generalIk.aDebugOffset = debugOffset.create("debugOffset", "debugOffset",
+	                                            om.MFnNumericData.kDouble, 0)
+	om.MPxNode.addAttribute(generalIk.aDebugOffset)
+
+	# caching results to persist across graph evaluations
+	cacheMatricesFn = om.MFnTypedAttribute()
+	matrixArrayData = om.MFnMatrixArrayData().create()
+	generalIk.aCacheMatrices = cacheMatricesFn.create(
+		"cacheMatrices", "cacheMatrices", 12, matrixArrayData ) # matrix array
+	cacheMatricesFn.writable = True
+	cacheMatricesFn.readable = True
+	cacheMatricesFn.cached = True
+	om.MPxNode.addAttribute( generalIk.aCacheMatrices )
+
 
 
 	# everyone's counting on you

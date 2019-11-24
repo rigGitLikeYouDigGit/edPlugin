@@ -42,8 +42,9 @@ cmds.setAttr(target + ".translateZ", 3)
 
 
 generalIk = cmds.createNode("generalIk")
-cmds.setAttr( generalIk + ".maxIterations", 20)
+cmds.setAttr( generalIk + ".maxIterations", 30)
 cmds.setAttr( generalIk + ".tolerance", 0.5)
+cmds.setAttr( generalIk + ".globalWeight", 0.2)
 
 
 chainLength = 4
