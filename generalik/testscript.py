@@ -48,7 +48,7 @@ cmds.setAttr( generalIk + ".globalWeight", 0.2)
 
 
 chainLength = 2
-#chainLength = 4
+chainLength = 3
 baseChain = []
 outputChain = []
 for i in range(chainLength):

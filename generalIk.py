@@ -15,6 +15,16 @@ from edPlugin.lib.python import nodeio
 kPluginNodeName = "generalIk"
 kPluginNodeId = om.MTypeId( 0xDAA1 )
 
+debugOn = 0
+def debug(n=None, var=None):
+	if debugOn:
+		if not n and not var:
+			print
+		else:
+			print("{} {}".format(n, var))
+
+
+
 # ChainData = namedtuple("ChainData", ["matrices"])
 
 """ STUFF TO BE AWARE OF:
@@ -160,6 +170,8 @@ class generalIk(om.MPxNode):
 
 			results = localMatrices
 			while n < maxIter and tol > tolerance:
+				debug()
+				debug("n", n)
 				data = iterateChainCCD(
 					worldMatrices=worldInputs,
 					ikSpaceMatrices=ikSpaceMatrices,
@@ -174,6 +186,9 @@ class generalIk(om.MPxNode):
 					ikSpaceUpMatrices=ikSpaceUpMatrices,
 				)
 				localMatrices = data["results"]
+
+				debug("results", results)
+
 				tol = data["tolerance"]
 				endIkSpace = data["end"]
 				targetMat = data["target"]
@@ -182,6 +197,7 @@ class generalIk(om.MPxNode):
 
 				if tol < tolerance:
 					print("found peace on pass {}".format(n))
+					break
 
 			results = localMatrices
 
@@ -331,14 +347,16 @@ def iterateChainCCD(worldMatrices=None,
 
 	step = 0 # check iteration order
 
+	#print("localMatrices {}".format(localMatrices))
+
 	for i in range(length):  # i from TIP TO ROOT
 		step += 1
 		index = length - 1 - i
 		data = jointData[index]
 
 		# print
-		# print("index {}, step {}".format(index, step))
-		#
+		#print("index {}, step {}".format(index, step))
+
 
 		# matrices from root to index
 		toIndex = localMatrices[ :index + 1 ]
@@ -357,20 +375,25 @@ def iterateChainCCD(worldMatrices=None,
 		oldMat = localMatrices[index]
 		oldRot = neutraliseTranslations(oldMat)
 
+		#print "oldRot {}".format(oldRot)
+
 
 		# localise end, target and upMatrix
 		activeEnd = endMat * activeMat.inverse()
 		activeTarget = targetMat * activeMat.inverse()
 		activeUp = ikSpaceUpMatrices[ index ] * activeMat.inverse()
 
+		debug("activeEnd", positionFromMatrix(activeEnd))
+		debug("activeTarget", positionFromMatrix(activeTarget))
+		# # indentity quat is being set, not multiplied
 
-		# process upVector
-		upDir = jointData[index]["upDir"]
-		if upDir == (0, 0, 0):
-			upDir = (0, 1, 0)
-		upVector = positionFromMatrix(activeUp)
-		#dot = upVector * (activeMat * om.MVector(upDir) )
-		dot = upVector * ( om.MVector(upDir) * activeMat )
+		# # process upVector
+		# upDir = jointData[index]["upDir"]
+		# if upDir == (0, 0, 0):
+		# 	upDir = (0, 1, 0)
+		# upVector = positionFromMatrix(activeUp)
+		# #dot = upVector * (activeMat * om.MVector(upDir) )
+		# dot = upVector * ( om.MVector(upDir) * activeMat )
 
 
 		# aim from end to target
@@ -380,34 +403,48 @@ def iterateChainCCD(worldMatrices=None,
 								factor=1.0,
 		                    )
 		#print("aimQuat {}".format(aimQuat))
-		""" counter strange immobility of root joint """
-		if index == 0 :
-			#print "index 0"
+
+		# previous quaternion
+		oldQuat = om.MQuaternion()
+		oldQuat.setValue(oldRot)
+		# print "oldQuat {}".format(oldQuat)
+		# oldQuat.normalizeIt()
+
+		if index == length - 1 :
+			#print "index -1"
+			#pass
 			outQuat = aimQuat
+			weightMat = outQuat.asMatrix() * oldRot
+			pass
+
 
 		else:
-			# previous quaternion
-			oldQuat = om.MQuaternion()
-			oldQuat.setValue(oldRot)
-			#oldQuat.normalizeIt()
-
-			# don't breathe this
-			weight = min(data["weight"] * globalWeight, 0.999)
-			#weight = data["weight"]
-
-			# print("oldQuat {}".format(oldQuat))
-			# print("weight {}".format(weight))
+			pass
 
 
-			outQuat = om.MQuaternion.slerp( oldQuat, aimQuat, weight, spin=0)
+
+		# don't breathe this
+		weight = min(data["weight"] * globalWeight, 0.999)
+		#weight = data["weight"]
+
+		# print("oldQuat {}".format(oldQuat))
+		# print("weight {}".format(weight))
+
+
+		outQuat = om.MQuaternion.slerp( oldQuat, aimQuat, weight, spin=0)
+
+		weightMat = outQuat.asMatrix()
 
 		#print("outQuat {}".format(outQuat))
+
 
 		""" HERE is where we apply constraints, weight blending etc"""
 
 
 
-		orientMat = outQuat.asMatrix()
+		#orientMat = outQuat.asMatrix() * oldRot
+		#orientMat = outQuat.asMatrix()
+		orientMat = weightMat
 
 
 		# # transfer original translate attributes to new matrix
