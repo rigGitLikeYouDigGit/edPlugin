@@ -184,10 +184,11 @@ class generalIk(om.MPxNode):
 					jointData=jointData,
 					globalWeight=globalWeight,
 					ikSpaceUpMatrices=ikSpaceUpMatrices,
+					tolerance=tolerance,
 				)
 				localMatrices = data["results"]
 
-				debug("results", results)
+				debug("results", localMatrices)
 
 				tol = data["tolerance"]
 				endIkSpace = data["end"]
@@ -345,7 +346,12 @@ def iterateChainCCD(worldMatrices=None,
 
 	localEnd = localEndMat
 
+
+	debug("localEnd", localEnd)
+	debug("endMat", endMat)
+
 	step = 0 # check iteration order
+	d = 1000
 
 	#print("localMatrices {}".format(localMatrices))
 
@@ -355,7 +361,7 @@ def iterateChainCCD(worldMatrices=None,
 		data = jointData[index]
 
 		# print
-		#print("index {}, step {}".format(index, step))
+		debug("index {}, step {}".format(index, step))
 
 
 		# matrices from root to index
@@ -369,17 +375,19 @@ def iterateChainCCD(worldMatrices=None,
 		toEnd = localMatrices[ index+1: ]
 		toEndMat = localEnd * multiplyMatrices( toEnd, reverse=False )
 
-
-
-		# info from previous iteration
-		oldMat = localMatrices[index]
+		# # info from previous iteration
+		oldMat = om.MMatrix(localMatrices[index])
+		# oldRot = oldMat
 		oldRot = neutraliseTranslations(oldMat)
-
-		#print "oldRot {}".format(oldRot)
+		# previous quaternion
+		oldQuat = om.MQuaternion()
+		oldQuat.setValue(oldRot)
+		# print "oldQuat {}".format(oldQuat)
 
 
 		# localise end, target and upMatrix
-		activeEnd = endMat * activeMat.inverse()
+		#activeEnd = endMat * activeMat.inverse()
+		activeEnd = toEndMat
 		activeTarget = targetMat * activeMat.inverse()
 		activeUp = ikSpaceUpMatrices[ index ] * activeMat.inverse()
 
@@ -398,30 +406,14 @@ def iterateChainCCD(worldMatrices=None,
 
 		# aim from end to target
 		aimQuat = testLookAt( baseMat=om.MMatrix(),
+		                      #baseMat=activeMat,
 		                       endMat=activeEnd,
 		                       targetMat=activeTarget,
 								factor=1.0,
 		                    )
-		#print("aimQuat {}".format(aimQuat))
-
-		# previous quaternion
-		oldQuat = om.MQuaternion()
-		oldQuat.setValue(oldRot)
-		# print "oldQuat {}".format(oldQuat)
-		# oldQuat.normalizeIt()
-
-		if index == length - 1 :
-			#print "index -1"
-			#pass
-			outQuat = aimQuat
-			weightMat = outQuat.asMatrix() * oldRot
-			pass
-
-
-		else:
-			pass
-
-
+		#aimQuat = aimQuat * oldQuat
+		aimQuat = oldQuat * aimQuat
+		#debug("aimQuat", aimQuat)
 
 		# don't breathe this
 		weight = min(data["weight"] * globalWeight, 0.999)
@@ -431,11 +423,12 @@ def iterateChainCCD(worldMatrices=None,
 		# print("weight {}".format(weight))
 
 
-		outQuat = om.MQuaternion.slerp( oldQuat, aimQuat, weight, spin=0)
+		outQuat = om.MQuaternion.slerp( aimQuat, aimQuat, weight, spin=0)
 
 		weightMat = outQuat.asMatrix()
 
-		#print("outQuat {}".format(outQuat))
+		debug("weightMat", weightMat)
+
 
 
 		""" HERE is where we apply constraints, weight blending etc"""
@@ -444,7 +437,7 @@ def iterateChainCCD(worldMatrices=None,
 
 		#orientMat = outQuat.asMatrix() * oldRot
 		#orientMat = outQuat.asMatrix()
-		orientMat = weightMat
+		orientMat = weightMat# * oldRot
 
 
 		# # transfer original translate attributes to new matrix
@@ -454,6 +447,7 @@ def iterateChainCCD(worldMatrices=None,
 
 		localMatrices[index] = orientMat
 
+
 		ikSpaceEnd = toEndMat * orientMat #* activeEnd
 
 
@@ -462,13 +456,19 @@ def iterateChainCCD(worldMatrices=None,
 		""" with end and target now in ikSpace, calculate offset """
 
 		endTargetVec = vectorBetweenMatrices(ikSpaceEnd, targetMat)
-		tolerance = endTargetVec.length()
+		d = endTargetVec.length()
 		#print("tolerance {}".format(tolerance))
 		endMat = ikSpaceEnd
 
 		ikChainEnd = multiplyMatrices(localMatrices)
 
-		localEndMat = ikChainEnd.inverse() * endMat
+		#localEndMat = ikChainEnd.inverse() * endMat
+		localEndMat = endMat * ikChainEnd.inverse()
+
+		if d < tolerance:
+			break
+
+	tolerance = d
 
 	return {
 		"results" : localMatrices,

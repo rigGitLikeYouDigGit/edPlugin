@@ -26,8 +26,8 @@ def connectInputJoint(joint, ik, index):
 	                 ik + ".inputJoints[{}].orient".format(index))
 	cmds.connectAttr(joint + ".rotateOrder",
 	                 ik + ".inputJoints[{}].rotateOrder".format(index))
-	cmds.connectAttr(joint + ".radius",
-	                 ik + ".inputJoints[{}].weight".format(index))
+	# cmds.connectAttr(joint + ".radius",
+	#                  ik + ".inputJoints[{}].weight".format(index))
 
 def connectOutputJoint(ik, joint, index):
 	cmds.connectAttr(ik + ".outputJoints[{}].translate".format(index),
@@ -36,7 +36,7 @@ def connectOutputJoint(ik, joint, index):
 	                 joint + ".rotate")
 
 target = cmds.createNode("joint", n="effector")
-cmds.setAttr(target + ".translateY", 2)
+cmds.setAttr(target + ".translateY", 8)
 cmds.setAttr(target + ".translateX", 2)
 cmds.setAttr(target + ".translateZ", 3)
 
@@ -44,11 +44,11 @@ cmds.setAttr(target + ".translateZ", 3)
 generalIk = cmds.createNode("generalIk")
 cmds.setAttr( generalIk + ".maxIterations", 2)
 cmds.setAttr( generalIk + ".tolerance", 0.1)
-cmds.setAttr( generalIk + ".globalWeight", 0.2)
+cmds.setAttr( generalIk + ".globalWeight", 1.0)
 
 
-chainLength = 2
-chainLength = 3
+chainLength = 4
+
 baseChain = []
 outputChain = []
 for i in range(chainLength):
@@ -77,6 +77,11 @@ for i in range(chainLength):
 	if i < chainLength - 1:
 		connectInputJoint(baseChain[i], generalIk, i)
 		connectOutputJoint(generalIk, outputChain[i], i)
+
+		if i: # no weight other than base
+			cmds.setAttr( generalIk + ".inputJoints[{}].weight".format(i), 0)
+
+
 	else:
 		# connect ends
 		cmds.connectAttr(baseChain[i] + ".worldMatrix[0]",
