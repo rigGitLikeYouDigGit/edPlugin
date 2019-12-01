@@ -118,3 +118,14 @@ cmds.connectAttr( up + ".worldMatrix[0]", generalIk + ".inputJoints[0].upMatrix"
 
 cmds.dgdirty(generalIk)
 
+
+
+"""
+
+
+from edPlugin.generalik import testscript
+reload(testscript)
+
+
+
+"""

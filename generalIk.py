@@ -74,6 +74,7 @@ class generalIk(om.MPxNode):
 			maxIter = pData.inputValue(generalIk.aMaxIter).asInt()
 			tolerance = pData.inputValue(generalIk.aTolerance).asDouble()
 			globalWeight = pData.inputValue(generalIk.aGlobalWeight).asDouble()
+			cacheOn = pData.inputValue(generalIk.aCacheOn).asBool()
 
 			# target
 			targetMat = pData.inputValue(generalIk.aTargetMat).asMatrix()
@@ -550,6 +551,12 @@ def nodeInitializer():
 	globalWeightAttrFn.keyable = True
 	om.MPxNode.addAttribute(generalIk.aGlobalWeight)
 
+	# let the past die?
+	cacheOnAttrFn = om.MFnNumericAttribute()
+	generalIk.aCacheOn = cacheOnAttrFn.create(
+		"cacheOn", "cacheOn", om.MFnNumericData.kBoolean, 1)
+	om.MPxNode.addAttribute(generalIk.aCacheOn)
+
 	# what are your goals in life
 	targetMatAttrFn = om.MFnMatrixAttribute()
 	generalIk.aTargetMat = targetMatAttrFn.create("targetMatrix",
@@ -768,7 +775,7 @@ def nodeInitializer():
 	# everyone's counting on you
 	drivers = [generalIk.aTargetMat, generalIk.aEndMat, generalIk.aJnts,
 	           generalIk.aMaxIter, generalIk.aGlobalWeight, generalIk.aTolerance,
-	           generalIk.aJntWeight]
+	           generalIk.aJntWeight, generalIk.aCacheOn]
 	driven = [generalIk.aOutArray, generalIk.aOutEndTrans, generalIk.aOutEndRot,
 	          generalIk.aDebugTarget, generalIk.aDebugOffset]
 
