@@ -51,6 +51,18 @@ terminology:
  - ikSpace: space with root joint of input chain as origin
  - activeSpace: space with currently mobile joint link as origin
 
+the most successful way to cache would be to use local matrices instead of world,
+then check if they've been dirtied - ultimately though I don't have a great solution
+to it, short of connecting up every single transform attribute from
+the input joints
+
+that COULD be a better way of doing it, and then checking if direct translate
+and rotate connections are dirty - this would even let you set up
+'bi-directional' behaviour where one mandate of the ik directly affects another
+
+
+
+
 """
 
 
@@ -111,15 +123,12 @@ class generalIk(om.MPxNode):
 
 
 			# from world inputs, reconstruct localised chain
-			# remove joint orients, then reapply
 			chainData = buildChains(
 				worldInputs, orients, ups, length=inLength)
 			localMatrices = chainData["localMatrices"]
 			localUpMatrices = chainData["localUpMatrices"]
 			ikSpaceMatrices = chainData["ikSpaceMatrices"]
 			ikSpaceUpMatrices = chainData["ikSpaceUpMatrices"]
-			# print("localMatrices {}".format(localMatrices))
-			# print("ikMatrices {}".format(ikSpaceMatrices))
 			# ikSpace and local matrices are correct
 
 			# extract cached matrices from previous graph evaluation
@@ -127,19 +136,16 @@ class generalIk(om.MPxNode):
 			cacheArray = om.MFnMatrixArrayData(cacheMatrices.data()).array()
 
 			if len(cacheArray) != inLength:
-				print "cache length different, invalid"
-				cacheArray.clear()
-				for n in localMatrices : cacheArray.append(n)
-			# for now check translations are valid -
-			# this will need more complexity
-			if any( positionFromMatrix(j) != positionFromMatrix(k)
-			        for j, k in zip(localMatrices, cacheArray)):
+				print( "cache length different, rebuilding" )
 				cacheArray.clear()
 				for n in localMatrices : cacheArray.append(n)
 
+			for i in range(inLength):
+				if positionFromMatrix(localMatrices[n]) != \
+						positionFromMatrix(cacheArray[n]):
+					print("cache entry {} position has changed, substituting")
+					cacheArray[n] = localMatrices[n]
 
-			""" we cannot just check if the input matrices are dirty - 
-			since they all take the world matrix, dirty does not mean modified """
 
 			""" I don't think there is any point in treating the end
 			matrix separately - it only adds a special case at every turn
@@ -148,28 +154,20 @@ class generalIk(om.MPxNode):
 			
 			"""
 
-			# main loop
+			# main loop ----------------
 			n = 0
 			tol = 100
 
-			#endIkSpace = worldInputs[0].inverse() * endMat
 			endIkSpace = endMat * worldInputs[0].inverse()
-			# print "initial endIkSpace {}".format(
-			# 	(endIkSpace[12], endIkSpace[13], endIkSpace[14]) )
 			# endIkSpace is correct
 
 			targetMat = neutraliseRotations(targetMat)
 			endLocalSpace = endMat * worldInputs[-1].inverse()
 
 			""" localise target into ikSpace """
-			#targetIkSpace = worldInputs[0].inverse() * targetMat
 			targetIkSpace =  targetMat * worldInputs[0].inverse()
-			#print("targetIkSpace {}".format( (
-			# 	targetIkSpace[12], targetIkSpace[13], targetIkSpace[14])
-			# ))
 			# targetIkSpace is correct
 
-			results = localMatrices
 			while n < maxIter and tol > tolerance:
 				debug()
 				debug("n", n)
@@ -203,23 +201,24 @@ class generalIk(om.MPxNode):
 
 			results = localMatrices
 
-			#worldSpaceTarget = worldInputs[0] * targetIkSpace # correct
 			worldSpaceTarget = worldInputs[0] * targetMat
 
 			ikSpaceOutputs = [
 				multiplyMatrices(localMatrices[:i + 1]) for i in range(inLength)]
-			#print("ikSpaceOutputs {}".format(ikSpaceOutputs))
 			endLocalSpace = endIkSpace * ikSpaceOutputs[-1].inverse()
 
-			# print("endLocalSpace {}".format(
-			# 	( endLocalSpace[12], endLocalSpace[13], endLocalSpace[14] ) ))
+			# save cached matrices for next evaluation
+			# BEFORE reapplying world space to base
+			cacheArray.clear()
+			for i in localMatrices:
+				cacheArray.append(i)
+
 
 			# restore world space root position
 			results[0] = results[0] * worldInputs[0]
 
 
-			# outputs
-
+			# outputs ---------------
 			spaceConstant = 1
 
 			outDebugDH = pData.outputValue(generalIk.aDebugTarget)
@@ -235,7 +234,6 @@ class generalIk(om.MPxNode):
 			# convert jntArray of matrices to useful rotation values
 			outArrayDH = pData.outputArrayValue(generalIk.aOutArray)
 
-
 			for i in range(inLength):
 				outArrayDH.jumpToPhysicalElement(i)
 				outCompDH = outArrayDH.outputValue()
@@ -244,13 +242,12 @@ class generalIk(om.MPxNode):
 				outRxDH = outRotDH.child(generalIk.aOutRx)
 				outRyDH = outRotDH.child(generalIk.aOutRy)
 				outRzDH = outRotDH.child(generalIk.aOutRz)
-				#
 
-				# apply jointOrient
+				# apply jointOrient -----
 				outMat = om.MTransformationMatrix(
 					results[i] ).rotateBy( orients[i].inverse(), spaceConstant )
 
-
+				# set output rotations -------
 				outRot = outMat.rotation()
 				# unitConversions bring SHAME on family
 				xAngle = om.MAngle(outRot[0])
@@ -264,10 +261,6 @@ class generalIk(om.MPxNode):
 				outTransDH = outCompDH.child(generalIk.aOutTrans)
 				outTransDH.set3Double( *outTranslate )
 
-			# save cached matrices for next evaluation
-			cacheArray.clear()
-			for i in localMatrices:
-				cacheArray.append(i)
 
 			outArrayDH.setAllClean()
 
