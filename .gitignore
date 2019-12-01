@@ -33,3 +33,4 @@ build/Debug/edPush.pdb
 *.pdb
 build/Release/edPush.lib
 build/Release/edPush.mll
+*.pyc
