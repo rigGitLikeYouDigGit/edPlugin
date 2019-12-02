@@ -21,13 +21,15 @@ cmds.file(new=True, f=True)
 
 def connectInputJoint(joint, ik, index):
 	cmds.connectAttr(joint + ".worldMatrix[0]",
-	                 ik + ".inputJoints[{}].matrix".format(index))
+	                 ik + ".inputJoints[{}].worldMatrix".format(index))
+	cmds.connectAttr(joint + ".matrix",
+	                 ik + ".inputJoints[{}].localMatrix".format(index))
 	cmds.connectAttr(joint + ".jointOrient",
 	                 ik + ".inputJoints[{}].orient".format(index))
 	cmds.connectAttr(joint + ".rotateOrder",
 	                 ik + ".inputJoints[{}].rotateOrder".format(index))
-	# cmds.connectAttr(joint + ".radius",
-	#                  ik + ".inputJoints[{}].weight".format(index))
+	cmds.connectAttr(joint + ".radius",
+	                 ik + ".inputJoints[{}].weight".format(index))
 
 def connectOutputJoint(ik, joint, index):
 	cmds.connectAttr(ik + ".outputJoints[{}].translate".format(index),
@@ -42,7 +44,7 @@ cmds.setAttr(target + ".translateZ", 3)
 
 
 generalIk = cmds.createNode("generalIk")
-cmds.setAttr( generalIk + ".maxIterations", 2)
+cmds.setAttr( generalIk + ".maxIterations", 10)
 cmds.setAttr( generalIk + ".tolerance", 0.1)
 cmds.setAttr( generalIk + ".globalWeight", 1.0)
 
@@ -78,8 +80,8 @@ for i in range(chainLength):
 		connectInputJoint(baseChain[i], generalIk, i)
 		connectOutputJoint(generalIk, outputChain[i], i)
 
-		if i: # no weight other than base
-			cmds.setAttr( generalIk + ".inputJoints[{}].weight".format(i), 0)
+		# if i: # no weight other than base
+		# 	cmds.setAttr( generalIk + ".inputJoints[{}].weight".format(i), 0)
 
 
 	else:

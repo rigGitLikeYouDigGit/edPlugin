@@ -11,6 +11,7 @@ import math
 import maya.cmds as cmds
 from collections import namedtuple
 from edPlugin.lib.python import nodeio
+reload(nodeio)
 
 kPluginNodeName = "generalIk"
 kPluginNodeId = om.MTypeId( 0xDAA1 )
@@ -86,7 +87,7 @@ class generalIk(om.MPxNode):
 			maxIter = pData.inputValue(generalIk.aMaxIter).asInt()
 			tolerance = pData.inputValue(generalIk.aTolerance).asDouble()
 			globalWeight = pData.inputValue(generalIk.aGlobalWeight).asDouble()
-			cacheOn = pData.inputValue(generalIk.aCacheOn).asBool()
+			cacheOn = pData.inputValue(generalIk.aCacheOn).asShort()
 
 			# target
 			targetMat = pData.inputValue(generalIk.aTargetMat).asMatrix()
@@ -131,6 +132,7 @@ class generalIk(om.MPxNode):
 			ikSpaceUpMatrices = chainData["ikSpaceUpMatrices"]
 			# ikSpace and local matrices are correct
 
+			# CACHE STUFF --------------------------------
 			# extract cached matrices from previous graph evaluation
 			cacheMatrices = pData.inputValue(generalIk.aCacheMatrices)
 			cacheArray = om.MFnMatrixArrayData(cacheMatrices.data()).array()
@@ -141,11 +143,17 @@ class generalIk(om.MPxNode):
 				for n in localMatrices : cacheArray.append(n)
 
 			for i in range(inLength):
-				if positionFromMatrix(localMatrices[n]) != \
-						positionFromMatrix(cacheArray[n]):
-					print("cache entry {} position has changed, substituting")
-					cacheArray[n] = localMatrices[n]
+				if positionFromMatrix(localMatrices[i]) != \
+						positionFromMatrix(cacheArray[i]):
+					print("cache entry {} position has changed, substituting".format(i))
+					cacheArray[i] = localMatrices[i]
 
+			if cacheOn == 1 or cacheOn == 2: # bind or bound
+				# set local matrices to cached ------
+				for i in range(inLength):
+					localMatrices[i] = cacheArray[i]
+				if cacheOn == 1:
+					pData.inputValue(generalIk.aCacheOn).setShort(2)
 
 			""" I don't think there is any point in treating the end
 			matrix separately - it only adds a special case at every turn
@@ -196,7 +204,7 @@ class generalIk(om.MPxNode):
 				n += 1
 
 				if tol < tolerance:
-					print("found peace on pass {}".format(n))
+					# process is complete
 					break
 
 			results = localMatrices
@@ -545,9 +553,11 @@ def nodeInitializer():
 	om.MPxNode.addAttribute(generalIk.aGlobalWeight)
 
 	# let the past die?
-	cacheOnAttrFn = om.MFnNumericAttribute()
-	generalIk.aCacheOn = cacheOnAttrFn.create(
-		"cacheOn", "cacheOn", om.MFnNumericData.kBoolean, 1)
+	# cacheOnAttrFn = om.MFnNumericAttribute()
+	# generalIk.aCacheOn = cacheOnAttrFn.create(
+	# 	"cacheOn", "cacheOn", om.MFnNumericData.kBoolean, 1)
+	# om.MPxNode.addAttribute(generalIk.aCacheOn)
+	generalIk.aCacheOn = nodeio.makeBindAttr(generalIk, name="cache")
 	om.MPxNode.addAttribute(generalIk.aCacheOn)
 
 	# what are your goals in life
@@ -574,12 +584,16 @@ def nodeInitializer():
 
 	# once i built a tower
 	jntMatAttrFn = om.MFnMatrixAttribute()
-	generalIk.aJntMat = jntMatAttrFn.create("matrix",
-	                                        "jntMat", 1)
+	generalIk.aJntMat = jntMatAttrFn.create("worldMatrix",
+	                                        "worldMatrix", 1)
 	jntMatAttrFn.storable = False
 	jntMatAttrFn.writable = True
 	jntMatAttrFn.cached = False # prevent ghost influences from staying
-	# om.MPxNode.addAttribute(generalIk.aJntMat)
+
+	# are you local
+	jntLocalMatAttrFn = om.MFnMatrixAttribute()
+	generalIk.aJntLocalMat = jntLocalMatAttrFn.create("localMatrix",
+	                                                  "localMatrix", 1)
 
 	# joint orients
 	orientRxAttrFn = om.MFnUnitAttribute()
@@ -653,6 +667,7 @@ def nodeInitializer():
 	jntArrayAttrFn.array = True
 	jntArrayAttrFn.usesArrayDataBuilder = True
 	jntArrayAttrFn.addChild(generalIk.aJntMat)
+	jntArrayAttrFn.addChild(generalIk.aJntLocalMat)
 	jntArrayAttrFn.addChild(generalIk.aJntUpMat)
 	jntArrayAttrFn.addChild(generalIk.aJntUpDir)
 	jntArrayAttrFn.addChild(generalIk.aJntWeight)
@@ -761,6 +776,7 @@ def nodeInitializer():
 	cacheMatricesFn.writable = True
 	cacheMatricesFn.readable = True
 	cacheMatricesFn.cached = True
+	cacheMatricesFn.keyable = True
 	om.MPxNode.addAttribute( generalIk.aCacheMatrices )
 
 
