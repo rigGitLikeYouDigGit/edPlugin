@@ -51,13 +51,16 @@ ops = {
 	1 : ("inAddress1", "inAddress2", "outAddress"),
 	2 : ("inAddress1", "inAddress2", "outAddress"),
 	99 : (),
+	3 : ("inputAddress"), # takes input and stores it at address
+	4 : ("outputAddress"), # takes value from address and outputs it
 
 }
 
-def intCode(program):
+def intCode(program, inputs=None,):
 	""" 4-cel words: opcode, input1, input2, output
 	op1 - add
 	op2 - multiply """
+	outputs = []
 	length = len(program)
 	index = 0
 	#for i in range(numWords):
@@ -69,27 +72,77 @@ def intCode(program):
 			index += 1
 			args.append( program[ index ])
 		index += 1
-		result = execute(args, memory=program, )
+		result = execute(args, memory=program, inputs=inputs, outputs=outputs)
 		if result < 0: # exit
 			#print("halting program")
 			break
+	return outputs
 
-def execute( args,  memory=None,):
+def execute( args,  memory=None, inputs=None, outputs=None):
 	"""program is the full intcode program"""
-	op = args[0]
+	# op = args[0]
+	opData = processOpCode(args)
+	op = opData["op"]
+	paramModes = opData["paramModes"]
+
+	# gather values for calculation -------
+	vals = []
+	for i, j in zip(paramModes, args[1:] ):
+		if i == 0: # position mode
+			vals.append( memory[j] )
+		elif i == 1: # literal, "immediate" mode
+			vals.append( j )
+
+	# calculate and assign -----------------
+	# we don't need to check output params, they're always position mode
+
 	if op == 99:
 		return -1
-	val1 = memory[ args[1] ]
-	val2 = memory[ args[2] ]
+
 	if op == 1:
-		outVal = val1 + val2
+		#outVal = val1 + val2
+		outVal = vals[0] + vals[1]
+		memory[args[3]] = outVal
 	elif op == 2:
-		outVal = val1 * val2
+		#outVal = val1 * val2
+		outVal = vals[0] + vals[1]
+		memory[args[3]] = outVal
+	elif op == 3:
+		memory[ args[1] ] = inputs[0] # assigns input to memory index
+	elif op == 4:
+		#outputs.append( memory[ args[1] ] ) # outputs value at index
+		outputs.append( vals[0] )
 
 	else:
 		raise Exception("illegal opcode {}".format(op))
-	memory[ args[3] ] = outVal
+
 	return 0
+
+def processOpCode( args ):
+	""" pulls useful info out of the n-digit opcode
+	expects the full operation sequence
+	from the source:
+	ABCDE
+	 1002
+
+	DE - two-digit opcode,      02 == opcode 2
+	 C - mode of 1st parameter,  0 == position mode
+	 B - mode of 2nd parameter,  1 == immediate mode
+	 A - mode of 3rd parameter,  0 == position mode,
+                                  omitted due to being a leading zero"""
+	opCode = str(args[0])
+	op = int(opCode[-3:]) # last two digits
+	paramModes = []
+	for i in range(len(args) - 1):
+		if i >= len(opCode) - 2:
+			paramModes.append(0)
+		else:
+			# reverse opcode to find correct param order
+			paramModes.append( int( opCode[::-1] [i + 2] ) )
+	print(" opCode {}, op {}, paramModes {}".format(opCode, op, paramModes))
+	return {"op" : op, "paramModes" : paramModes}
+
+
 
 
 if __name__ == '__main__':
