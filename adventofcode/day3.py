@@ -18,6 +18,7 @@ class Turtle(object):
 	def __init__(self, id):
 		self.xy = [0, 0]
 		self.id = id
+		self.pathDelay = 0
 
 	def feedWholeInput(self, directions, grid=None, intersections=None):
 		tokens = directions.split(",")
@@ -40,19 +41,21 @@ class Turtle(object):
 		for i in range(d):
 			self.xy[0] += dx
 			self.xy[1] += dy
+			self.pathDelay += 1
 			if grid:
 				# crawl through grid
 				try:
 					check = grid[self.xy[0]][self.xy[1]]
 					if self.id not in check:
-						intersections.append( (self.xy[0], self.xy[1]) )
+						check[self.id] = self.pathDelay
+						intersections.append( ( (self.xy[0], self.xy[1]), check) )
 						print "found"
 				except:
 					grid[self.xy[0]] = grid.get(self.xy[0]) or {}
 					grid[self.xy[0]][self.xy[1]] = \
-						grid[self.xy[0]].get(self.xy[1]) or set()
+						grid[self.xy[0]].get(self.xy[1]) or {self.id : self.pathDelay}
 				finally:
-					grid[self.xy[0]][self.xy[1]].add(self.id)
+					grid[self.xy[0]][self.xy[1]][self.id] = self.pathDelay
 		return intersections
 
 
@@ -77,8 +80,10 @@ if __name__ == '__main__':
 	print intersections
 
 	# manhattan distance
-	distance = min([abs(i[0] + i[1]) for i in intersections])
+	distance = min([abs(i[0][0] + i[0][1]) for i in intersections])
+	pathDistance = min([sum(i[1].values()) for i in intersections])
 	print distance
+	print pathDistance
 
 	pass
 
