@@ -48,7 +48,7 @@ private:
     public:
         static MObject aOffset;
         static MObject aMask;
-        static MTypeId id;
-        static MString nodeName;
+        static MTypeId kNODE_ID;
+        static MString kNODE_NAME;
 };
 #endif
