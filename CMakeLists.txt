@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 
-project(edPush)
+project(edPlugin)
 find_package(Maya REQUIRED)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSION})
 
@@ -12,6 +12,8 @@ set(SOURCE_FILES
     "edPush.h"
     "edPush.cpp"
     "pluginMain.cpp"
+    "meshAnalysis.h"
+    "meshAnalysis.cpp"
 )
 
 include_directories(${MAYA_INCLUDE_DIR})

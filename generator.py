@@ -2,7 +2,15 @@
 """ trying to automate a bit of the code generation for plugin nodes
 this is a basic approach, not live - something like cog would be more
 powerful and make it more manageable to update all nodes at once,
-but hopefully that won't be a frequent situation """
+but hopefully that won't be a frequent situation
+
+stuff this WON'T do yet:
+ - update cMakeLists.txt
+ - regenerate cmake solutions, build files etc
+ - update pluginMain.cpp
+
+
+"""
 
 import sys, shutil, os, string
 
@@ -12,7 +20,7 @@ from edPlugin import ROOT_PATH
 def makeFiles( nodeName="newNode", nodeParentType="MPxNode", dirpath=None):
 
 	nodeNameCaps = "".join( [i.capitalize() for i in nodeName] )
-	nodeNameTitle = nodeName.capitalize()
+	nodeNameTitle = nodeName[0].upper() + nodeName[1:]
 
 	if nodeParentType == "MPxDeformerNode":
 		mainMethod = nodeh.deformMethod
@@ -29,6 +37,16 @@ def makeFiles( nodeName="newNode", nodeParentType="MPxNode", dirpath=None):
 	with open(hPath, mode="w+") as hFile:
 		hFile.write( hFormat )
 
+	cFormat = nodecpp.baseCpp.format(nodeName=nodeName, nodeNameCaps=nodeNameCaps,
+	                             nodeNameTitle=nodeNameTitle,
+	                             nodeParent=nodeParentType,
+	                             mainMethod=mainMethod)
+
+
+	cPath = dirpath + "/" + nodeName + ".cpp"
+	with open(cPath, mode="w+") as cFile:
+		cFile.write(cFormat)
+
 
 if __name__ == "__main__":
 
@@ -39,5 +57,5 @@ if __name__ == "__main__":
 	)
 	outputPath = ROOT_PATH
 
-	makeFiles( "testNode", nodeParentType="MPxNode", dirpath=outputPath)
+	makeFiles( "meshAnalysis", nodeParentType="MPxNode", dirpath=outputPath)
 

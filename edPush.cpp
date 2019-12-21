@@ -50,8 +50,8 @@ MStatus EdPush::initialize()
     status = attributeAffects(aMask, outputGeom);
 
     // make mask and weights paintable
-    MGlobal::executeCommand("makePaintable -attrType multiFloat -sm deformer edPush weights");
-    MGlobal::executeCommand("makePaintable -attrType doubleArray edPush mask");
+//    MGlobal::executeCommand("makePaintable -attrType multiFloat -sm deformer edPush weights");
+//    MGlobal::executeCommand("makePaintable -attrType doubleArray edPush mask");
     // how best to initialise mask to 1.0?
 
     return MStatus::kSuccess;

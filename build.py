@@ -2,3 +2,8 @@
 on visual studio """
 
 import subprocess
+
+from edPlugin import ROOT_PATH
+
+def buildPlugin(name):
+	pass

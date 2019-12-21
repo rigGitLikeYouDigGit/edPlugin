@@ -31,7 +31,7 @@ class {nodeNameTitle} : public {nodeParent} {{
         {nodeNameTitle}();
         virtual ~{nodeNameTitle}();
 
-        {mainMethod}
+        virtual MStatus {mainMethod};
 
         static void* creator();
         static MStatus initialize();
@@ -45,10 +45,10 @@ public:
 	"""
 
 deformMethod = """
-		virtual MStatus deform(
+		 deform(
 	            MDataBlock& data, MItGeometry& iter, const MMatrix& mat,
-	            unsigned int MIndex);   """
+	            unsigned int MIndex)   """
 
 computeMethod = """
-	    virtual MStatus compute(const MPlug& plug, MDataBlock& data);
+	    compute(const MPlug& plug, MDataBlock& data)
 		"""

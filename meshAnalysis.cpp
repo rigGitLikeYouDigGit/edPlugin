@@ -1,16 +1,58 @@
 
-/*
-all purpose node for deriving information from mesh surface and character -
-curvature, tension, compression, motion vectors, etc,
-storing information per point, outputting it as mask arrays
 
-it would be AMAZING if this could somehow be made compatible with the gpu
-deformation chain, but that is beyond my ability for now
+/*
+
+your description here
+
 */
 
 #include "meshAnalysis.h"
 
-MTypeId MeshAnalysis::id(0x00122C05);
-MString MeshAnalysis::nodeName( "edPush" );
-MObject MeshAnalysis::aOffset;
-MObject MeshAnalysis::aMask;
+MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
+MString MeshAnalysis::kNODE_NAME( "meshAnalysis" );
+
+MObject MeshAnalysis::aInMesh;
+
+
+MStatus MeshAnalysis::initialize()
+{
+    // initialise attributes
+    MFnTypedAttribute tAttr;
+    MFnNumericAttribute nAttr;
+
+    // main inputs
+    aInMesh = tAttr.create("inMesh", "inMesh", MFnData::kMesh);
+    tAttr.setReadable(true);
+    tAttr.setWritable(true);
+    addAttribute(aInMesh);
+
+    // cache attributes
+//        aMask = tAttr.create( "mask", "msk", MFnData::kDoubleArray);
+//    tAttr.setStorable(true);
+//    tAttr.setWritable(true);
+//    tAttr.setHidden(false);
+//    //tAttr.setDefault( defaultObj );
+//    //tAttr.setArray(true);
+//    // only works for weights on one mesh input for now
+//    status = addAttribute(aMask);
+
+    return MStatus::kSuccess;
+}
+
+
+
+MStatus MeshAnalysis::
+	    compute(const MPlug& plug, MDataBlock& data)
+		 {
+    return MS::kSuccess;
+}
+
+void* MeshAnalysis::creator(){
+
+    return new MeshAnalysis;
+
+}
+
+MeshAnalysis::MeshAnalysis() {};
+MeshAnalysis::~MeshAnalysis() {};
+

@@ -4,18 +4,12 @@ import sys
 for i in sys.modules:
 	del i
 
+from edPlugin.tests import sureReloadPlugin
+
 path = "F:\\all_projects_desktop\common\edCode\edPlugin\generalIk.py"
 path = "generalIk.py"
-cmds.loadPlugin( path )
-cmds.file(new=True, f=True)
 
-cmds.unloadPlugin(path, f=True)
-
-cmds.file(new=True, f=True)
-
-cmds.loadPlugin( path )
-
-cmds.file(new=True, f=True)
+sureReloadPlugin(path)
 # setup basic ik scene
 
 
