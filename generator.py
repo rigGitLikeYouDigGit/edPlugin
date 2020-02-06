@@ -57,5 +57,5 @@ if __name__ == "__main__":
 	)
 	outputPath = ROOT_PATH
 
-	makeFiles( "meshAnalysis", nodeParentType="MPxNode", dirpath=outputPath)
+	makeFiles( "testDeformer", nodeParentType="MPxDeformerNode", dirpath=outputPath)
 

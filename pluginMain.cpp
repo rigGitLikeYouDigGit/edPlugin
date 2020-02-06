@@ -3,10 +3,15 @@ register all plugins
 */
 
 #include "edPush.h"
-#include "meshAnalysis.h"
+
+//#include "meshAnalysis.h"
+//#include "testDeformer.h"
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
+const char* kAUTHOR = "ed";
+const char* kVERSION = "1.0";
+const char* kREQUIRED_API_VERSION = "Any";
 
 #define REGISTER_NODE(NODE) \
     status = fnPlugin.registerNode( \
@@ -41,31 +46,27 @@ thanks mate
 
 MStatus initializePlugin( MObject obj ){
 
-    MFnPlugin fnPlugin( obj, "edPush_by_ed", "1.0", "any");
-    MStatus status;
+    MFnPlugin fnPlugin( obj, kAUTHOR, kVERSION, kREQUIRED_API_VERSION);
+    MStatus status = MStatus::kSuccess;
 
-    REGISTER_DEFORMER(EdPush);
+    status = REGISTER_DEFORMER(EdPush);
 
     REGISTER_NODE(MeshAnalysis);
 
-
-    return MS::kSuccess;
-
+    return status;
 }
 
 MStatus uninitializePlugin( MObject obj ){
 
     MStatus status;
-    MFnPlugin fnPlugin(obj);
+    MFnPlugin plugin(obj);
 
-    DEREGISTER_NODE( EdPush );
-    DEREGISTER_NODE( MeshAnalysis );
+    //status = plugin.deregisterNode( EdPush::id );
+    status = plugin.deregisterNode( EdPush::kNODE_ID );
+    if (!status){
+        status.perror( "deregisterNode" );
+        return status;
+    }
+    return status;
 
-//    status = plugin.deregisterNode( EdPush::id );
-//    if (!status){
-//        status.perror( "deregisterNode" );
-//        return status;
-//    }
-//    return status;
-    return MS::kSuccess;
 }

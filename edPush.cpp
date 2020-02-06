@@ -10,11 +10,38 @@ deformer -type "edPush"
 
 #include "edPush.h"
 
+//MTypeId EdPush::id(0x00122C05);
 MTypeId EdPush::kNODE_ID(0x00122C05);
+//MString EdPush::nodeName( "edPush" );
 MString EdPush::kNODE_NAME( "edPush" );
+
+//#include <maya/MPxNode.h>
+#include <maya/MPxDeformerNode.h>
+#include <maya/MTypeId.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+
+#include <maya/MDataBlock.h>
+#include <maya/MDataHandle.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnVectorArrayData.h>
+#include <maya/MFnData.h>
+#include <maya/MFnMesh.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <maya/MPoint.h>
+#include <maya/MVector.h>
+#include <maya/MPlug.h>
+#include <maya/MItGeometry.h>
+
+
+//MTypeId EdPush::id(0x00122C03);
+//MString EdPush::node_name( "edPush" );
 MObject EdPush::aOffset;
 MObject EdPush::aMask;
-
 
 
 MStatus EdPush::initialize()
@@ -50,8 +77,8 @@ MStatus EdPush::initialize()
     status = attributeAffects(aMask, outputGeom);
 
     // make mask and weights paintable
-//    MGlobal::executeCommand("makePaintable -attrType multiFloat -sm deformer edPush weights");
-//    MGlobal::executeCommand("makePaintable -attrType doubleArray edPush mask");
+    MGlobal::executeCommand("makePaintable -attrType multiFloat -sm deformer edPush weights");
+    MGlobal::executeCommand("makePaintable -attrType doubleArray edPush mask");
     // how best to initialise mask to 1.0?
 
     return MStatus::kSuccess;
@@ -79,15 +106,13 @@ MDoubleArray EdPush::initialiseMasks(int length, MDataHandle &maskHandle){
     MFnDoubleArrayData maskData( maskHandle.data());
     //MFnDoubleArrayData maskData( data.inputValue( aMask) );
     MDoubleArray mask = maskData.array();
-    if (mask.length() < length){
-        mask.setLength(length);
-        for( int n; n < length; n++){
-            mask[n] = 1.0;
-        }
-    }
-
+//    if (mask.length() < length){
+//        mask.setLength(length);
+//        for( int n; n < length; n++){
+//            mask[n] = 1.0;
+//        }
+//    }
     return mask;
-
 }
 
 MStatus EdPush::deform(
