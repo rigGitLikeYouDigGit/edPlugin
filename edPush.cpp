@@ -38,8 +38,8 @@ MString EdPush::kNODE_NAME( "edPush" );
 #include <maya/MItGeometry.h>
 
 
-MTypeId EdPush::id(0x00122C03);
-MString EdPush::node_name( "edPush" );
+//MTypeId EdPush::id(0x00122C03);
+//MString EdPush::node_name( "edPush" );
 MObject EdPush::aOffset;
 MObject EdPush::aMask;
 

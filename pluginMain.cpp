@@ -28,29 +28,30 @@ const char* kREQUIRED_API_VERSION = "Any";
     );                                        \
     CHECK_MSTATUS_AND_RETURN_IT(status);    \
 
+#define REGISTER_DEFORMER(NODE)                    \
+    status = fnPlugin.registerNode(            \
+        NODE::kNODE_NAME,                    \
+        NODE::kNODE_ID,                        \
+        NODE::creator,                        \
+        NODE::initialize,                   \
+        MPxNode::kDeformerNode                 \
+    );                                        \
+    CHECK_MSTATUS_AND_RETURN_IT(status);    \
+
 #define DEREGISTER_NODE(NODE)                \
     status = fnPlugin.deregisterNode(        \
         NODE::kNODE_ID                        \
     );                                        \
-    CHECK_MSTATUS_AND_RETURN_IT(status);    \
+    //CHECK_MSTATUS_AND_RETURN_IT(status);    \
 
 MStatus initializePlugin( MObject obj ){
 
 //    MFnPlugin fnPlugin( obj, "edPlugin_by_ed", "1.0", "any");
     MFnPlugin fnPlugin( obj, kAUTHOR, kVERSION, kREQUIRED_API_VERSION);
     MStatus status = MStatus::kSuccess;
-    MString errorString;
 
-    //status = REGISTER_NODE(EdPush)
+    status = REGISTER_DEFORMER(EdPush);
 
-    status = fnPlugin.registerNode(
-        //"edPush",
-        EdPush::kNODE_NAME,
-        EdPush::kNODE_ID,
-//        EdPush::id,
-        EdPush::creator,
-        EdPush::initialize,
-        MPxNode::kDeformerNode    );
 
     if( status != MStatus::kSuccess ){
         status.perror( "registerNode" );
