@@ -4,7 +4,7 @@
 #include <vector>
 #include <iostream>
 
-//
+
 #include <maya/MPxDeformerNode.h>
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
@@ -21,8 +21,6 @@
 #include <maya/MVector.h>
 #include <maya/MPlug.h>
 #include <maya/MItGeometry.h>
-
-//#include "lib.cpp"
 
 class EdPush : public MPxDeformerNode {
     public:
@@ -51,6 +49,7 @@ private:
         static MObject aOffset;
         static MObject aMask;
         static MTypeId kNODE_ID;
+//        static MString nodeName;
         static MString kNODE_NAME;
 };
 #endif
