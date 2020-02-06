@@ -6,10 +6,10 @@
 #include <vector>
 #include <iostream>
 
-//#include <maya/MPxNode.h>
-//#include <maya/MTypeId.h>
-//#include <maya/MGlobal.h>
-//#include <maya/MObject.h>
+#include <maya/MPxNode.h>
+#include <maya/MTypeId.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
 //
 //#include <maya/MDataBlock.h>
 //#include <maya/MDataHandle.h>
@@ -24,6 +24,7 @@
 //#include <maya/MVector.h>
 //#include <maya/MPlug.h>
 //#include <maya/MItGeometry.h>
+
 
 #include "lib.cpp"
 

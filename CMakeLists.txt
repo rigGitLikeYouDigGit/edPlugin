@@ -9,13 +9,13 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSIO
 set(CMAKE_ARCJOVE)
 
 set(SOURCE_FILES
-    #"lib.cpp"
+    "lib.cpp"
     "edPush.h"
     "edPush.cpp"
     #"testDeformer.h"
     #"testDeformer.cpp"
-    #"meshAnalysis.h"
-    #"meshAnalysis.cpp"
+    "meshAnalysis.h"
+    "meshAnalysis.cpp"
 
     "pluginMain.cpp"
 

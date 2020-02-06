@@ -4,6 +4,8 @@ as well as common plugin functions
 */
 
 //#pragma once
+#ifndef _PLUGIN_LIB
+#define _PLUGIN_LIB
 
 #include <vector>
 #include <string>
@@ -44,3 +46,6 @@ static MObject makeBindAttr( ){
     fn.setHidden(false);
     return aBind;
 }
+
+
+#endif

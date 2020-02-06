@@ -6,7 +6,7 @@
 
 
 #include <maya/MPxDeformerNode.h>
-//#include <maya/MPxNode.h>
+#include <maya/MPxNode.h>
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>

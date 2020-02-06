@@ -10,6 +10,7 @@ use separate mesh time process node to access previous values
 */
 
 #include "meshAnalysis.h"
+#include "lib.cpp"
 
 MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
 MString MeshAnalysis::kNODE_NAME( "meshAnalysis" );
@@ -54,8 +55,8 @@ MStatus MeshAnalysis::initialize()
     // if refMesh is connected, compute values relative to that
     // else use the cached bound mesh
     // ELSE compute the absolute values live
-    aBind = makeBindAttr();
-    addAttribute( aBind );
+//    aBind = makeBindAttr();
+//    addAttribute( aBind );
 
 
     // cache attributes

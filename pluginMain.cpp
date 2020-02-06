@@ -4,7 +4,7 @@ register all plugins
 
 #include "edPush.h"
 
-//#include "meshAnalysis.h"
+#include "meshAnalysis.h"
 //#include "testDeformer.h"
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
@@ -51,7 +51,7 @@ MStatus initializePlugin( MObject obj ){
 
     status = REGISTER_DEFORMER(EdPush);
 
-    REGISTER_NODE(MeshAnalysis);
+    status = REGISTER_NODE(MeshAnalysis);
 
     return status;
 }
@@ -59,14 +59,15 @@ MStatus initializePlugin( MObject obj ){
 MStatus uninitializePlugin( MObject obj ){
 
     MStatus status;
-    MFnPlugin plugin(obj);
+    MFnPlugin fnPlugin(obj);
 
     //status = plugin.deregisterNode( EdPush::id );
-    status = plugin.deregisterNode( EdPush::kNODE_ID );
-    if (!status){
-        status.perror( "deregisterNode" );
-        return status;
-    }
+//    status = plugin.deregisterNode( EdPush::kNODE_ID );
+//    if (!status){
+//        status.perror( "deregisterNode" );
+//        return status;
+//    }
+    status = DEREGISTER_NODE( EdPush )
     return status;
 
 }
