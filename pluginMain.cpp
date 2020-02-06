@@ -7,14 +7,6 @@ register all plugins
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
-//#define CHECK_MSTATUS_AND_RETURN_IT(STATUS, msg)
-//        if (!STATUS){
-//        STATUS.perror( msg );
-//        return STATUS;
-//    }
-
-//MTypeId EdPush::kNODE_ID = 0x00126b05;
-//MString EdPush::kNODE_NAME = "edPush";
 
 #define REGISTER_NODE(NODE) \
     status = fnPlugin.registerNode( \
@@ -24,6 +16,17 @@ register all plugins
         NODE::initialize \
     ); \
     CHECK_MSTATUS_AND_RETURN_IT(status); \
+
+#define REGISTER_DEFORMER(NODE) \
+    status = fnPlugin.registerNode( \
+        NODE::kNODE_NAME, \
+        NODE::kNODE_ID, \
+        NODE::creator, \
+        NODE::initialize, \
+        MPxNode::kDeformerNode \
+    ); \
+    CHECK_MSTATUS_AND_RETURN_IT(status); \
+
 
 #define DEREGISTER_NODE(NODE) \
     status = fnPlugin.deregisterNode( \
@@ -41,7 +44,7 @@ MStatus initializePlugin( MObject obj ){
     MFnPlugin fnPlugin( obj, "edPush_by_ed", "1.0", "any");
     MStatus status;
 
-    REGISTER_NODE(EdPush);
+    REGISTER_DEFORMER(EdPush);
 
     REGISTER_NODE(MeshAnalysis);
 
