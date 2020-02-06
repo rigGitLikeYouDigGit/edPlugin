@@ -6,6 +6,7 @@
 
 
 #include <maya/MPxDeformerNode.h>
+//#include <maya/MPxNode.h>
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
@@ -51,5 +52,6 @@ private:
         static MTypeId kNODE_ID;
 //        static MString nodeName;
         static MString kNODE_NAME;
+
 };
 #endif

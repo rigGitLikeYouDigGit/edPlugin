@@ -46,6 +46,11 @@ public:
 
     // attributes
     static MObject aInMesh;
+    static MObject aRefMesh;
+    static MObject aCurvature;
+    static MObject aDeltas;
+    static MObject aTension;
+    static MObject aBind;
 
 
 };

@@ -3,8 +3,17 @@ register all plugins
 */
 
 #include "edPush.h"
+
+//#include "meshAnalysis.h"
+//#include "testDeformer.h"
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
+//
+//#define CHECK_MSTATUS(STATUS) \
+//        if (!STATUS){ \
+//        STATUS.perror( "error" ); \
+//        } \
+//        return STATUS; \
 
 const char* kAUTHOR = "ed";
 const char* kVERSION = "1.0";
@@ -42,13 +51,12 @@ MStatus initializePlugin( MObject obj ){
         EdPush::creator,
         EdPush::initialize,
         MPxNode::kDeformerNode    );
-        
+
     if( status != MStatus::kSuccess ){
         status.perror( "registerNode" );
         return status;
     }
     return status;
-
 }
 
 MStatus uninitializePlugin( MObject obj ){
