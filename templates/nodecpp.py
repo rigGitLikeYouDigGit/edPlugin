@@ -3,15 +3,15 @@
 baseCpp = """
 
 /*
-
-your description here
-
+{nodeDescription}
 */
 
 #include "{nodeName}.h"
 
-MTypeId {nodeNameTitle}::kNODE_ID(0x00122C05);
+MTypeId {nodeNameTitle}::kNODE_ID({MTypeId});
 MString {nodeNameTitle}::kNODE_NAME( "{nodeName}" );
+
+{MObjects}
 
 MStatus {nodeNameTitle}::initialize()
 {{
@@ -35,4 +35,8 @@ void* {nodeNameTitle}::creator(){{
 {nodeNameTitle}::~{nodeNameTitle}() {{}};
 
 """
+
+MObjectTemplate = """MObject {nodeNameTitle}::{MObjectName};
+					"""
+
 

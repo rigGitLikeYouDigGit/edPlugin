@@ -1,18 +1,14 @@
 
 
-#ifndef TESTDEFORMER_H
-#define TESTDEFORMER_H
+#ifndef UBERDEFORMER_H
+#define UBERDEFORMER_H
 
-#include <vector>
-#include <iostream>
+#include "lib.cpp"
 
-#include <maya/MPxDeformerNode.h>
-
-
-class TestDeformer : public MPxDeformerNode {
+class UberDeformer : public MPxDeformerNode {
     public:
-        TestDeformer();
-        virtual ~TestDeformer();
+        UberDeformer();
+        virtual ~UberDeformer();
 
         virtual MStatus 
 		 deform(
@@ -23,7 +19,7 @@ class TestDeformer : public MPxDeformerNode {
         static MStatus initialize();
 
 public:
-    static MTypeId id;
+    static MTypeId kNODE_ID;
     static MString kNODE_NAME;
 
 };

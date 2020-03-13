@@ -1,27 +1,8 @@
 #ifndef EDPUSH_H
 #define EDPUSH_H
 
-#include <vector>
-#include <iostream>
+#include "lib.cpp"
 
-
-#include <maya/MPxDeformerNode.h>
-#include <maya/MPxNode.h>
-#include <maya/MTypeId.h>
-#include <maya/MGlobal.h>
-#include <maya/MObject.h>
-
-#include <maya/MDataBlock.h>
-#include <maya/MDataHandle.h>
-#include <maya/MFnNumericAttribute.h>
-#include <maya/MFnTypedAttribute.h>
-#include <maya/MFnDoubleArrayData.h>
-#include <maya/MFnDependencyNode.h>
-
-#include <maya/MPoint.h>
-#include <maya/MVector.h>
-#include <maya/MPlug.h>
-#include <maya/MItGeometry.h>
 
 class EdPush : public MPxDeformerNode {
     public:

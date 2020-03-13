@@ -9,12 +9,14 @@ as well as common plugin functions
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include <maya/MPxNode.h>
 #include <maya/MPxDeformerNode.h>
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
+#include <maya/MString.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -31,6 +33,7 @@ as well as common plugin functions
 #include <maya/MVector.h>
 #include <maya/MPlug.h>
 #include <maya/MItGeometry.h>
+
 
 
 // common functions
