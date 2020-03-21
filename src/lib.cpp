@@ -17,6 +17,16 @@ as well as common plugin functions
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
+#include <maya/MPoint.h>
+#include <maya/MFloatPoint.h>
+#include <maya/MVector.h>
+#include <maya/MFloatVector.h>
+#include <maya/MVectorArray.h>
+#include <maya/MFloatArray.h>
+#include <maya/MDoubleArray.h>
+#include <maya/MIntArray.h>
+#include <maya/MPointArray.h>
+#include <maya/MFloatPointArray.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -25,12 +35,15 @@ as well as common plugin functions
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnVectorArrayData.h>
+#include <maya/MFnIntArrayData.h>
+#include <maya/MFnFloatArrayData.h>
 #include <maya/MFnData.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnNurbsCurve.h>
 #include <maya/MFnDependencyNode.h>
 
-#include <maya/MPoint.h>
-#include <maya/MVector.h>
+
+
 #include <maya/MPlug.h>
 #include <maya/MItGeometry.h>
 
@@ -45,6 +58,7 @@ static MObject makeBindAttr( ){
     fn.addField("off", 0);
     fn.addField("bind", 1);
     fn.addField("bound", 2);
+    fn.addField("live", 3);
     fn.setKeyable(true);
     fn.setHidden(false);
     return aBind;

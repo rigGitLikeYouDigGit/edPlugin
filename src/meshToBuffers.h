@@ -22,6 +22,13 @@ public:
     
     // attribute MObjects
     static MObject aTest;
+    static MObject aInMesh;
+    static MObject aPositions;
+    static MObject aFaceCounts;
+    static MObject aFaceConnects;
+    static MObject aBind;
+
+
     
 
 };
