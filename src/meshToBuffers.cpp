@@ -8,6 +8,14 @@
 
 #include "meshToBuffers.h"
 
+#include <Eigen/Dense>
+#include <Eigen/Core>
+
+using namespace Eigen;
+
+Matrix3f Test;
+
+
 MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
 MString MeshToBuffers::kNODE_NAME( "meshToBuffers" );
 

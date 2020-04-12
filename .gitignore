@@ -35,6 +35,8 @@ build/Release/edPush.lib
 build/Release/edPush.mll
 *.pyc
 *.ipch
+*.mll
+include/*
 
 build/.vs/edPlugin/v15/ipch/AutoPCH/ad673cd3617a0de/EDPUSH.ipch
 build/.vs/edPlugin/v15/.suo
