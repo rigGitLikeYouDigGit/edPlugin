@@ -1,6 +1,6 @@
 
 from maya import cmds
-from edPlugin.tests import sureReloadPlugin
+from edPlugin.test import sureReloadPlugin
 
 path = "edPush.mll"
 

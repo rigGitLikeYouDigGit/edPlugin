@@ -3,7 +3,7 @@
 #ifndef MESHANALYSIS_H
 #define MESHANALYSIS_H
 
-#include "lib.cpp"
+#include "lib/api.cpp"
 
 class MeshAnalysis : public MPxNode {
     public:

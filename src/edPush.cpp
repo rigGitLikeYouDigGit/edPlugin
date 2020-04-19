@@ -9,7 +9,6 @@ deformer -type "edPush"
 */
 
 #include "edPush.h"
-//#include "lib.cpp"
 
 //MTypeId EdPush::id(0x00122C05);
 MTypeId EdPush::kNODE_ID(0x00122C05);

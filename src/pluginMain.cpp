@@ -8,6 +8,8 @@ register all plugins
 
 // BEGIN PROCEDURAL CONTROL INCLUDE
 #include "meshToBuffers.h"
+#include "uberDeformer.h"
+#include "deformer/deformerNotion.h"
 // END PROCEDURAL CONTROL INCLUDE
 
 #include <maya/MFnPlugin.h>
@@ -66,6 +68,8 @@ MStatus initializePlugin( MObject obj ){
 
     // BEGIN PROCEDURAL CONTROL REGISTER
     status = REGISTER_NODE(MeshToBuffers);
+	status = REGISTER_DEFORMER(UberDeformer);
+	status = REGISTER_NODE(DeformerNotion);
     // END PROCEDURAL CONTROL REGISTER
 
 
@@ -81,6 +85,8 @@ MStatus uninitializePlugin( MObject obj ){
     status = DEREGISTER_NODE( MeshAnalysis );
     // BEGIN PROCEDURAL CONTROL DEREGISTER
     status = DEREGISTER_NODE( MeshToBuffers );
+	status = DEREGISTER_NODE(UberDeformer);
+	status = DEREGISTER_NODE(DeformerNotion);
     // END PROCEDURAL CONTROL DEREGISTER
 
     return status;

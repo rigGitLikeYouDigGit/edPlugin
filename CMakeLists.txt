@@ -11,12 +11,13 @@ set(CMAKE_ARCJOVE)
 
 
 
-file(GLOB SOURCE_FILES "src/*.cpp" "src/*.h" "src/lib/*.cpp" "src/lib/*.h")
+file(GLOB SOURCE_FILES "src/*.cpp" "src/*.h" "src/lib/*.cpp" "src/lib/*.h" 
+	"src/deformer/*.h" "src/deformer/*.cpp")
 
  
-
-include_directories(${MAYA_INCLUDE_DIR})
 include_directories("F:/all_projects_desktop/common/edCode/edPlugin/include/eigen-3.3.7")
+include_directories(${MAYA_INCLUDE_DIR})
+
 link_directories(${MAYA_LIBRARY_DIR})
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${MAYA_LIBRARIES} ${OPENGL_LIBRARY})

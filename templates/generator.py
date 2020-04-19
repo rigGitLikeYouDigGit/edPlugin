@@ -62,7 +62,7 @@ class NodeCode(object):
 		"MPxNode",
 		"MPxDeformerNode",
 	)
-	dirpath = ROOT_PATH
+	dirpath = ROOT_PATH + "/src"
 
 	def __init__(self,
 	             nodeName="camelCaseName",
@@ -146,9 +146,22 @@ if __name__ == "__main__":
 	#makeFiles( "uberDeformer", nodeParentType="MPxDeformerNode", dirpath=outputPath)
 	#makeFiles( "meshToBuffers", nodeParentType="MPxNode", dirpath=outputPath)
 
-	meshToBuffers = NodeCode("meshToBuffers", nodeType="MPxNode")
-	meshToBuffers.description = """
-	converts maya mesh to raw float and int buffers of position and topo data
+	# meshToBuffers = NodeCode("meshToBuffers", nodeType="MPxNode")
+	# meshToBuffers.description = """
+	# converts maya mesh to raw float and int buffers of position and topo data
+	# """
+	# meshToBuffers.write()
+
+	# uberDeformer = NodeCode("uberDeformer", nodeType="MPxDeformerNode")
+	# uberDeformer.description = """
+	# build deformation scheme by iterating over deformer notions
+	# """
+	# uberDeformer.write()
+
+	deformerNotion = NodeCode("deformerNotion", nodeType="MPxNode")
+	deformerNotion.description = """
+	individual component deformation of uberDeformer
 	"""
-	meshToBuffers.write()
+	deformerNotion.write()
+
 

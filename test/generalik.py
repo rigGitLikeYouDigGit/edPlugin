@@ -4,7 +4,7 @@ import sys
 for i in sys.modules:
 	del i
 
-from edPlugin.tests import sureReloadPlugin
+from edPlugin.test import sureReloadPlugin
 
 path = "F:\\all_projects_desktop\common\edCode\edPlugin\generalIk.py"
 path = "generalIk.py"

@@ -4,7 +4,7 @@
 #define MESHTOBUFFERS_H
 
 #include "lib/api.cpp"
-
+#include "lib/topo.cpp"
 
 class MeshToBuffers : public MPxNode {
     public:
@@ -24,13 +24,14 @@ public:
     // attribute MObjects
     static MObject aTest;
     static MObject aInMesh;
-    static MObject aPositions;
+    static MObject aPointPositions;
     static MObject aFaceCounts;
     static MObject aFaceConnects;
+	static MObject aPointConnects;
+	static MObject aFaceCentres;
     static MObject aBind;
-
-
     
+
 
 };
 #endif

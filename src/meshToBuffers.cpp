@@ -8,12 +8,6 @@
 
 #include "meshToBuffers.h"
 
-#include <Eigen/Dense>
-#include <Eigen/Core>
-
-using namespace Eigen;
-
-Matrix3f Test;
 
 
 MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
@@ -21,9 +15,11 @@ MString MeshToBuffers::kNODE_NAME( "meshToBuffers" );
 
 MObject MeshToBuffers::aTest;
 MObject MeshToBuffers::aInMesh;
-MObject MeshToBuffers::aPositions;
+MObject MeshToBuffers::aPointPositions;
 MObject MeshToBuffers::aFaceCounts;
 MObject MeshToBuffers::aFaceConnects;
+MObject MeshToBuffers::aPointConnects;
+MObject MeshToBuffers::aFaceCentres;
 // connects actually pointless with constant vertices per face
 MObject MeshToBuffers::aBind;
 
@@ -43,25 +39,48 @@ MStatus MeshToBuffers::initialize()
     aFaceCounts = tAttr.create("faceCounts", "faceCounts", MFnData::kIntArray);
     addAttribute( aFaceCounts );
 
+	//aFaceCentres = tAttr.create("faceCentres", "faceCentres", MFnData::kFloatArray);
+	//addAttribute(aFaceCentres ); // more efficient to find online
+
+
 //    aFaceConnects = tAttr.create("faceConnects", "faceConnects", MFnData::kIntArray);
 //    addAttribute( aFaceConnects );
 
-    aPositions = tAttr.create("positions", "positions", MFnData::kFloatArray);
-    addAttribute( aPositions );
+    aPointPositions = tAttr.create("pointPositions", "pointPositions", MFnData::kFloatArray);
+    addAttribute( aPointPositions );
+
+	aPointConnects = tAttr.create("pointConnects", "pointConnects", MFnData::kIntArray);
+	addAttribute(aPointConnects);
 
 
     // bind
-    aBind = makeBindAttr();
+    // aBind = makeBindAttr(); // gives random errors
+	MFnEnumAttribute fn;
+	aBind = fn.create("bind", "bind", 1);
+	fn.addField("off", 0);
+	fn.addField("bind", 1);
+	fn.addField("bound", 2);
+	fn.addField("live", 3);
+	fn.setKeyable(true);
+	fn.setHidden(false);
     addAttribute( aBind );
 
     MStatus status;
-    status = attributeAffects(aInMesh, aFaceCounts);
-    //status = attributeAffects(aInMesh, aFaceConnects);
-    status = attributeAffects(aInMesh, aPositions);
+	attributeAffects(aBind, aPointPositions);
+	attributeAffects(aBind, aPointConnects);
+	attributeAffects(aBind, aFaceCounts);
 
-    status = attributeAffects(aBind, aFaceCounts);
-    //status = attributeAffects(aBind, aFaceConnects);
-    status = attributeAffects(aBind, aPositions);
+	attributeAffects(aInMesh, aPointPositions);
+	attributeAffects(aInMesh, aPointConnects);
+	attributeAffects(aInMesh, aFaceCounts);
+
+/*
+	vector<MObject> topoAttrs = { aFaceCounts, aPointConnects };
+	vector<MObject> liveAttrs = { aPointPositions };
+	setAttributeAffectsAll(aBind, topoAttrs);
+	setAttributeAffectsAll(aBind, liveAttrs);
+	setAttributeAffectsAll(aInMesh, topoAttrs);
+	setAttributeAffectsAll(aInMesh, liveAttrs);*/
 
     return MStatus::kSuccess;
 }
@@ -100,7 +119,7 @@ MStatus MeshToBuffers::compute(
 	        MIntArray faceVertices;
 	        meshFn.getPolygonVertices( i, faceVertices );
 
-	        for( int n = 0; n < faceVertices.length(); n++ ){
+	        for( unsigned int n = 0; n < faceVertices.length(); n++ ){
 	            allFaceVertices.set( faceVertices[ n ], i * 4 + n );
 	        }
 	    }
@@ -111,16 +130,29 @@ MStatus MeshToBuffers::compute(
         MDataHandle faceDH = data.outputValue( aFaceCounts );
         faceDH.setMObject( faceObj );
 
+		// find point connections
+		vector<int> faceVector = MIntArrayToVector(allFaceVertices);
+
+		vector<int> pointConnects = pointBufferFromFaceBuffer(faceVector);
+		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
+		MObject pointObj = faceData.create(pointConnectsArray);
+
+		MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
+		pointConnectsDH.setMObject(pointObj);
+
 	    if( bind == 1){
 	        data.inputValue( aBind ).setInt( 2 );
 	    }
 
 	}
 
+	
 
 	// set outputs
-	MDataHandle positionsDH = data.outputValue( aPositions );
+	MDataHandle positionsDH = data.outputValue( aPointPositions );
 	positionsDH.setMObject( positionsData );
+
+	data.setClean(plug);
 
 
     return MS::kSuccess;

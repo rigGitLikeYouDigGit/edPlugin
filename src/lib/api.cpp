@@ -4,7 +4,7 @@ base lib containing all maya imports,
 as well as common plugin functions
 */
 
-//#pragma once
+#pragma once
 #ifndef _PLUGIN_LIB
 #define _PLUGIN_LIB
 
@@ -48,7 +48,7 @@ as well as common plugin functions
 #include <maya/MPlug.h>
 #include <maya/MItGeometry.h>
 
-
+using namespace std;
 
 // common functions
 // how do you actually use strings though
@@ -64,6 +64,78 @@ static MObject makeBindAttr( ){
     fn.setHidden(false);
     return aBind;
 }
+
+// converting between maya types and vectors
+inline vector<int> MIntArrayToVector(MIntArray &arr) {
+	// constructs stl vector from int array
+	vector<int> output(arr.length(), 1);
+	for (unsigned int i = 0; i < arr.length(); i++) {
+		output[i] = arr[i];
+	}
+	return output;
+}
+
+inline vector<float> MFloatArrayToVector(MFloatArray &arr) {
+	// constructs stl vector from float array
+	// sorry if there's a more elegant way to template these
+	vector<float> output( static_cast<int>( arr.length() ), 1);
+	for (unsigned int i = 0; i < arr.length(); i++) {
+		output[i] = arr[i];
+	}
+	return output;
+}
+
+inline vector<float> MVectorArrayToVector(MVectorArray &arr) {
+	// constructs stl vector from MVectorArray
+	vector<float> output(static_cast<int>(arr.length()) * 3, 1);
+	for (unsigned int i = 0; i < arr.length(); i++) {
+		output[i*3] = static_cast<float>(arr[i].x);
+		output[i*3 + 1] = static_cast<float>(arr[i].y);
+		output[i*3 + 2] = static_cast<float>(arr[i].z);
+	}
+	return output;
+}
+
+inline MIntArray vectorToMIntArray(vector<int> &v) {
+	// constructs MIntArray from stl float vector
+	MIntArray output( static_cast<int>(v.size()) );	
+	for (unsigned int i = 0; i < v.size(); i++) {
+		output[i] = v[i];
+	}
+	return output;
+}
+
+inline MFloatArray vectorToMFloatArray(vector<float> &v) {
+	// constructs MFloatArray from stl float vector
+	MFloatArray output( static_cast<int>(v.size()) );
+	// static casting size_t is among the most annoying c++ I've found
+	for (unsigned int i = 0; i < v.size(); i++) {
+		output[i] = v[i];
+	}
+	return output;
+}
+
+inline MVectorArray vectorToMVectorArray(vector<float> &v) {
+	// constructs MFloatArray from stl float vector
+	MVectorArray output(static_cast<int>(v.size()) / 3);
+	// static casting size_t is among the most annoying c++ I've found
+	for (unsigned int i = 0; i < v.size(); i++) {
+		output[i].x = v[i*3];
+		output[i].y = v[i*3 + 1];
+		output[i].z = v[i*3 + 2];
+	}
+	return output;
+}
+
+
+// unable to find a good way to do this
+//void setAttributeAffectsAll(MPxNode &nodeType, MObject &driver, vector<MObject> &driven) {
+//	// sets driver to affect all driven
+//	for (auto &i : driven) {
+//		nodeType::attributeAffects(driver, i);
+//	}
+//}
+//
 
 
 #endif

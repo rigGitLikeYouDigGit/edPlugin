@@ -1,4 +1,5 @@
 
+
 #ifndef TOPO_LIB
 #define TOPO_LIB
 
@@ -20,7 +21,7 @@ to be converted to and from raw buffers at interfaces between software*/
 
 // --- building buffers ---
 
-int entryRealLength(vector<int> &buffer, int entryIndex) {
+inline int entryRealLength(vector<int> &buffer, int entryIndex) {
 	// gives number of indices in entry other than -1
 	// assumes entry length of 4
 	int output = 0;
@@ -31,10 +32,10 @@ int entryRealLength(vector<int> &buffer, int entryIndex) {
 	return output;
 }
 
-vector<int> buildBufferOffsets(vector<int> &baseBuffer) {
+inline vector<int> buildBufferOffsets(vector<int> &baseBuffer) {
 	// returns new vector containing offsets into original
 	// each offset corresponds to number of real indices in base
-	int n = baseBuffer.size();
+	int n = static_cast<int>(baseBuffer.size());
 	vector<int> output(n);
 	for (int i = 0; i < n; i++) {
 		output[i] = entryRealLength(baseBuffer, i);
@@ -42,17 +43,19 @@ vector<int> buildBufferOffsets(vector<int> &baseBuffer) {
 	return output;
 }
 
-vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer ) 
+inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer ) 
 {
 	/* expects face buffer with entries 4-long, -1 denoting no connection 
 	not particularly performant, do not use online 
 	for now gives points in unordered entries, with no consistent winding order
 	*/
 
-	int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end());
-	int nFaces = faceBuffer.size() / 4;
+	//int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end());
+	int nPoints = static_cast<int>(faceBuffer.size());
+	int nFaces = nPoints / 4;
 
 	vector<int> output(nPoints, -1);
+	//vector<int> output(nPoints);
 
 	// build set representing each point
 	vector< set<int> > pointSets(nPoints);
@@ -81,8 +84,8 @@ vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 				continue;
 			}
 
-			int left = entryLength % abs(n - 1);
-			int right = entryLength % abs(n + 1);
+			int left = (n - 1 + entryLength) % entryLength;
+			int right = (n + 1) % entryLength;
 
 			pointSets[pointIndex].insert(faceBuffer[i * 4 + left]);
 			pointSets[pointIndex].insert(faceBuffer[i * 4 + right]);
@@ -108,9 +111,9 @@ vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 
 // --- LAPLACIAN AND CHILL ---
 
-Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
+inline Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
 	// aka degree matrix
-	int n = pointOffsets.size();
+	int n = static_cast<int>(pointOffsets.size());
 	Eigen::SparseMatrix<int> output(n, n);
 	for (int i = 0; i < n; i++) {
 		output.insert(i, i) = pointOffsets[i];
@@ -118,8 +121,8 @@ Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
 	return output;
 }
 
-Eigen::SparseMatrix<int> buildAdjacencyMatrix(vector<int> &pointBuffer) {
-	int n = pointBuffer.size();
+inline Eigen::SparseMatrix<int> buildAdjacencyMatrix(vector<int> &pointBuffer) {
+	int n = static_cast<int>(pointBuffer.size());
 	Eigen::SparseMatrix<int> output(n, n);
 
 	for (int i = 0; i < n; i++) {
@@ -137,7 +140,7 @@ Eigen::SparseMatrix<int> buildAdjacencyMatrix(vector<int> &pointBuffer) {
 }
 
 
-Eigen::SparseMatrix<int> buildLaplaceMatrix(
+inline Eigen::SparseMatrix<int> buildLaplaceMatrix(
 	Eigen::SparseMatrix<int> &adjacencyMatrix,
 	vector<int> &pointValences,
 	int nPoints)
