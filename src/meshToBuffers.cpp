@@ -10,7 +10,7 @@
 
 
 
-//MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
+MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
 MString MeshToBuffers::kNODE_NAME( "meshToBuffers" );
 
 MObject MeshToBuffers::aTest;

@@ -8,7 +8,7 @@
 
 #include "uberDeformer.h"
 
-//MTypeId UberDeformer::kNODE_ID(0x00122C09);
+MTypeId UberDeformer::kNODE_ID(0x00122C09);
 MString UberDeformer::kNODE_NAME( "uberDeformer" );
 
 MObject UberDeformer::aBind;

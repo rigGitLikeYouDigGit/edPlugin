@@ -8,8 +8,11 @@ from edPlugin.test import meshanalysis
 
 
 def unloadPlugin(path=None):
-	""" forces new scene and unloads pplugin for recompilation """
+	""" forces new scene and unloads plugin for recompilation """
 	path = path or PLUGIN_ID
+	path = PLUGIN_ID
+	path = MLL_PATH
+	path = "edPlugin"
 	cmds.file(new=1, f=1)
 	cmds.unloadPlugin(path, f=True)
 

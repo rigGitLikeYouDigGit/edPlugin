@@ -12,6 +12,7 @@ as well as common plugin functions
 #include <string>
 #include <iostream>
 
+#include <maya/MStreamUtils.h>
 #include <maya/MPxNode.h>
 #include <maya/MPxDeformerNode.h>
 #include <maya/MTypeId.h>
@@ -47,6 +48,12 @@ as well as common plugin functions
 
 #include <maya/MPlug.h>
 #include <maya/MItGeometry.h>
+
+// debug macros
+ // as in "debugString"
+#define DEBUGS(info) \
+MStreamUtils::stdOutStream() << info << std::endl;
+
 
 using namespace std;
 

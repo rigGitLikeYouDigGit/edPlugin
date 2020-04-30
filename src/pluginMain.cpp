@@ -53,16 +53,18 @@ thanks mate
 */
 
 // node IDs in one place for ease of use
-MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
-MTypeId EdPush::kNODE_ID(0x00122C05);
+//MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
+//MTypeId EdPush::kNODE_ID(0x00122C05);
 
 
-MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
-MTypeId UberDeformer::kNODE_ID(0x00122C09);
-MTypeId DeformerNotion::kNODE_ID(0x00122C10);
+//MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
+//MTypeId UberDeformer::kNODE_ID(0x00122C09);
+//MTypeId DeformerNotion::kNODE_ID(0x00122C10);
 
 
 MStatus initializePlugin( MObject obj ){
+
+	DEBUGS("initializePlugin");
 
     MFnPlugin fnPlugin( obj, kAUTHOR, kVERSION, kREQUIRED_API_VERSION);
     MStatus status = MStatus::kSuccess;
@@ -72,7 +74,7 @@ MStatus initializePlugin( MObject obj ){
 
     // gpu gubs
 
-    // normal nodes
+    // normal nodes 
     status = REGISTER_NODE(MeshAnalysis);
 
     // BEGIN PROCEDURAL CONTROL REGISTER

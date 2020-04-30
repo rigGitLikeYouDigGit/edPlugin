@@ -8,7 +8,7 @@
 
 #include "deformerNotion.h"
 
-//MTypeId DeformerNotion::kNODE_ID(0x00122C10);
+MTypeId DeformerNotion::kNODE_ID(0x00122C10);
 MString DeformerNotion::kNODE_NAME( "deformerNotion" );
 
 MObject DeformerNotion::aWeights;
