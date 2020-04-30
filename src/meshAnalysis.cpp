@@ -11,7 +11,7 @@ use separate mesh time process node to access previous values
 
 #include "meshAnalysis.h"
 
-MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
+//MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
 MString MeshAnalysis::kNODE_NAME( "meshAnalysis" );
 
 MObject MeshAnalysis::aInMesh;

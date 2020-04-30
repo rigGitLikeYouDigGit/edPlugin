@@ -6,7 +6,7 @@ as well as common plugin functions
 
 #pragma once
 #ifndef _PLUGIN_LIB
-#define _PLUGIN_LIB
+#define _PLUGIN_LIB 1
 
 #include <vector>
 #include <string>

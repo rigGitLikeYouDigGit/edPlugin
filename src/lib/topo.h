@@ -34,7 +34,7 @@ inline int entryRealLength(vector<int> &buffer, int entryIndex) {
 
 inline vector<int> buildBufferOffsets(vector<int> &baseBuffer) {
 	// returns new vector containing offsets into original
-	// each offset corresponds to number of real indices in base
+	// each offset corresponds to number of real indices in base entry
 	int n = static_cast<int>(baseBuffer.size());
 	vector<int> output(n);
 	for (int i = 0; i < n; i++) {
@@ -157,11 +157,31 @@ inline Eigen::SparseMatrix<int> buildLaplaceMatrix(
     return output;
 }
 
+// struct Topo to represent mesh
+// either builds buffers or accepts prebuilt
+// assumes max vertex valence of 4
+
+struct Topo {
+	int nPoints;
+	vector<int> pointConnects;
+	vector<int> faceConnects;
+
+	Topo(int nPointsIn) {
+		// initialise arrays to -1
+		pointConnects.assign(nPointsIn * 4, -1);
+		faceConnects.assign(nPointsIn * 4, -1);
+		nPoints = nPointsIn;
+	}
+
+	Topo(vector<int> pointConnectsIn, vector<int> faceConnectsIn) {
+		// copy input arrays, Topo struct owns its values in memory
+		pointConnects = pointConnectsIn;
+		faceConnects = faceConnectsIn;
+		nPoints = int(pointConnects.size());
+	}
 
 
-
-
-
+};
 
 
 #endif

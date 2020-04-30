@@ -8,7 +8,7 @@
 
 #include "deformerNotion.h"
 
-MTypeId DeformerNotion::kNODE_ID(0x00122C10);
+//MTypeId DeformerNotion::kNODE_ID(0x00122C10);
 MString DeformerNotion::kNODE_NAME( "deformerNotion" );
 
 MObject DeformerNotion::aWeights;
@@ -56,8 +56,8 @@ MStatus DeformerNotion::compute(
 
 	// "balance wheel" mechanism to mark node dirty to uberDeformer
 	// thanks Matt
-	//bool old = data.inputValue(aMasterConnection).asBool();
-	//data.outputValue(aMasterConnection).setBool( !old );
+	bool old = data.outputValue(aMasterConnection).asBool();
+	data.outputValue(aMasterConnection).setBool( !old );
 	
 
 	data.setClean(plug);

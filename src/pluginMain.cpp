@@ -52,6 +52,15 @@ macros shamelessly lifted from yantor3d
 thanks mate
 */
 
+// node IDs in one place for ease of use
+MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
+MTypeId EdPush::kNODE_ID(0x00122C05);
+
+
+MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
+MTypeId UberDeformer::kNODE_ID(0x00122C09);
+MTypeId DeformerNotion::kNODE_ID(0x00122C10);
+
 
 MStatus initializePlugin( MObject obj ){
 

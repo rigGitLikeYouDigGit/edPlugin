@@ -3,8 +3,8 @@
 #ifndef MESHTOBUFFERS_H
 #define MESHTOBUFFERS_H
 
-#include "lib/api.cpp"
-#include "lib/topo.cpp"
+#include "lib/api.h"
+#include "lib/topo.h"
 
 class MeshToBuffers : public MPxNode {
     public:

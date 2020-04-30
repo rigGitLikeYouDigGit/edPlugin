@@ -3,7 +3,7 @@
 #ifndef DEFORMERNOTION_H
 #define DEFORMERNOTION_H
 
-#include "../lib/api.cpp"
+#include "../lib/api.h"
 
 struct MeshData {
 	vector<float> pointPositions;

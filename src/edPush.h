@@ -1,7 +1,7 @@
 #ifndef EDPUSH_H
 #define EDPUSH_H
 
-#include "lib/api.cpp"
+#include "lib/api.h"
 
 
 class EdPush : public MPxDeformerNode {

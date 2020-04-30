@@ -3,7 +3,7 @@
 #ifndef UBERDEFORMER_H
 #define UBERDEFORMER_H
 
-#include "lib/api.cpp"
+#include "lib/api.h"
 
 class UberDeformer : public MPxDeformerNode {
     public:

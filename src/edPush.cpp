@@ -10,9 +10,9 @@ deformer -type "edPush"
 
 #include "edPush.h"
 
-//MTypeId EdPush::id(0x00122C05);
-MTypeId EdPush::kNODE_ID(0x00122C05);
-//MString EdPush::nodeName( "edPush" );
+
+//MTypeId EdPush::kNODE_ID(0x00122C05);
+
 MString EdPush::kNODE_NAME( "edPush" );
 
 

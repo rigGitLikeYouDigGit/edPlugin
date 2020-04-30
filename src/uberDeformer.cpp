@@ -8,7 +8,7 @@
 
 #include "uberDeformer.h"
 
-MTypeId UberDeformer::kNODE_ID(0x00122C09);
+//MTypeId UberDeformer::kNODE_ID(0x00122C09);
 MString UberDeformer::kNODE_NAME( "uberDeformer" );
 
 MObject UberDeformer::aBind;
@@ -35,6 +35,7 @@ MStatus UberDeformer::initialize()
 	// array of booleans to connect to deformerNotions
 	aNotions = nFn.create("notions", "notions", MFnNumericData::kBoolean, 0);
 	nFn.setArray(true);
+	nFn.setUsesArrayDataBuilder(true);
 	nFn.setWritable(true);
 	nFn.setReadable(false);
 	nFn.setKeyable(false);
