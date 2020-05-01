@@ -5,7 +5,7 @@ baseH = """
 #ifndef {nodeNameCaps}_H
 #define {nodeNameCaps}_H
 
-#include "lib/api.cpp"
+#include "lib/api.h"
 
 class {nodeNameTitle} : public {nodeParent} {{
     public:

@@ -24,6 +24,7 @@ to be converted to and from raw buffers at interfaces between software*/
 inline int entryRealLength(vector<int> &buffer, int entryIndex) {
 	// gives number of indices in entry other than -1
 	// assumes entry length of 4
+	DEBUGS("topo.h entryRealLength");
 	int output = 0;
 	for (int i = 0; i < 4; i++) {
 		int val = buffer[entryIndex * 4 + i];
@@ -35,6 +36,8 @@ inline int entryRealLength(vector<int> &buffer, int entryIndex) {
 inline vector<int> buildBufferOffsets(vector<int> &baseBuffer) {
 	// returns new vector containing offsets into original
 	// each offset corresponds to number of real indices in base entry
+	DEBUGS("topo.h buildBufferOffsets");
+
 	int n = static_cast<int>(baseBuffer.size());
 	vector<int> output(n);
 	for (int i = 0; i < n; i++) {
@@ -48,14 +51,22 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 	/* expects face buffer with entries 4-long, -1 denoting no connection 
 	not particularly performant, do not use online 
 	for now gives points in unordered entries, with no consistent winding order
+
+	buffer entries are points connected to that index
+	buffer_entry[i] = iA, iB, iC, iD
+
 	*/
+	//DEBUGS("topo.h pointBufferFromFaceBuffer");
+	//DEBUGVI(faceBuffer);
 
-	//int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end());
-	int nPoints = static_cast<int>(faceBuffer.size());
-	int nFaces = nPoints / 4;
+	// maximum point is number of points
+	int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end()) + 1;
+	//DEBUGS("nPoints" << nPoints);
+	//int nPoints = static_cast<int>(faceBuffer.size());
+	int nFaces = static_cast<int>(faceBuffer.size()) / 4;
+	//DEBUGS("nFaces" << nFaces) // works
 
-	vector<int> output(nPoints, -1);
-	//vector<int> output(nPoints);
+	vector<int> output(nPoints * 4, -1);
 
 	// build set representing each point
 	vector< set<int> > pointSets(nPoints);
@@ -63,7 +74,7 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 	// iterate over faces in buffer
 	for (int i = 0; i < nFaces; i++) {
 		// iterate over points in face entry
-
+		//DEBUGS("i " << i)
 
 		set<int> faceSet;
 		for (int n = 0; n < 4; n++) {
@@ -74,11 +85,15 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 		int entryLength = 4;
 		if (faceSet.count(-1) > 0) {
 			entryLength = 3;
+			//DEBUGS("found entryLength 3 in face " << i)
 		}
 
+		// gather connected points
 		for (int n = 0; n < 4; n++) {
-
+			//DEBUGS("faceIndex" << (i * 4 + n));
 			int pointIndex = faceBuffer[i * 4 + n];
+			//DEBUGS("pointIndex" << pointIndex);
+
 			// skip index if it doesn't exist
 			if (pointIndex < 0) {
 				continue;
@@ -87,11 +102,14 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 			int left = (n - 1 + entryLength) % entryLength;
 			int right = (n + 1) % entryLength;
 
+			//DEBUGS("modulo wrapping : n " << n << " left " << left << " right " << right)
+
 			pointSets[pointIndex].insert(faceBuffer[i * 4 + left]);
 			pointSets[pointIndex].insert(faceBuffer[i * 4 + right]);
 		}
 	}
 	// flatten pointSets to vector
+	//DEBUGS("iterating points")
 	set<int>::iterator it;
 	for (int i = 0; i < nPoints; i++) 
 	{
@@ -101,7 +119,8 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 			n++;
 		}
 	}
-	/* output point buffers also contain -1
+	/* output point buffers also contain -1:
+	THIS CORRESPONDS TO VALENCE-3 VERTEX, _N_O_T_ a triangle
 	this is for ease, it may be that building corresponding offset buffers is more efficient
 	than checking n > 0 when processing points at low level
 	*/
@@ -113,6 +132,8 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 
 inline Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
 	// aka degree matrix
+	DEBUGS("topo.h buildValenceMatrix");
+
 	int n = static_cast<int>(pointOffsets.size());
 	Eigen::SparseMatrix<int> output(n, n);
 	for (int i = 0; i < n; i++) {
@@ -122,6 +143,8 @@ inline Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
 }
 
 inline Eigen::SparseMatrix<int> buildAdjacencyMatrix(vector<int> &pointBuffer) {
+	DEBUGS("topo.h buildAdjacencyMatrix");
+
 	int n = static_cast<int>(pointBuffer.size());
 	Eigen::SparseMatrix<int> output(n, n);
 
@@ -145,6 +168,8 @@ inline Eigen::SparseMatrix<int> buildLaplaceMatrix(
 	vector<int> &pointValences,
 	int nPoints)
 {
+	DEBUGS("topo.h buildLaplaceMatrix");
+
 	Eigen::SparseMatrix<int> output(nPoints, nPoints);
 
 	output = adjacencyMatrix;

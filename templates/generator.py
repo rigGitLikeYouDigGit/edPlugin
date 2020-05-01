@@ -158,10 +158,16 @@ if __name__ == "__main__":
 	# """
 	# uberDeformer.write()
 
-	deformerNotion = NodeCode("deformerNotion", nodeType="MPxNode")
-	deformerNotion.description = """
-	individual component deformation of uberDeformer
+	# deformerNotion = NodeCode("deformerNotion", nodeType="MPxNode")
+	# deformerNotion.description = """
+	# individual component deformation of uberDeformer
+	# """
+	# deformerNotion.write()
+
+	memory = NodeCode("memorySink", nodeType="MPxNode")
+	memory.description = """
+	memory cell passing on end result of evaluation
 	"""
-	deformerNotion.write()
+	memory.write()
 
 

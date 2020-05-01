@@ -90,6 +90,7 @@ MStatus MeshToBuffers::compute(
 				const MPlug& plug, MDataBlock& data) {
     // going with floats for now, can easily switch to doubles if needed
 	// initialise MFnMesh
+	DEBUGS("MeshToBuffers compute")
 	MObject meshObj = data.inputValue( aInMesh ).asMesh() ;
 	MFnMesh meshFn;
 	meshFn.setObject(meshObj);
@@ -132,6 +133,8 @@ MStatus MeshToBuffers::compute(
 
 		// find point connections
 		vector<int> faceVector = MIntArrayToVector(allFaceVertices);
+		DEBUGS("faceVector");
+		DEBUGVI(faceVector);
 
 		vector<int> pointConnects = pointBufferFromFaceBuffer(faceVector);
 		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);

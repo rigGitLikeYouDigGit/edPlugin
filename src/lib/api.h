@@ -45,20 +45,30 @@ as well as common plugin functions
 #include <maya/MFnDependencyNode.h>
 
 
-
 #include <maya/MPlug.h>
 #include <maya/MItGeometry.h>
 
 // debug macros
+#define COUT MStreamUtils::stdOutStream()
+#define CERR MStreamUtils::stdErrorStream()
+
  // as in "debugString"
 #define DEBUGS(info) \
-MStreamUtils::stdOutStream() << info << std::endl;
+COUT << info << std::endl;
 
+// as in "debugVectorInt"
+#define DEBUGVI(vec) \
+for(auto const& i: vec){ \
+	COUT << i << " "; \
+} COUT << "length " << vec.size() << std::endl; 
+
+
+#define DEBUGVF(vec) \
+copy( vec.begin(), vec.end(), ostream_iterator<float>(MStreamUtils::stdOutStream, " "));
 
 using namespace std;
 
 // common functions
-// how do you actually use strings though
 static MObject makeBindAttr( ){
     MObject aBind;
     MFnEnumAttribute fn;
@@ -75,6 +85,7 @@ static MObject makeBindAttr( ){
 // converting between maya types and vectors
 inline vector<int> MIntArrayToVector(MIntArray &arr) {
 	// constructs stl vector from int array
+	DEBUGS("api.h MIntArrayToVector");
 	vector<int> output(arr.length(), 1);
 	for (unsigned int i = 0; i < arr.length(); i++) {
 		output[i] = arr[i];
@@ -85,6 +96,7 @@ inline vector<int> MIntArrayToVector(MIntArray &arr) {
 inline vector<float> MFloatArrayToVector(MFloatArray &arr) {
 	// constructs stl vector from float array
 	// sorry if there's a more elegant way to template these
+	DEBUGS("api.h MFloatArrayToVector")
 	vector<float> output( static_cast<int>( arr.length() ), 1);
 	for (unsigned int i = 0; i < arr.length(); i++) {
 		output[i] = arr[i];
@@ -94,6 +106,7 @@ inline vector<float> MFloatArrayToVector(MFloatArray &arr) {
 
 inline vector<float> MVectorArrayToVector(MVectorArray &arr) {
 	// constructs stl vector from MVectorArray
+	DEBUGS("api.h MVectorArrayToVector");
 	vector<float> output(static_cast<int>(arr.length()) * 3, 1);
 	for (unsigned int i = 0; i < arr.length(); i++) {
 		output[i*3] = static_cast<float>(arr[i].x);
@@ -105,6 +118,7 @@ inline vector<float> MVectorArrayToVector(MVectorArray &arr) {
 
 inline MIntArray vectorToMIntArray(vector<int> &v) {
 	// constructs MIntArray from stl float vector
+	DEBUGS("api.h vectorToMIntArray");
 	MIntArray output( static_cast<int>(v.size()) );	
 	for (unsigned int i = 0; i < v.size(); i++) {
 		output[i] = v[i];
@@ -114,6 +128,7 @@ inline MIntArray vectorToMIntArray(vector<int> &v) {
 
 inline MFloatArray vectorToMFloatArray(vector<float> &v) {
 	// constructs MFloatArray from stl float vector
+	DEBUGS("api.h vectorToMFloatArray");
 	MFloatArray output( static_cast<int>(v.size()) );
 	// static casting size_t is among the most annoying c++ I've found
 	for (unsigned int i = 0; i < v.size(); i++) {
@@ -124,6 +139,7 @@ inline MFloatArray vectorToMFloatArray(vector<float> &v) {
 
 inline MVectorArray vectorToMVectorArray(vector<float> &v) {
 	// constructs MFloatArray from stl float vector
+	DEBUGS("api.h vectorToMVectorArray");
 	MVectorArray output(static_cast<int>(v.size()) / 3);
 	// static casting size_t is among the most annoying c++ I've found
 	for (unsigned int i = 0; i < v.size(); i++) {
