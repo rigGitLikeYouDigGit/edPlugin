@@ -18,7 +18,7 @@ class UberDeformer : public MPxDeformerNode {
         static MStatus initialize();
 
 		// function to find connected deformerNotions
-		vector<MObject> findConnectedNotions();
+		std::vector<MObject> findConnectedNotions();
 
 public:
     static MTypeId kNODE_ID;

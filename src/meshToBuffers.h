@@ -28,7 +28,10 @@ public:
     static MObject aFaceCounts;
     static MObject aFaceConnects;
 	static MObject aPointConnects;
+	static MObject aExtraPointConnects;
 	static MObject aFaceCentres;
+	static MObject aUvCoords;
+	static MObject aNormals;
     static MObject aBind;
     
 

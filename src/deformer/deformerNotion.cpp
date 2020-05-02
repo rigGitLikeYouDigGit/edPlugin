@@ -40,7 +40,7 @@ MStatus DeformerNotion::initialize()
 	addAttribute(aLocalIterations);
 	
 	// set affects
-	vector<MObject> drivers = { aUseWeights, aWeights, aLocalIterations };
+	std::vector<MObject> drivers = { aUseWeights, aWeights, aLocalIterations };
 	for (auto &it : drivers) {
 		attributeAffects(it, aMasterConnection);
 	}

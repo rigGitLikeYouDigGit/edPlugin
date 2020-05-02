@@ -9,6 +9,7 @@ as well as common plugin functions
 #define _PLUGIN_LIB 1
 
 #include <vector>
+#include <set>
 #include <string>
 #include <iostream>
 
@@ -35,6 +36,9 @@ as well as common plugin functions
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
+#include <maya/MFnUnitAttribute.h>
+#include <maya/MFnGenericAttribute.h>
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MFnIntArrayData.h>
@@ -43,9 +47,10 @@ as well as common plugin functions
 #include <maya/MFnMesh.h>
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MFnDependencyNode.h>
-
+#include <maya/MArrayDataBuilder.h>
 
 #include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MItGeometry.h>
 
 // debug macros
@@ -66,7 +71,6 @@ for(auto const& i: vec){ \
 #define DEBUGVF(vec) \
 copy( vec.begin(), vec.end(), ostream_iterator<float>(MStreamUtils::stdOutStream, " "));
 
-using namespace std;
 
 // common functions
 static MObject makeBindAttr( ){
@@ -82,32 +86,67 @@ static MObject makeBindAttr( ){
     return aBind;
 }
 
+static MPlugArray getAllConnectedPlugs(MObject &mainNode, MObject &plugAttr, 
+		bool asSource, bool asSink) {
+	// returns nodes connected to attribute
+	DEBUGS("api.h getAllConnectedPlugs")
+	MStatus s;
+	MPlugArray output;
+	MFnDependencyNode dFn(mainNode);
+	MPlug queryPlug(mainNode, plugAttr);
+	if (queryPlug.isArray()) {
+
+	}
+	else {
+		queryPlug.connectedTo(output, asSink, asSource);
+	}
+	/*CHECK_MSTATUS_AND_RETURN_IT(s);*/
+	return output;
+}
+
+
+inline MStatus jumpToElement(MArrayDataHandle &hArray, int index) {
+	// safer system for array plugs
+	// creates index if it doesn't exist
+	MStatus s;
+	s = hArray.jumpToElement(index);
+	if (MFAIL(s)) {
+		MArrayDataBuilder builder = hArray.builder(&s);
+		builder.addElement(index);
+		s = hArray.set(builder);
+		s = hArray.jumpToElement(index);
+	}
+	CHECK_MSTATUS_AND_RETURN_IT(s);
+	return s;
+}
+
+
 // converting between maya types and vectors
-inline vector<int> MIntArrayToVector(MIntArray &arr) {
+inline std::vector<int> MIntArrayToVector(MIntArray &arr) {
 	// constructs stl vector from int array
 	DEBUGS("api.h MIntArrayToVector");
-	vector<int> output(arr.length(), 1);
+	std::vector<int> output(arr.length(), 1);
 	for (unsigned int i = 0; i < arr.length(); i++) {
 		output[i] = arr[i];
 	}
 	return output;
 }
 
-inline vector<float> MFloatArrayToVector(MFloatArray &arr) {
+inline std::vector<float> MFloatArrayToVector(MFloatArray &arr) {
 	// constructs stl vector from float array
 	// sorry if there's a more elegant way to template these
 	DEBUGS("api.h MFloatArrayToVector")
-	vector<float> output( static_cast<int>( arr.length() ), 1);
+	std::vector<float> output( static_cast<int>( arr.length() ), 1);
 	for (unsigned int i = 0; i < arr.length(); i++) {
 		output[i] = arr[i];
 	}
 	return output;
 }
 
-inline vector<float> MVectorArrayToVector(MVectorArray &arr) {
+inline std::vector<float> MVectorArrayToVector(MVectorArray &arr) {
 	// constructs stl vector from MVectorArray
 	DEBUGS("api.h MVectorArrayToVector");
-	vector<float> output(static_cast<int>(arr.length()) * 3, 1);
+	std::vector<float> output(static_cast<int>(arr.length()) * 3, 1);
 	for (unsigned int i = 0; i < arr.length(); i++) {
 		output[i*3] = static_cast<float>(arr[i].x);
 		output[i*3 + 1] = static_cast<float>(arr[i].y);
@@ -116,7 +155,7 @@ inline vector<float> MVectorArrayToVector(MVectorArray &arr) {
 	return output;
 }
 
-inline MIntArray vectorToMIntArray(vector<int> &v) {
+inline MIntArray vectorToMIntArray(std::vector<int> &v) {
 	// constructs MIntArray from stl float vector
 	DEBUGS("api.h vectorToMIntArray");
 	MIntArray output( static_cast<int>(v.size()) );	
@@ -126,7 +165,7 @@ inline MIntArray vectorToMIntArray(vector<int> &v) {
 	return output;
 }
 
-inline MFloatArray vectorToMFloatArray(vector<float> &v) {
+inline MFloatArray vectorToMFloatArray(std::vector<float> &v) {
 	// constructs MFloatArray from stl float vector
 	DEBUGS("api.h vectorToMFloatArray");
 	MFloatArray output( static_cast<int>(v.size()) );
@@ -137,7 +176,7 @@ inline MFloatArray vectorToMFloatArray(vector<float> &v) {
 	return output;
 }
 
-inline MVectorArray vectorToMVectorArray(vector<float> &v) {
+inline MVectorArray vectorToMVectorArray(std::vector<float> &v) {
 	// constructs MFloatArray from stl float vector
 	DEBUGS("api.h vectorToMVectorArray");
 	MVectorArray output(static_cast<int>(v.size()) / 3);
@@ -152,7 +191,7 @@ inline MVectorArray vectorToMVectorArray(vector<float> &v) {
 
 
 // unable to find a good way to do this
-//void setAttributeAffectsAll(MPxNode &nodeType, MObject &driver, vector<MObject> &driven) {
+//void setAttributeAffectsAll(MPxNode &nodeType, MObject &driver, std::vector<MObject> &driven) {
 //	// sets driver to affect all driven
 //	for (auto &i : driven) {
 //		nodeType::attributeAffects(driver, i);

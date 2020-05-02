@@ -19,7 +19,10 @@ MObject MeshToBuffers::aPointPositions;
 MObject MeshToBuffers::aFaceCounts;
 MObject MeshToBuffers::aFaceConnects;
 MObject MeshToBuffers::aPointConnects;
+MObject MeshToBuffers::aExtraPointConnects;
 MObject MeshToBuffers::aFaceCentres;
+MObject MeshToBuffers::aNormals;
+MObject MeshToBuffers::aUvCoords;
 // connects actually pointless with constant vertices per face
 MObject MeshToBuffers::aBind;
 
@@ -52,6 +55,19 @@ MStatus MeshToBuffers::initialize()
 	aPointConnects = tAttr.create("pointConnects", "pointConnects", MFnData::kIntArray);
 	addAttribute(aPointConnects);
 
+	// extra high valence point connects
+	aExtraPointConnects = tAttr.create("extraPointConnects", "extraPointConnects", MFnData::kIntArray);
+	addAttribute(aExtraPointConnects);
+
+	aNormals = tAttr.create("normals", "normals", MFnData::kFloatArray);
+	addAttribute(aNormals);
+
+	// uv buffers are arrays, one for each uv set of mesh
+	aUvCoords = tAttr.create("uvCoords", "uvCoords", MFnData::kFloatArray);
+	tAttr.setArray(true);
+	tAttr.setUsesArrayDataBuilder(true);
+	addAttribute(aUvCoords);
+
 
     // bind
     // aBind = makeBindAttr(); // gives random errors
@@ -75,8 +91,8 @@ MStatus MeshToBuffers::initialize()
 	attributeAffects(aInMesh, aFaceCounts);
 
 /*
-	vector<MObject> topoAttrs = { aFaceCounts, aPointConnects };
-	vector<MObject> liveAttrs = { aPointPositions };
+	std::vector<MObject> topoAttrs = { aFaceCounts, aPointConnects };
+	std::vector<MObject> liveAttrs = { aPointPositions };
 	setAttributeAffectsAll(aBind, topoAttrs);
 	setAttributeAffectsAll(aBind, liveAttrs);
 	setAttributeAffectsAll(aInMesh, topoAttrs);
@@ -132,16 +148,22 @@ MStatus MeshToBuffers::compute(
         faceDH.setMObject( faceObj );
 
 		// find point connections
-		vector<int> faceVector = MIntArrayToVector(allFaceVertices);
+		std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
 		DEBUGS("faceVector");
 		DEBUGVI(faceVector);
 
-		vector<int> pointConnects = pointBufferFromFaceBuffer(faceVector);
+		std::vector<int> pointConnects, extraPointConnects;
+		tie(pointConnects, extraPointConnects) = pointBufferFromFaceBuffer(faceVector);
+
 		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
 		MObject pointObj = faceData.create(pointConnectsArray);
-
 		MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
 		pointConnectsDH.setMObject(pointObj);
+
+		MIntArray extraPointConnectsArray = vectorToMIntArray(extraPointConnects);
+		MObject extraPointObj = faceData.create(pointConnectsArray);
+		MDataHandle extraPointConnectsDH = data.outputValue(aExtraPointConnects);
+		extraPointConnectsDH.setMObject(extraPointObj);
 
 	    if( bind == 1){
 	        data.inputValue( aBind ).setInt( 2 );

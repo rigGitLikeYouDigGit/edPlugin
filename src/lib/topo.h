@@ -21,9 +21,9 @@ to be converted to and from raw buffers at interfaces between software*/
 
 // --- building buffers ---
 
-inline int entryRealLength(vector<int> &buffer, int entryIndex) {
+inline int entryRealLength(std::vector<int> &buffer, int entryIndex) {
 	// gives number of indices in entry other than -1
-	// assumes entry length of 4
+	// assumes regular entry length of 4
 	DEBUGS("topo.h entryRealLength");
 	int output = 0;
 	for (int i = 0; i < 4; i++) {
@@ -33,20 +33,20 @@ inline int entryRealLength(vector<int> &buffer, int entryIndex) {
 	return output;
 }
 
-inline vector<int> buildBufferOffsets(vector<int> &baseBuffer) {
+inline std::vector<int> buildBufferOffsets(std::vector<int> &baseBuffer) {
 	// returns new vector containing offsets into original
 	// each offset corresponds to number of real indices in base entry
 	DEBUGS("topo.h buildBufferOffsets");
 
 	int n = static_cast<int>(baseBuffer.size());
-	vector<int> output(n);
+	std::vector<int> output(n);
 	for (int i = 0; i < n; i++) {
 		output[i] = entryRealLength(baseBuffer, i);
 	}
 	return output;
 }
 
-inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer ) 
+inline tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer( std::vector<int> &faceBuffer ) 
 {
 	/* expects face buffer with entries 4-long, -1 denoting no connection 
 	not particularly performant, do not use online 
@@ -54,6 +54,12 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 
 	buffer entries are points connected to that index
 	buffer_entry[i] = iA, iB, iC, iD
+
+	there is no good way to maintain constant entry length - we assume 4 as the most common,
+	and return a second vector of 
+	[-pointIndex, nConnected, A, B, C, D, E, -pointIndex, nConnected, A, B, C, D, E, F, ...]
+	I don't know if this is a good idea
+	truncated entries are still left in main buffer
 
 	*/
 	//DEBUGS("topo.h pointBufferFromFaceBuffer");
@@ -66,17 +72,18 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 	int nFaces = static_cast<int>(faceBuffer.size()) / 4;
 	//DEBUGS("nFaces" << nFaces) // works
 
-	vector<int> output(nPoints * 4, -1);
+	std::vector<int> output(nPoints * 4, -1);
+	std::vector<int> extraPoints;
 
 	// build set representing each point
-	vector< set<int> > pointSets(nPoints);
+	std::vector< std::set<int> > pointSets(nPoints);
 
 	// iterate over faces in buffer
 	for (int i = 0; i < nFaces; i++) {
 		// iterate over points in face entry
 		//DEBUGS("i " << i)
 
-		set<int> faceSet;
+		std::set<int> faceSet;
 		for (int n = 0; n < 4; n++) {
 			faceSet.insert(faceBuffer[i * 4 + n]);
 		}
@@ -110,12 +117,27 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 	}
 	// flatten pointSets to vector
 	//DEBUGS("iterating points")
-	set<int>::iterator it;
+	std::set<int>::iterator it;
 	for (int i = 0; i < nPoints; i++) 
 	{
 		int n = 0;
+		int extra = 0;
+
+		// check for high valence vertices
+		if (pointSets[i].size() > 4) {
+			extraPoints.push_back(-i);
+			extraPoints.push_back(static_cast<int>(pointSets[i].size()));
+			extra = 1;
+		}
+
 		for (it = pointSets[i].begin(); it != pointSets[i].end(); ++it) {
-			output[i * 4 + n] = *it;
+			if (n < 4) {
+				output[i * 4 + n] = *it;
+			}
+			if (extra) {
+				extraPoints.push_back(*it);
+			}
+			
 			n++;
 		}
 	}
@@ -124,13 +146,13 @@ inline vector<int> pointBufferFromFaceBuffer( vector<int> &faceBuffer )
 	this is for ease, it may be that building corresponding offset buffers is more efficient
 	than checking n > 0 when processing points at low level
 	*/
-	return output;
+	return make_tuple(output, extraPoints);
 }
 
 
 // --- LAPLACIAN AND CHILL ---
 
-inline Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
+inline Eigen::SparseMatrix<int> buildValenceMatrix( std::vector<int> &pointOffsets) {
 	// aka degree matrix
 	DEBUGS("topo.h buildValenceMatrix");
 
@@ -142,7 +164,7 @@ inline Eigen::SparseMatrix<int> buildValenceMatrix( vector<int> &pointOffsets) {
 	return output;
 }
 
-inline Eigen::SparseMatrix<int> buildAdjacencyMatrix(vector<int> &pointBuffer) {
+inline Eigen::SparseMatrix<int> buildAdjacencyMatrix(std::vector<int> &pointBuffer) {
 	DEBUGS("topo.h buildAdjacencyMatrix");
 
 	int n = static_cast<int>(pointBuffer.size());
@@ -165,7 +187,7 @@ inline Eigen::SparseMatrix<int> buildAdjacencyMatrix(vector<int> &pointBuffer) {
 
 inline Eigen::SparseMatrix<int> buildLaplaceMatrix(
 	Eigen::SparseMatrix<int> &adjacencyMatrix,
-	vector<int> &pointValences,
+	std::vector<int> &pointValences,
 	int nPoints)
 {
 	DEBUGS("topo.h buildLaplaceMatrix");
@@ -188,8 +210,8 @@ inline Eigen::SparseMatrix<int> buildLaplaceMatrix(
 
 struct Topo {
 	int nPoints;
-	vector<int> pointConnects;
-	vector<int> faceConnects;
+	std::vector<int> pointConnects;
+	std::vector<int> faceConnects;
 
 	Topo(int nPointsIn) {
 		// initialise arrays to -1
@@ -198,7 +220,7 @@ struct Topo {
 		nPoints = nPointsIn;
 	}
 
-	Topo(vector<int> pointConnectsIn, vector<int> faceConnectsIn) {
+	Topo(std::vector<int> pointConnectsIn, std::vector<int> faceConnectsIn) {
 		// copy input arrays, Topo struct owns its values in memory
 		pointConnects = pointConnectsIn;
 		faceConnects = faceConnectsIn;

@@ -10,6 +10,8 @@ register all plugins
 #include "meshToBuffers.h"
 #include "uberDeformer.h"
 #include "deformer/deformerNotion.h"
+#include "memorySource.h"
+#include "memorySink.h"
 // END PROCEDURAL CONTROL INCLUDE
 
 #include <maya/MFnPlugin.h>
@@ -20,6 +22,11 @@ register all plugins
 const char* kAUTHOR = "ed";
 const char* kVERSION = "1.0";
 const char* kREQUIRED_API_VERSION = "Any";
+
+// define vector for nodes to register and deregister
+//std::vector<MObject> nodes = {/*
+//	MeshToBuffers::thisMObject,
+//};*/
 
 #define REGISTER_NODE(NODE) \
     status = fnPlugin.registerNode( \
@@ -63,7 +70,9 @@ thanks mate
 
 
 MStatus initializePlugin( MObject obj ){
-
+	DEBUGS("");
+	DEBUGS(" - - - ");
+	DEBUGS("");
 	DEBUGS("initializePlugin");
 
     MFnPlugin fnPlugin( obj, kAUTHOR, kVERSION, kREQUIRED_API_VERSION);
@@ -81,6 +90,9 @@ MStatus initializePlugin( MObject obj ){
     status = REGISTER_NODE(MeshToBuffers);
 	status = REGISTER_DEFORMER(UberDeformer);
 	status = REGISTER_NODE(DeformerNotion);
+	status = REGISTER_NODE(MemorySource);
+	status = REGISTER_NODE(MemorySink);
+
     // END PROCEDURAL CONTROL REGISTER
 
 
@@ -98,6 +110,8 @@ MStatus uninitializePlugin( MObject obj ){
     status = DEREGISTER_NODE( MeshToBuffers );
 	status = DEREGISTER_NODE(UberDeformer);
 	status = DEREGISTER_NODE(DeformerNotion);
+	status = DEREGISTER_NODE(MemorySource);
+	status = DEREGISTER_NODE(MemorySink);
     // END PROCEDURAL CONTROL DEREGISTER
 
     return status;

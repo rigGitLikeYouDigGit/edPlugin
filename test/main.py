@@ -45,6 +45,18 @@ def baseTest():
 	cmds.connectAttr( cube + ".outMesh", buffers + ".inMesh", f=True)
 	cmds.setAttr( buffers + ".bind", 3) #live, bind system works fine
 	print("testsRun")
+
+	source = cmds.createNode("memorySource")
+	sink = cmds.createNode("memorySink")
+	cmds.connectAttr(source + ".sink", sink + ".source")
+	cmds.connectAttr(cube + ".translateX", sink + ".data")
+	cmds.setAttr(cube + ".translateX", 1.2)
+	cmds.connectAttr("time1.outTime", sink + ".time")
+	cmds.connectAttr("time1.outTime", source + ".time")
+
+	adl = cmds.createNode("addDoubleLinear")
+	cmds.connectAttr(source + ".data", adl + ".input1")
+
 	return cube
 
 def testDeformers(mesh):

@@ -6,9 +6,9 @@
 #include "../lib/api.h"
 
 struct MeshData {
-	vector<float> pointPositions;
-	vector<int> faceConnects;
-	vector<int> pointConnects;
+	std::vector<float> pointPositions;
+	std::vector<int> faceConnects;
+	std::vector<int> pointConnects;
 };
 
 
