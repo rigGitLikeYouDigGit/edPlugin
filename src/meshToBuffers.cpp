@@ -16,10 +16,10 @@ MString MeshToBuffers::kNODE_NAME( "meshToBuffers" );
 MObject MeshToBuffers::aTest;
 MObject MeshToBuffers::aInMesh;
 MObject MeshToBuffers::aPointPositions;
-MObject MeshToBuffers::aFaceCounts;
+MObject MeshToBuffers::aFaceOffsets;
 MObject MeshToBuffers::aFaceConnects;
 MObject MeshToBuffers::aPointConnects;
-MObject MeshToBuffers::aExtraPointConnects;
+MObject MeshToBuffers::aPointOffsets;
 MObject MeshToBuffers::aFaceCentres;
 MObject MeshToBuffers::aNormals;
 MObject MeshToBuffers::aUvCoords;
@@ -39,15 +39,15 @@ MStatus MeshToBuffers::initialize()
     addAttribute(aInMesh);
 
     // outputs
-    aFaceCounts = tAttr.create("faceCounts", "faceCounts", MFnData::kIntArray);
-    addAttribute( aFaceCounts );
+	aFaceConnects = tAttr.create("faceConnects", "faceConnects", MFnData::kIntArray);
+	addAttribute(aFaceConnects);
+
+    aFaceOffsets = tAttr.create("faceOffsets", "faceOffsets", MFnData::kIntArray);
+    addAttribute( aFaceOffsets );
 
 	//aFaceCentres = tAttr.create("faceCentres", "faceCentres", MFnData::kFloatArray);
 	//addAttribute(aFaceCentres ); // more efficient to find online
 
-
-//    aFaceConnects = tAttr.create("faceConnects", "faceConnects", MFnData::kIntArray);
-//    addAttribute( aFaceConnects );
 
     aPointPositions = tAttr.create("pointPositions", "pointPositions", MFnData::kFloatArray);
     addAttribute( aPointPositions );
@@ -55,9 +55,8 @@ MStatus MeshToBuffers::initialize()
 	aPointConnects = tAttr.create("pointConnects", "pointConnects", MFnData::kIntArray);
 	addAttribute(aPointConnects);
 
-	// extra high valence point connects
-	aExtraPointConnects = tAttr.create("extraPointConnects", "extraPointConnects", MFnData::kIntArray);
-	addAttribute(aExtraPointConnects);
+	aPointOffsets = tAttr.create("pointOffsets", "pointOffsets", MFnData::kIntArray);
+	addAttribute(aPointOffsets);
 
 	aNormals = tAttr.create("normals", "normals", MFnData::kFloatArray);
 	addAttribute(aNormals);
@@ -84,14 +83,14 @@ MStatus MeshToBuffers::initialize()
     MStatus status;
 	attributeAffects(aBind, aPointPositions);
 	attributeAffects(aBind, aPointConnects);
-	attributeAffects(aBind, aFaceCounts);
+	attributeAffects(aBind, aFaceOffsets);
 
 	attributeAffects(aInMesh, aPointPositions);
 	attributeAffects(aInMesh, aPointConnects);
-	attributeAffects(aInMesh, aFaceCounts);
+	attributeAffects(aInMesh, aFaceOffsets);
 
 /*
-	std::vector<MObject> topoAttrs = { aFaceCounts, aPointConnects };
+	std::vector<MObject> topoAttrs = { aFaceOffsets, aPointConnects };
 	std::vector<MObject> liveAttrs = { aPointPositions };
 	setAttributeAffectsAll(aBind, topoAttrs);
 	setAttributeAffectsAll(aBind, liveAttrs);
@@ -106,7 +105,7 @@ MStatus MeshToBuffers::compute(
 				const MPlug& plug, MDataBlock& data) {
     // going with floats for now, can easily switch to doubles if needed
 	// initialise MFnMesh
-	DEBUGS("MeshToBuffers compute")
+	//DEBUGS("MeshToBuffers compute")
 	MObject meshObj = data.inputValue( aInMesh ).asMesh() ;
 	MFnMesh meshFn;
 	meshFn.setObject(meshObj);
@@ -130,48 +129,69 @@ MStatus MeshToBuffers::compute(
 	int bind = data.inputValue( aBind ).asInt() ;
 	if( bind == 1 || bind == 3 ){ // bind or live
 	    // do binding with topology buffers
-	    // we don't triangulate here, but assume count of 4 per face
-	    MIntArray allFaceVertices = MIntArray( nPolys * 4, -1);
+	    
+		// face buffers
+	    MIntArray allFaceVertices;
+		MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
+		int offsetIndex = 0;
+		//DEBUGS("nPolys " << nPolys);
 	    for( int i = 0; i < nPolys; i++){
-	        MIntArray faceVertices;
+
+			//DEBUGS("offsetIndex " << offsetIndex);
+
+				// add offset to current index
+				faceVertexOffsets[i] = offsetIndex;
+
+			// get face vertices
+			MIntArray faceVertices;
 	        meshFn.getPolygonVertices( i, faceVertices );
 
 	        for( unsigned int n = 0; n < faceVertices.length(); n++ ){
-	            allFaceVertices.set( faceVertices[ n ], i * 4 + n );
+				allFaceVertices.append(faceVertices[n]);
+				offsetIndex += 1;
 	        }
 	    }
 
+		/* currently gives an offset buffer with 0 as first value - this is redundant,
+		but allows direct indexing into main values, and I think it's convention
+		*/
+
 	    MFnIntArrayData faceData;
 	    MObject faceObj = faceData.create( allFaceVertices );
-
-        MDataHandle faceDH = data.outputValue( aFaceCounts );
+        MDataHandle faceDH = data.outputValue( aFaceConnects );
         faceDH.setMObject( faceObj );
+
+		MObject faceOffsetObj = faceData.create(faceVertexOffsets);
+		MDataHandle faceOffsetDH = data.outputValue(aFaceOffsets);
+		faceOffsetDH.setMObject(faceOffsetObj);
 
 		// find point connections
 		std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
-		DEBUGS("faceVector");
-		DEBUGVI(faceVector);
+		std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
+		//DEBUGS("faceVector" );
+		//DEBUGVI(faceVector);
+		//DEBUGS("faceOffsets");
+		//DEBUGVI(faceOffsetVector);
+		
 
-		std::vector<int> pointConnects, extraPointConnects;
-		tie(pointConnects, extraPointConnects) = pointBufferFromFaceBuffer(faceVector);
+		std::vector<int> pointConnects, pointOffsets;
+		tie(pointConnects, pointOffsets) = pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
 
 		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
 		MObject pointObj = faceData.create(pointConnectsArray);
 		MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
 		pointConnectsDH.setMObject(pointObj);
 
-		MIntArray extraPointConnectsArray = vectorToMIntArray(extraPointConnects);
-		MObject extraPointObj = faceData.create(pointConnectsArray);
-		MDataHandle extraPointConnectsDH = data.outputValue(aExtraPointConnects);
-		extraPointConnectsDH.setMObject(extraPointObj);
+		MIntArray pointOffsetArray = vectorToMIntArray(pointOffsets);
+		MObject pointOffsetObj = faceData.create(pointOffsetArray);
+		MDataHandle pointOffsetDH = data.outputValue(aPointOffsets);
+		pointOffsetDH.setMObject(pointOffsetObj);
 
 	    if( bind == 1){
 	        data.inputValue( aBind ).setInt( 2 );
 	    }
 
 	}
-
-	
 
 	// set outputs
 	MDataHandle positionsDH = data.outputValue( aPointPositions );

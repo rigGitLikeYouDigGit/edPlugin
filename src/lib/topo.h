@@ -35,8 +35,7 @@ inline int entryRealLength(std::vector<int> &buffer, int entryIndex) {
 
 inline std::vector<int> buildBufferOffsets(std::vector<int> &baseBuffer) {
 	// returns new vector containing offsets into original
-	// each offset corresponds to number of real indices in base entry
-	DEBUGS("topo.h buildBufferOffsets");
+	//DEBUGS("topo.h buildBufferOffsets");
 
 	int n = static_cast<int>(baseBuffer.size());
 	std::vector<int> output(n);
@@ -46,20 +45,40 @@ inline std::vector<int> buildBufferOffsets(std::vector<int> &baseBuffer) {
 	return output;
 }
 
-inline tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer( std::vector<int> &faceBuffer ) 
+
+inline std::vector<int> entryFromBuffer(
+	std::vector<int> &values,
+	std::vector<int> &offsets,
+	int entryIndex) {
+	// use buffer indices to retrieve main values in entry
+	vector<int> result;
+	int startIndex = offsets[entryIndex];
+	int endIndex;
+
+	// check if entry is last
+	if (entryIndex == offsets.size() - 1) {
+		endIndex = static_cast<int>(values.size());
+	}
+	else {
+		endIndex = offsets[entryIndex + 1];
+	}
+	for (int i = startIndex; i < endIndex;) {
+		result.push_back(values[i]);
+		i++;
+	}
+	return result;
+}
+
+
+
+inline std::tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer( 
+	std::vector<int> &faceBuffer, std::vector<int> &faceOffsets)
 {
-	/* expects face buffer with entries 4-long, -1 denoting no connection 
-	not particularly performant, do not use online 
+	/*  
 	for now gives points in unordered entries, with no consistent winding order
 
 	buffer entries are points connected to that index
 	buffer_entry[i] = iA, iB, iC, iD
-
-	there is no good way to maintain constant entry length - we assume 4 as the most common,
-	and return a second vector of 
-	[-pointIndex, nConnected, A, B, C, D, E, -pointIndex, nConnected, A, B, C, D, E, F, ...]
-	I don't know if this is a good idea
-	truncated entries are still left in main buffer
 
 	*/
 	//DEBUGS("topo.h pointBufferFromFaceBuffer");
@@ -68,12 +87,12 @@ inline tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer( std:
 	// maximum point is number of points
 	int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end()) + 1;
 	//DEBUGS("nPoints" << nPoints);
-	//int nPoints = static_cast<int>(faceBuffer.size());
-	int nFaces = static_cast<int>(faceBuffer.size()) / 4;
+
+	int nFaces = static_cast<int>(faceOffsets.size());
 	//DEBUGS("nFaces" << nFaces) // works
 
-	std::vector<int> output(nPoints * 4, -1);
-	std::vector<int> extraPoints;
+	std::vector<int> pointConnects;
+	std::vector<int> pointOffsets(nPoints, -1);
 
 	// build set representing each point
 	std::vector< std::set<int> > pointSets(nPoints);
@@ -83,70 +102,49 @@ inline tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer( std:
 		// iterate over points in face entry
 		//DEBUGS("i " << i)
 
-		std::set<int> faceSet;
-		for (int n = 0; n < 4; n++) {
-			faceSet.insert(faceBuffer[i * 4 + n]);
-		}
+		std::vector<int> facePoints = entryFromBuffer(faceBuffer, faceOffsets, i);
+		//DEBUGS("facePoints");
+		//DEBUGVI(facePoints);
 
 		// if triangle, add all other points
 		int entryLength = 4;
-		if (faceSet.count(-1) > 0) {
-			entryLength = 3;
-			//DEBUGS("found entryLength 3 in face " << i)
-		}
+		entryLength = static_cast<int>(facePoints.size());
 
 		// gather connected points
-		for (int n = 0; n < 4; n++) {
-			//DEBUGS("faceIndex" << (i * 4 + n));
-			int pointIndex = faceBuffer[i * 4 + n];
-			//DEBUGS("pointIndex" << pointIndex);
+		for (int n = 0; n < entryLength; n++) {
+			//DEBUGS("faceIndex" << (facePoints[n]));
+			int pointIndex = facePoints[n];
 
-			// skip index if it doesn't exist
-			if (pointIndex < 0) {
-				continue;
-			}
+			//DEBUGS("pointIndex" << pointIndex);
 
 			int left = (n - 1 + entryLength) % entryLength;
 			int right = (n + 1) % entryLength;
 
 			//DEBUGS("modulo wrapping : n " << n << " left " << left << " right " << right)
 
-			pointSets[pointIndex].insert(faceBuffer[i * 4 + left]);
-			pointSets[pointIndex].insert(faceBuffer[i * 4 + right]);
+			pointSets[pointIndex].insert(facePoints[left]);
+			pointSets[pointIndex].insert(facePoints[right]);
 		}
 	}
 	// flatten pointSets to vector
 	//DEBUGS("iterating points")
 	std::set<int>::iterator it;
+	int n = 0;
+
 	for (int i = 0; i < nPoints; i++) 
 	{
-		int n = 0;
-		int extra = 0;
-
-		// check for high valence vertices
-		if (pointSets[i].size() > 4) {
-			extraPoints.push_back(-i);
-			extraPoints.push_back(static_cast<int>(pointSets[i].size()));
-			extra = 1;
-		}
-
+		// set offset index
+		pointOffsets[i] = n;
+		
+		// iterate over connected point indices in set
 		for (it = pointSets[i].begin(); it != pointSets[i].end(); ++it) {
-			if (n < 4) {
-				output[i * 4 + n] = *it;
-			}
-			if (extra) {
-				extraPoints.push_back(*it);
-			}
-			
+			pointConnects.push_back(*it);
 			n++;
 		}
 	}
-	/* output point buffers also contain -1:
-	THIS CORRESPONDS TO VALENCE-3 VERTEX, _N_O_T_ a triangle
-	this is for ease, it may be that building corresponding offset buffers is more efficient
-	than checking n > 0 when processing points at low level
-	*/
-	return make_tuple(output, extraPoints);
+
+	//return output;
+	return std::make_tuple(pointConnects, pointOffsets);
 }
 
 

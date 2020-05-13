@@ -24,11 +24,14 @@ public:
     // attribute MObjects
     static MObject aTest;
     static MObject aInMesh;
+
+	static MObject aFaceConnects;
+	static MObject aFaceOffsets;
+
     static MObject aPointPositions;
-    static MObject aFaceCounts;
-    static MObject aFaceConnects;
 	static MObject aPointConnects;
-	static MObject aExtraPointConnects;
+	static MObject aPointOffsets;
+
 	static MObject aFaceCentres;
 	static MObject aUvCoords;
 	static MObject aNormals;
