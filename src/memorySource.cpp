@@ -17,7 +17,9 @@ MTypeId MemorySource::kNODE_ID(0x00122C1B);
 MString MemorySource::kNODE_NAME( "memorySource" );
 
 MObject MemorySource::aTime;
+MObject MemorySource::aResetFrame;
 MObject MemorySource::aData;
+MObject MemorySource::aFloatData;
 MObject MemorySource::aSinkConnection;
 
 
@@ -34,11 +36,19 @@ MStatus MemorySource::initialize()
 	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
 	addAttribute(aTime);
 
+	// attribute used to update cell - time is most convenient
+	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 0.0);
+	addAttribute(aResetFrame);
+
 	// untyped attribute can be used to pass on whatever you want
 	aData = tFn.create("data", "data", MFnData::kAny);
 	tFn.setReadable(true);
 	tFn.setWritable(false);
 	addAttribute(aData);
+
+	// test
+	aFloatData = nFn.create("floatData", "floatData", MFnNumericData::kFloat);
+	addAttribute(aFloatData);
 
 	aSinkConnection = nFn.create("sink", "sink", MFnNumericData::kBoolean, 0.0);
 	nFn.setReadable(true);
@@ -46,6 +56,10 @@ MStatus MemorySource::initialize()
 	addAttribute(aSinkConnection);
 
 	attributeAffects(aTime, aData);
+	attributeAffects(aTime, aFloatData);
+
+	attributeAffects(aResetFrame, aData);
+	attributeAffects(aResetFrame, aFloatData);
 
     return MStatus::kSuccess;
 }
@@ -63,27 +77,55 @@ MStatus MemorySource::compute(
 		return MS::kSuccess;
 	}
 
+	// check if time is reset frame - reset to zero if so
+	if (data.inputValue(aTime).asFloat() == data.inputValue(aResetFrame).asFloat()) {
+		data.outputValue(aFloatData).setFloat(0.0);
+		data.setClean(plug);
+		return MS::kSuccess;
+	}
+
 	DEBUGS("memorySource connected sink " << MFnDependencyNode(sinkObj).name());
+	data.setClean(plug);
 
 	// extract sink data
 	MObject sinkData;
-	s = getSinkData(sinkObj, sinkData);
+	MObject sinkFloatData;
+	float sinkFloatValue;
+	s = getSinkData(sinkObj, sinkData, sinkFloatData, sinkFloatValue);
 	CHECK_MSTATUS_AND_RETURN_IT(s);
+	
 	// set source data plug
-	s = setOutputSourceData(sinkData, data);
+	//s = setOutputSourceData(sinkData, data);
+	//data.outputValue(aFloatData).set(sinkFloatData);
+	//data.outputValue(aFloatData).setMObject(MObject(sinkFloatData));
+	data.outputValue(aFloatData).setFloat(sinkFloatValue);
+	//data.outputValue(aData).set(sinkData);
 	CHECK_MSTATUS_AND_RETURN_IT(s);
+
+
 
 	data.setClean(plug);
 
     return MS::kSuccess;
 }
 
-MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData) {
+MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &floatValue) {
 	DEBUGS("memorySource getSinkData")
 	MStatus s;
 	MPlug sinkPlug = MPlug(sinkObj, MemorySink::aData);
 	//sinkData = sinkPlug.asMObject();
+
+	// check float data
+	MPlug floatPlug = MPlug(sinkObj, MemorySink::aFloatData);
+	float testFloat = floatPlug.asFloat();
+	floatValue = testFloat;
+	//sinkFloatData = floatPlug.asMDataHandle().data();
+	
+
+	DEBUGS("found float value " << testFloat);
+
 	sinkData = sinkPlug.asMDataHandle().data();
+
 	return MStatus::kSuccess;
 }
 
@@ -94,6 +136,7 @@ MStatus MemorySource::setOutputSourceData(MObject &sinkData, MDataBlock &data) {
 	//MPlug sourcePlug = MPlug(thisMObject(), aData);
 	//sourcePlug.setMObject(sinkData);
 	//sourcePlug.asMDataHandle().set(sinkData);
+
 	data.outputValue(aData).set(sinkData);
 	return MStatus::kSuccess;
 }
@@ -107,8 +150,7 @@ MStatus MemorySource::connectionMade(
 
 	//DEBUGS("plug " << plug.name() << " otherPlug " << otherPlug.name());
 
-	// we only care abou sink plug
-	/*if (plug.name() != "sink") {*/
+	// we only care about sink plug
 	if (plug.attribute() != aSinkConnection) {
 		return MPxNode::connectionMade(plug, otherPlug, asSrc);
 	}
@@ -116,7 +158,6 @@ MStatus MemorySource::connectionMade(
 	DEBUGS("connection to sink plug");
 
 	if (otherPlug.attribute() == MemorySink::aSourceConnection) {
-		//DEBUGS("we're in business boys");
 		if (sinkConnected) {
 			// cannot connect two sinks to one source
 			DEBUGS("memorySource already has sink connected");
@@ -158,20 +199,7 @@ void* MemorySource::creator(){
     return newObj;
 
 }
-//
-//MStatus MemorySource::getConnectedSink(MObject &nodeObj) {
-//	// retrieve the MObject of the sink connected to this node
-//	DEBUGS("memorySource getConnectedSink")
-//		MPlugArray connectedPlugs = getAllConnectedPlugs(thisMObject(), MemorySource::aSinkConnection, true, true);
-//	if (connectedPlugs.length() > 0) {
-//		// get MObject
-//		nodeObj = connectedPlugs[0].node();
-//		return MStatus::kSuccess;
-//	}
-//	else {
-//		return MStatus::kFailure;
-//	}
-//}
+
 
 
 MemorySource::MemorySource() {};

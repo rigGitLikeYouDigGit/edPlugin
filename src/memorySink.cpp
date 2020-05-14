@@ -14,6 +14,7 @@ MString MemorySink::kNODE_NAME( "memorySink" );
 
 MObject MemorySink::aTime;
 MObject MemorySink::aData;
+MObject MemorySink::aFloatData;
 MObject MemorySink::aSourceConnection;
 
 
@@ -37,6 +38,10 @@ MStatus MemorySink::initialize()
 	tFn.setWritable(true);
 	addAttribute(aData);
 
+	// test
+	aFloatData = nFn.create("floatData", "floatData", MFnNumericData::kFloat);
+	addAttribute(aFloatData);
+
 	aSourceConnection = nFn.create("source", "source", MFnNumericData::kBoolean, 0.0);
 	nFn.setReadable(false);
 	nFn.setWritable(true);
@@ -49,7 +54,11 @@ MStatus MemorySink::initialize()
 MStatus MemorySink::compute(
 				const MPlug& plug, MDataBlock& data) {
 
-	data.setClean(plug);
+	// data.setClean(plug);
+	DEBUGS("memorySink compute ");
+
+	// get input float
+	float inputFloat = data.inputValue(aFloatData).asFloat();
 
     return MS::kSuccess;
 }

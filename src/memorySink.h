@@ -23,6 +23,7 @@ public:
     // attribute MObjects
 	static MObject aSourceConnection;
 	static MObject aData;
+	static MObject aFloatData;
 	static MObject aTime;
 
     

@@ -22,7 +22,7 @@ class MemorySource : public MPxNode {
 			const MPlug &plug, const MPlug &otherPlug, bool asSrc);
 		void setSinkObj(MObject &obj);
 		void clearSinkObj(MObject &obj);
-		MStatus getSinkData(MObject &sinkObj, MObject &sinkData);
+		MStatus getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &sinkFloatValue);
 		MStatus setOutputSourceData(MObject &sinkData, MDataBlock &data);
 
 public:
@@ -32,7 +32,9 @@ public:
     // attribute MObjects
 	static MObject aSinkConnection;
 	static MObject aTime;
+	static MObject aResetFrame;
 	static MObject aData;
+	static MObject aFloatData;
 
 	// internal sink objects
 	MObject sinkObj;
