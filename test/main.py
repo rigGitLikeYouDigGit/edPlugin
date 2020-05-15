@@ -57,8 +57,8 @@ def baseTest():
 	cmds.connectAttr("time1.outTime", source + ".time")
 
 	adl = cmds.createNode("addDoubleLinear")
-	# cmds.connectAttr(source + ".data", adl + ".input1")
-	cmds.connectAttr(source + ".floatData", adl + ".input2")
+	cmds.connectAttr(source + ".data[0]", adl + ".input1")
+	#cmds.connectAttr(source + ".floatData", adl + ".input2")
 
 	outputCube = cmds.duplicate(cube, n="outputCube")[0]
 	cmds.setAttr(outputCube + ".translateZ", 5)

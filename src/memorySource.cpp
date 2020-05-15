@@ -71,7 +71,7 @@ MStatus MemorySource::compute(
 				const MPlug& plug, MDataBlock& data) {
 	MStatus s;
 	DEBUGS("memorySource compute");
-	DEBUGS("memorySource sinkConnected " << sinkConnected);
+	//DEBUGS("memorySource sinkConnected " << sinkConnected);
 
 	if (!sinkConnected || sinkObj == MObject::kNullObj) {
 		// do literally nothing
@@ -86,7 +86,7 @@ MStatus MemorySource::compute(
 		return MS::kSuccess;
 	}
 
-	DEBUGS("memorySource connected sink " << MFnDependencyNode(sinkObj).name());
+	//DEBUGS("memorySource connected sink " << MFnDependencyNode(sinkObj).name());
 	data.setClean(plug);
 
 	// extract sink data
@@ -94,19 +94,24 @@ MStatus MemorySource::compute(
 	MObject sinkFloatData;
 	float sinkFloatValue;
 	MDataHandle sinkDH;
+
 	s = getSinkData(sinkObj, sinkData, sinkFloatData, sinkFloatValue, sinkDH);
+	MArrayDataHandle sinkArrayDH = MArrayDataHandle(sinkDH);
+	// transfer sink values to source
+	MArrayDataHandle sourceArrayDH = data.outputArrayValue(aData);
 	CHECK_MSTATUS_AND_RETURN_IT(s);
 	
 	// set source data plug
-	//s = setOutputSourceData(sinkData, data);
-	//data.outputValue(aFloatData).set(sinkFloatData);
-	//data.outputValue(aFloatData).setMObject(MObject(sinkFloatData));
+	s = setOutputSourceData(sourceArrayDH, sinkArrayDH);
+
 	data.outputValue(aFloatData).setFloat(sinkFloatValue);
+
+
+	
 	//data.outputValue(aData).set(sinkData);
 	//data.outputValue(aData).copy(sinkDH);
 	CHECK_MSTATUS_AND_RETURN_IT(s);
-
-
+	
 
 	data.setClean(plug);
 
@@ -122,27 +127,38 @@ MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData, MObject &
 	// check float data
 	MPlug floatPlug = MPlug(sinkObj, MemorySink::aFloatData);
 	float testFloat = floatPlug.asFloat();
+	//floatPlug.destructHandle(); // when do we call this 
 	floatValue = testFloat;
 	//sinkFloatData = floatPlug.asMDataHandle().data();
 	
-
-	DEBUGS("found float value " << testFloat);
+	//DEBUGS("found float value " << testFloat);
 
 	//sinkData = sinkPlug.asMDataHandle().data();
 	//sinkDH = sinkPlug.asMDataHandle();
+	sinkDH = MDataHandle(sinkPlug.asMDataHandle());
 
 	return MStatus::kSuccess;
 }
 
-MStatus MemorySource::setOutputSourceData(MObject &sinkData, MDataBlock &data) {
+MStatus MemorySource::setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArrayDataHandle &sinkArrayDH) {
 	DEBUGS("memorySource setOutputData")
 	MStatus s;
-	//DEBUGS("obj value "<<)
-	//MPlug sourcePlug = MPlug(thisMObject(), aData);
-	//sourcePlug.setMObject(sinkData);
-	//sourcePlug.asMDataHandle().set(sinkData);
 
-	data.outputValue(aData).set(sinkData);
+	int index = 0;
+	int n = sinkArrayDH.elementCount();
+	//DEBUGS("n " << n);
+	for (index; index < n; index++) {
+		//DEBUGS("index " << index);
+		jumpToElement(sinkArrayDH, index);
+		jumpToElement(sourceArrayDH, index);
+
+		// copy sink data object
+		//MFn::Type sinkDataType = MFnData(sinkArrayDH.outputValue().data()).type();
+
+		sourceArrayDH.outputValue().copy(
+			sinkArrayDH.outputValue()
+		);
+	}
 	return MStatus::kSuccess;
 }
 
@@ -151,7 +167,7 @@ MStatus MemorySource::setOutputSourceData(MObject &sinkData, MDataBlock &data) {
 MStatus MemorySource::connectionMade(
 	const MPlug &plug, const MPlug &otherPlug, bool asSrc) {
 	// check if sink has been connected 
-	DEBUGS("memorySource connectionMade");
+	//DEBUGS("memorySource connectionMade");
 
 	//DEBUGS("plug " << plug.name() << " otherPlug " << otherPlug.name());
 
@@ -160,7 +176,7 @@ MStatus MemorySource::connectionMade(
 		return MPxNode::connectionMade(plug, otherPlug, asSrc);
 	}
 
-	DEBUGS("connection to sink plug");
+	//DEBUGS("connection to sink plug");
 
 	if (otherPlug.attribute() == MemorySink::aSourceConnection) {
 		if (sinkConnected) {

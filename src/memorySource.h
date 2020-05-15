@@ -23,7 +23,7 @@ class MemorySource : public MPxNode {
 		void setSinkObj(MObject &obj);
 		void clearSinkObj(MObject &obj);
 		MStatus getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &sinkFloatValue, MDataHandle &sinkDH);
-		MStatus setOutputSourceData(MObject &sinkData, MDataBlock &data);
+		MStatus setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArrayDataHandle &sinkArrayDH);
 
 public:
     static MTypeId kNODE_ID;

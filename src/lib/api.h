@@ -33,6 +33,8 @@ as well as common plugin functions
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
+#include <maya/MArrayDataHandle.h>
+#include <maya/MArrayDataBuilder.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
