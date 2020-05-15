@@ -50,14 +50,14 @@ def baseTest():
 	source = cmds.createNode("memorySource")
 	sink = cmds.createNode("memorySink")
 	cmds.connectAttr(source + ".sink", sink + ".source")
-	cmds.connectAttr(cube + ".translateY", sink + ".data")
+	cmds.connectAttr(cube + ".translateY", sink + ".data[0]")
 	cmds.connectAttr(cube + ".translateX", sink + ".floatData")
 	cmds.setAttr(cube + ".translateX", 1.2)
 	cmds.connectAttr("time1.outTime", sink + ".time")
 	cmds.connectAttr("time1.outTime", source + ".time")
 
 	adl = cmds.createNode("addDoubleLinear")
-	cmds.connectAttr(source + ".data", adl + ".input1")
+	# cmds.connectAttr(source + ".data", adl + ".input1")
 	cmds.connectAttr(source + ".floatData", adl + ".input2")
 
 	outputCube = cmds.duplicate(cube, n="outputCube")[0]

@@ -44,6 +44,8 @@ MStatus MemorySource::initialize()
 	aData = tFn.create("data", "data", MFnData::kAny);
 	tFn.setReadable(true);
 	tFn.setWritable(false);
+	tFn.setArray(true);
+	tFn.setUsesArrayDataBuilder(true);
 	addAttribute(aData);
 
 	// test
@@ -91,7 +93,8 @@ MStatus MemorySource::compute(
 	MObject sinkData;
 	MObject sinkFloatData;
 	float sinkFloatValue;
-	s = getSinkData(sinkObj, sinkData, sinkFloatData, sinkFloatValue);
+	MDataHandle sinkDH;
+	s = getSinkData(sinkObj, sinkData, sinkFloatData, sinkFloatValue, sinkDH);
 	CHECK_MSTATUS_AND_RETURN_IT(s);
 	
 	// set source data plug
@@ -100,6 +103,7 @@ MStatus MemorySource::compute(
 	//data.outputValue(aFloatData).setMObject(MObject(sinkFloatData));
 	data.outputValue(aFloatData).setFloat(sinkFloatValue);
 	//data.outputValue(aData).set(sinkData);
+	//data.outputValue(aData).copy(sinkDH);
 	CHECK_MSTATUS_AND_RETURN_IT(s);
 
 
@@ -109,7 +113,7 @@ MStatus MemorySource::compute(
     return MS::kSuccess;
 }
 
-MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &floatValue) {
+MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &floatValue, MDataHandle &sinkDH) {
 	DEBUGS("memorySource getSinkData")
 	MStatus s;
 	MPlug sinkPlug = MPlug(sinkObj, MemorySink::aData);
@@ -124,7 +128,8 @@ MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData, MObject &
 
 	DEBUGS("found float value " << testFloat);
 
-	sinkData = sinkPlug.asMDataHandle().data();
+	//sinkData = sinkPlug.asMDataHandle().data();
+	//sinkDH = sinkPlug.asMDataHandle();
 
 	return MStatus::kSuccess;
 }

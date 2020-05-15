@@ -36,6 +36,8 @@ MStatus MemorySink::initialize()
 	aData = tFn.create("data", "data", MFnData::kAny);
 	tFn.setReadable(false);
 	tFn.setWritable(true);
+	tFn.setArray(true);
+	tFn.setUsesArrayDataBuilder(true);
 	addAttribute(aData);
 
 	// test
@@ -58,7 +60,7 @@ MStatus MemorySink::compute(
 	DEBUGS("memorySink compute ");
 
 	// get input float
-	float inputFloat = data.inputValue(aFloatData).asFloat();
+	//float inputFloat = data.inputValue(aFloatData).asFloat();
 
     return MS::kSuccess;
 }
