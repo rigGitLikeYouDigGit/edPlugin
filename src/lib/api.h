@@ -12,6 +12,7 @@ as well as common plugin functions
 #include <set>
 #include <string>
 #include <iostream>
+#include <memory>
 
 #include <maya/MStreamUtils.h>
 #include <maya/MPxNode.h>
@@ -122,6 +123,26 @@ inline MStatus jumpToElement(MArrayDataHandle &hArray, int index) {
 	return s;
 }
 
+inline MStatus mirrorArrayDataHandle(MArrayDataHandle &masterArrayDH, MArrayDataHandle &slaveArrayDH) {
+	// transfer exact structure of array handle from master to slave
+	int index = 0;
+	int n = masterArrayDH.elementCount();
+	//DEBUGS("n " << n);
+	for (index; index < n; index++) {
+		//DEBUGS("index " << index);
+		jumpToElement(masterArrayDH, index);
+		jumpToElement(slaveArrayDH, index);
+
+		/*if (slaveArrayDH.outputValue() == masterArrayDH.outputValue()) {
+			continue;
+		}*/
+
+		slaveArrayDH.outputValue().copy(
+			masterArrayDH.outputValue()
+		);
+	}
+	return MStatus::kSuccess;
+}
 
 // converting between maya types and vectors
 inline std::vector<int> MIntArrayToVector(MIntArray &arr) {

@@ -51,18 +51,34 @@ def baseTest():
 	sink = cmds.createNode("memorySink")
 	cmds.connectAttr(source + ".sink", sink + ".source")
 	cmds.connectAttr(cube + ".translateY", sink + ".data[0]")
-	cmds.connectAttr(cube + ".translateX", sink + ".floatData")
 	cmds.setAttr(cube + ".translateX", 1.2)
-	cmds.connectAttr("time1.outTime", sink + ".time")
 	cmds.connectAttr("time1.outTime", source + ".time")
+
+	#cmds.setAttr(source + ".resetFrame", 1)
 
 	adl = cmds.createNode("addDoubleLinear")
 	cmds.connectAttr(source + ".data[0]", adl + ".input1")
 	#cmds.connectAttr(source + ".floatData", adl + ".input2")
 
 	outputCube = cmds.duplicate(cube, n="outputCube")[0]
-	cmds.setAttr(outputCube + ".translateZ", 5)
-	cmds.connectAttr(adl + ".output", outputCube + ".translateY")
+	midCube = cmds.duplicate(cube, n="midCube")[0]
+	cmds.setAttr(midCube + ".translateZ", 5)
+	cmds.connectAttr(adl + ".output", midCube + ".translateY")
+
+	# test chaining memory cells
+	sink2 = cmds.createNode("memorySink", n="secondSink")
+	source2 = cmds.createNode("memorySource", n="secondSource")
+	cmds.connectAttr(source2 + ".sink", sink2 + ".source")
+	cmds.connectAttr( source + ".data[0]", sink2 + ".data[0]")
+	cmds.connectAttr("time1.outTime", source2 + ".time")
+
+
+	cmds.connectAttr(source2 + ".data[0]", outputCube + ".translateY")
+	cmds.setAttr(outputCube + ".translateZ", 10)
+
+	cmds.setKeyframe(cube, at="translateY", time=1, value=0)
+	cmds.setKeyframe(cube, at="translateY", time=20, value=10)
+	cmds.setKeyframe(cube, at="translateY", time=40, value=0)
 
 	return cube
 

@@ -19,8 +19,9 @@ MString MemorySource::kNODE_NAME( "memorySource" );
 MObject MemorySource::aTime;
 MObject MemorySource::aResetFrame;
 MObject MemorySource::aData;
-MObject MemorySource::aFloatData;
+MObject MemorySource::aInnerData;
 MObject MemorySource::aSinkConnection;
+MObject MemorySource::aIncrement;
 
 
 MStatus MemorySource::initialize()
@@ -34,10 +35,12 @@ MStatus MemorySource::initialize()
 
 	// attribute used to update cell - time is most convenient
 	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
+	tFn.setReadable(true);
+	tFn.setWritable(true);
 	addAttribute(aTime);
 
 	// attribute used to update cell - time is most convenient
-	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 0.0);
+	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 1.0);
 	addAttribute(aResetFrame);
 
 	// untyped attribute can be used to pass on whatever you want
@@ -48,20 +51,35 @@ MStatus MemorySource::initialize()
 	tFn.setUsesArrayDataBuilder(true);
 	addAttribute(aData);
 
-	// test
-	aFloatData = nFn.create("floatData", "floatData", MFnNumericData::kFloat);
-	addAttribute(aFloatData);
+	// internal cache array mirroring main interface
+	aInnerData = tFn.create("innerData", "innerData", MFnData::kAny);
+	tFn.setReadable(true);
+	tFn.setWritable(true);
+	tFn.setArray(true);
+	tFn.setUsesArrayDataBuilder(true);
+	addAttribute(aInnerData);
 
+	// boolean connection to sink
 	aSinkConnection = nFn.create("sink", "sink", MFnNumericData::kBoolean, 0.0);
 	nFn.setReadable(true);
 	nFn.setWritable(false);
 	addAttribute(aSinkConnection);
 
+	// can be handy for some uses to have an exclusively positive counter
+	aIncrement = nFn.create("increment", "increment", MFnNumericData::kInt, 0.0);
+	nFn.setReadable(true);
+	nFn.setWritable(false);
+	addAttribute(aIncrement);
+
 	attributeAffects(aTime, aData);
-	attributeAffects(aTime, aFloatData);
+	attributeAffects(aTime, aInnerData);
+	attributeAffects(aTime, aIncrement);
 
 	attributeAffects(aResetFrame, aData);
-	attributeAffects(aResetFrame, aFloatData);
+	attributeAffects(aResetFrame, aInnerData);
+	attributeAffects(aResetFrame, aIncrement);
+
+	attributeAffects(aInnerData, aData);
 
     return MStatus::kSuccess;
 }
@@ -79,62 +97,61 @@ MStatus MemorySource::compute(
 		return MS::kSuccess;
 	}
 
-	// check if time is reset frame - reset to zero if so
+	// get source data handles
+	MArrayDataHandle sourceArrayDH = data.outputArrayValue(aData);
+	MArrayDataHandle sourceInnerArrayDH = data.outputArrayValue(aInnerData);
+
+	// extract sink data
+	MDataHandle sinkDH;
+	s = getSinkData(sinkObj, sinkDH);
+	MArrayDataHandle sinkArrayDH = MArrayDataHandle(sinkDH);
+	
+	// check if time is reset frame - reset to current values if so
 	if (data.inputValue(aTime).asFloat() == data.inputValue(aResetFrame).asFloat()) {
-		data.outputValue(aFloatData).setFloat(0.0);
+		DEBUGS("memorySource time reset")
+		mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
+		mirrorArrayDataHandle(sinkArrayDH, sourceArrayDH);
+
+		// reset counter
+		data.outputValue(aIncrement).setInt(0);
+
 		data.setClean(plug);
 		return MS::kSuccess;
 	}
 
-	//DEBUGS("memorySource connected sink " << MFnDependencyNode(sinkObj).name());
-	data.setClean(plug);
 
-	// extract sink data
-	MObject sinkData;
-	MObject sinkFloatData;
-	float sinkFloatValue;
-	MDataHandle sinkDH;
+	// only if time has changed, update current values from cached
+	//MPlug timePlug = MPlug(thisMObject(), MemorySource::aTime);
+	//if (!data.isClean(aTime)) {
+	//if (!data.isClean(timePlug)) {
 
-	s = getSinkData(sinkObj, sinkData, sinkFloatData, sinkFloatValue, sinkDH);
-	MArrayDataHandle sinkArrayDH = MArrayDataHandle(sinkDH);
-	// transfer sink values to source
-	MArrayDataHandle sourceArrayDH = data.outputArrayValue(aData);
-	CHECK_MSTATUS_AND_RETURN_IT(s);
-	
-	// set source data plug
-	s = setOutputSourceData(sourceArrayDH, sinkArrayDH);
+	// for some reason input time plug was never reading as dirty
+	if( previousTime != data.inputValue(aTime).asFloat()){
+		DEBUGS("memorySource time dirty");
+		mirrorArrayDataHandle(sourceInnerArrayDH, sourceArrayDH);
+		mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
 
-	data.outputValue(aFloatData).setFloat(sinkFloatValue);
+		previousTime = data.inputValue(aTime).asFloat();
+
+		// add to increment
+		data.outputValue(aIncrement).setInt(data.outputValue(aIncrement).asInt() + 1);
+	}
 
 
-	
-	//data.outputValue(aData).set(sinkData);
-	//data.outputValue(aData).copy(sinkDH);
-	CHECK_MSTATUS_AND_RETURN_IT(s);
-	
+	// dirty sink plug
+	bool switchStatus = !data.outputValue(aSinkConnection).asBool();
+	data.outputValue(aSinkConnection).setBool(switchStatus);
 
 	data.setClean(plug);
 
     return MS::kSuccess;
 }
 
-MStatus MemorySource::getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &floatValue, MDataHandle &sinkDH) {
-	DEBUGS("memorySource getSinkData")
+MStatus MemorySource::getSinkData(MObject &sinkObj, MDataHandle &sinkDH) {
+	//DEBUGS("memorySource getSinkData")
 	MStatus s;
 	MPlug sinkPlug = MPlug(sinkObj, MemorySink::aData);
-	//sinkData = sinkPlug.asMObject();
 
-	// check float data
-	MPlug floatPlug = MPlug(sinkObj, MemorySink::aFloatData);
-	float testFloat = floatPlug.asFloat();
-	//floatPlug.destructHandle(); // when do we call this 
-	floatValue = testFloat;
-	//sinkFloatData = floatPlug.asMDataHandle().data();
-	
-	//DEBUGS("found float value " << testFloat);
-
-	//sinkData = sinkPlug.asMDataHandle().data();
-	//sinkDH = sinkPlug.asMDataHandle();
 	sinkDH = MDataHandle(sinkPlug.asMDataHandle());
 
 	return MStatus::kSuccess;
@@ -144,24 +161,9 @@ MStatus MemorySource::setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArra
 	DEBUGS("memorySource setOutputData")
 	MStatus s;
 
-	int index = 0;
-	int n = sinkArrayDH.elementCount();
-	//DEBUGS("n " << n);
-	for (index; index < n; index++) {
-		//DEBUGS("index " << index);
-		jumpToElement(sinkArrayDH, index);
-		jumpToElement(sourceArrayDH, index);
-
-		// copy sink data object
-		//MFn::Type sinkDataType = MFnData(sinkArrayDH.outputValue().data()).type();
-
-		sourceArrayDH.outputValue().copy(
-			sinkArrayDH.outputValue()
-		);
-	}
+	mirrorArrayDataHandle(sinkArrayDH, sourceArrayDH);
 	return MStatus::kSuccess;
 }
-
 
 
 MStatus MemorySource::connectionMade(
@@ -192,6 +194,7 @@ MStatus MemorySource::connectionMade(
 
 MStatus MemorySource::connectionBroken(
 	const MPlug &plug, const MPlug &otherPlug, bool asSrc) {
+	// clear connected sink node
 	DEBUGS("memorySource connectionBroken");
 
 	if (plug.attribute() != aSinkConnection) {
@@ -203,11 +206,13 @@ MStatus MemorySource::connectionBroken(
 }
 
 void MemorySource::setSinkObj(MObject &obj) {
+	// sets internal sink reference
 	sinkObj = obj;
 	sinkConnected = true;
 }
 
 void MemorySource::clearSinkObj(MObject &obj) {
+	// is this enough to clear reference to connected node?
 	sinkObj = MObject::kNullObj;
 	sinkConnected = false;
 }
@@ -217,11 +222,10 @@ void* MemorySource::creator(){
 	MemorySource *newObj = new MemorySource;
 	newObj->sinkConnected = false;
 	newObj->sinkObj = MObject::kNullObj;
+	newObj->previousTime = 0.0;
     return newObj;
 
 }
-
-
 
 MemorySource::MemorySource() {};
 MemorySource::~MemorySource() {};

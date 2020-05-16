@@ -23,10 +23,8 @@ public:
     // attribute MObjects
 	static MObject aSourceConnection;
 	static MObject aData;
-	static MObject aFloatData;
-	static MObject aTime;
+	//static MObject aTime; // time not used on sink right now
 
-    
 
 };
 #endif

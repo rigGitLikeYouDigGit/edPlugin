@@ -22,7 +22,7 @@ class MemorySource : public MPxNode {
 			const MPlug &plug, const MPlug &otherPlug, bool asSrc);
 		void setSinkObj(MObject &obj);
 		void clearSinkObj(MObject &obj);
-		MStatus getSinkData(MObject &sinkObj, MObject &sinkData, MObject &sinkFloatData, float &sinkFloatValue, MDataHandle &sinkDH);
+		MStatus getSinkData(MObject &sinkObj, MDataHandle &sinkDH);
 		MStatus setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArrayDataHandle &sinkArrayDH);
 
 public:
@@ -34,13 +34,18 @@ public:
 	static MObject aTime;
 	static MObject aResetFrame;
 	static MObject aData;
-	static MObject aFloatData;
+	static MObject aInnerData;
+	static MObject aIncrement;
 
 	// internal sink objects
 	MObject sinkObj;
+	// ToDo: refactor to use observing pointers
 	std::set<MObject> sinkObjs;
 	// check for disconnection
 	bool sinkConnected;
+
+	// compare previous value
+	float previousTime;
     
 
 };

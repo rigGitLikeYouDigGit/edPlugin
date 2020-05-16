@@ -12,9 +12,8 @@
 MTypeId MemorySink::kNODE_ID(0x00122C1A);
 MString MemorySink::kNODE_NAME( "memorySink" );
 
-MObject MemorySink::aTime;
+//MObject MemorySink::aTime;
 MObject MemorySink::aData;
-MObject MemorySink::aFloatData;
 MObject MemorySink::aSourceConnection;
 
 
@@ -27,9 +26,9 @@ MStatus MemorySink::initialize()
 	MFnUnitAttribute uFn;
 
 
-	// attribute used to update cell - time is most convenient
-	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
-	addAttribute(aTime);
+	//// attribute used to update cell - time is most convenient
+	//aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
+	//addAttribute(aTime);
 
 	// untyped attribute can be used to pass on whatever you want
 	//aData = gFn.create("data", "data");
@@ -40,14 +39,13 @@ MStatus MemorySink::initialize()
 	tFn.setUsesArrayDataBuilder(true);
 	addAttribute(aData);
 
-	// test
-	aFloatData = nFn.create("floatData", "floatData", MFnNumericData::kFloat);
-	addAttribute(aFloatData);
-
+	// connection to memorySource node
 	aSourceConnection = nFn.create("source", "source", MFnNumericData::kBoolean, 0.0);
 	nFn.setReadable(false);
 	nFn.setWritable(true);
 	addAttribute(aSourceConnection);
+
+	attributeAffects(aSourceConnection, aData);
 
     return MStatus::kSuccess;
 }
@@ -59,8 +57,10 @@ MStatus MemorySink::compute(
 	// data.setClean(plug);
 	DEBUGS("memorySink compute ");
 
-	// get input float
-	//float inputFloat = data.inputValue(aFloatData).asFloat();
+	// transfer interface data to internal
+	MArrayDataHandle outerDH = data.outputArrayValue(aData);
+
+	data.setClean(plug);
 
     return MS::kSuccess;
 }
