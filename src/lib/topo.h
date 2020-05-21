@@ -5,11 +5,11 @@
 
 #include <vector>
 #include <set>
+#include <algorithm>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
-using namespace std;
 
 // none of this is elegant
 // please forgive
@@ -18,6 +18,19 @@ using namespace std;
 /* more complex operations done with eigen types,
 to be converted to and from raw buffers at interfaces between software*/
 
+// size_t sucks
+#define INT(sizeVar) static_cast<int>(sizeVar)
+
+template <typename T>
+inline int index(const std::vector<T> &vec, const T &element) {
+	// returns index in array or -1 if not found
+	int result = -1;
+	auto it = std::find(vec.begin(), vec.end(), element);
+	if (it != vec.end()) {
+		result = static_cast<int>(distance(vec.begin(), it));
+	}
+	return result;
+}
 
 // --- building buffers ---
 
@@ -51,7 +64,7 @@ inline std::vector<int> entryFromBuffer(
 	std::vector<int> &offsets,
 	int entryIndex) {
 	// use buffer indices to retrieve main values in entry
-	vector<int> result;
+	std::vector<int> result;
 	int startIndex = offsets[entryIndex];
 	int endIndex;
 
@@ -146,6 +159,224 @@ inline std::tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer(
 	//return output;
 	return std::make_tuple(pointConnects, pointOffsets);
 }
+
+
+// --- HALF EDGE MESH STRUCTURE ---
+
+
+struct IndexedComponent {
+	// base class for index comparison
+	int index;
+	bool operator==(const IndexedComponent& other) {
+		// common sense rules - don't compare face with edge
+		return (index == other.index);
+	}
+};
+
+
+// topology types, no spatial info
+struct Point; // point in space
+struct Vertex; // unique vertex, split by face
+struct Face; // polygonal face
+struct Edge; // undirected shared edge
+struct HalfEdge; // directed unique edge
+
+
+struct Point : IndexedComponent {
+	std::vector<Vertex*> vertices; // vertices owned by this point, maybe ordered
+	std::vector<Edge*> edges; // edges owned by this point, maybe ordered
+	std::vector<Face*> faces; // faces to which this point belongs
+};
+
+struct Vertex : IndexedComponent {
+	Point* point; // point to which this vertex belongs
+	Face* face; // face to which this vertex belongs
+	Edge* edges[2]; // previous and next edges
+	HalfEdge* hedges[2]; // previous and next halfEdges
+};
+
+struct Face : IndexedComponent {
+	std::vector<Point*> points; // points in this face
+	std::vector<Edge*> edges; // edges shared by this face
+	std::vector<HalfEdge*> hedges; // ordered half edges
+	std::vector<Vertex*> vertices; // ordered vertices
+};
+
+struct Edge : IndexedComponent {
+	Point* points[2]; // connected points, unordered
+	std::vector<Face*> faces; // faces which share this edge
+	std::vector<HalfEdge*> hedges; // hedges owned by this edge
+
+};
+
+struct HalfEdge : IndexedComponent {
+	Vertex* vertices[2]; // unique source and sink vertices
+	Point* points[2]; // source and sink points to which vertices belong
+	HalfEdge* next; // next half edge in polygon
+	HalfEdge* prev; // previous half edge in polygon
+	Edge* edge; // edge to which this halfEdge belongs
+	Face* face; // face to which this halfEdge belongs
+	std::vector<HalfEdge*> equivalents; // equivalent half edges (lying along the same edge)
+};
+
+// topo operations
+//int isAdjacent(IndexedComponent &a, IndexedComponent &b) {
+//	// returns 1 if order is a -> b or no order, -1 if b <- a, 0 otherwise
+//	return 0;
+//}
+
+struct HalfEdgeMesh {
+	// half-edge data structure
+	// also includes some extra features
+	// we follow the pattern of points, vertices, faces, edges, half-edges
+	// explored in Keenan Crane Discrete Differential Geometry
+	// this also largely lines up with the Houdini model, except full edges exist
+
+	// one point -> many vertices
+	// one edge -> many half-edges
+
+	// topo arrays - main mesh struct contains full object sequence
+	// arrays of structs, rip
+	std::vector<Point> points;
+	std::vector<Vertex> vertices;
+	std::vector<Face> faces;
+	std::vector<Edge> edges;
+	std::vector<HalfEdge> hedges;
+
+	int nPoints;
+	int nFaces;
+	int nVertices;
+	int nEdges;
+	int nHalfEdges;
+
+	// topo raw buffers
+	std::vector<int> pointConnects; // points to points
+	std::vector<int> pointOffsets;
+
+	std::vector<int> faceConnects; // faces to points
+	std::vector<int> faceVertexConnects; // faces to vertices
+	std::vector<int> faceOffsets;
+
+	// spatial information
+	std::vector<float> pointPositions;
+	std::vector<float> pointNormals;
+	std::vector<float> faceNormals;
+
+
+	HalfEdgeMesh() {
+	}
+
+	void build(
+		std::vector<int> &pointConnects,
+		std::vector<int> &pointOffsets,
+		std::vector<int> &faceConnects,
+		std::vector<int> &faceOffsets,
+		std::vector<float> &pointPositions
+	) {
+		// main method to build half-edge representation from raw buffers
+		nPoints = static_cast<int>(pointOffsets.size());
+		nFaces = static_cast<int>(faceOffsets.size());
+		nVertices = static_cast<int>(faceConnects.size());
+		// build points
+		for (int i = 0; i < nPoints; i++) {
+			Point p = Point();
+			p.index = i;
+			points.push_back(p);
+		}
+
+		// build vertices
+		for (int i = 0; i < nVertices; i++) {
+			Vertex v = Vertex();
+			v.index = i;
+			vertices.push_back(v);
+		}
+
+
+		int n = 0;
+		// loop over faces
+		for (int i = 0; i < nFaces; i++) {
+
+			Face f = Face();
+			f.index = i;
+
+			// need to guarantee order, set for vertices for now
+			std::set<Vertex*> faceVertices;
+
+			// get points in face
+			std::vector<int> facePoints = entryFromBuffer(
+				faceConnects, faceOffsets, i);
+
+			// iterate over points in face
+			for (int j = 0; j < static_cast<int>(facePoints.size()); j++) {
+				// set references
+				Point p = points[facePoints[j]];
+				f.points.push_back( &p );
+				p.faces.push_back(&f);
+
+				// vertices
+				Vertex v = vertices[n];
+				p.vertices.push_back(&v);
+				v.face = &f;
+				v.point = &p;
+
+				faceVertices.insert(&v);
+
+				n++;
+			}
+
+			// ensure that vertices are ordered correctly
+			// check for contiguous ring in pointConnects
+			std::vector<Vertex*> orderedVertices;
+			Vertex *vStart = *faceVertices.begin();
+			faceVertices.erase(faceVertices.begin());
+			orderedVertices.push_back(vStart);
+
+			// found index must be in previous connects to be allowed
+			int prevPointIndex = vStart->point->index;
+
+			int nIterations = 0;
+
+			while (!faceVertices.empty()) {
+				// check if stuck in loop
+				if (nIterations > INT(faceVertices.size())) {
+					DEBUGS("ordering vertices loops indefinitely, buffers are non manifold");
+					break;
+				}
+				Vertex *testV;
+				int testPointIndex;
+				for (auto &it : faceVertices) {
+
+					std::vector<int> connectedIndices = entryFromBuffer(
+						pointConnects, pointOffsets, prevPointIndex);
+
+					testV = it;
+					testPointIndex = testV->index;
+					// check if test index is in connected points
+					if (index(connectedIndices, testPointIndex) > -1) {
+						break;
+					}
+				}
+				orderedVertices.push_back(testV);
+				prevPointIndex = testPointIndex;
+				faceVertices.erase(testV);
+			}
+
+			// assign ordered vertices
+			for (auto &v : orderedVertices) {
+				f.vertices.push_back(v);
+			}
+			// assuming there is a better way than this abysmal effort
+
+		}
+
+		// for half edges a continuous ring of points around face is needed
+
+		
+	}
+
+};
+
+
 
 
 // --- LAPLACIAN AND CHILL ---
