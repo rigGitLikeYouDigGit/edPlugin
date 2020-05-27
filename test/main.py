@@ -1,6 +1,7 @@
 
 """ tests for each plugin node """
-from maya import cmds
+from maya import cmds, mel
+import maya.api.OpenMaya as om
 
 from edPlugin import MLL_PATH, PLUGIN_ID
 
@@ -26,9 +27,17 @@ def runTests():
 	loadPlugin()
 	print("running edPlugin tests")
 
-	createPluginNodes()
+	#createPluginNodes()
 	cube = baseTest()
 	testDeformers(cube)
+
+def getMObject(name):
+	sel = om.MSelectionList()
+	sel.add(name)
+	return sel.getDependNode(0)
+
+def getMPlug(nodeObj, plugName):
+	return om.MFnDependencyNode(nodeObj).findPlug(plugName, False)
 
 
 def createPluginNodes():
@@ -45,7 +54,80 @@ def baseTest():
 	cmds.connectAttr( cube + ".outMesh", buffers + ".inMesh", f=True)
 	cmds.setAttr( buffers + ".bind", 3) #live, bind system works fine
 	print("testsRun")
+	#testMemory(cube)
 
+	# test for skin
+	mesh = cmds.polyCylinder(r=1, h=10, sx=16, sy=16, sz=16, ax=(0, 0, 1), ch=0)[0]
+
+	# skin cluster to transfer base weights
+	skcMesh = cmds.duplicate(mesh, n="skcMesh")[0]
+
+	joints = []
+	refJoints = []
+
+	for i in range(3):
+		jnt = cmds.createNode("joint", n="mainJnt_{}".format(i))
+		cmds.setAttr(jnt + ".translateZ", i * 5 - 5)
+		joints.append(jnt)
+		if i: cmds.parent(jnt, joints[i-1])
+
+	skin = cmds.skinCluster(joints, skcMesh)[0]
+	ddm = cmds.deformer(mesh, type="directDeltaMush")[0]
+
+	# copy matrix connections
+	for i in range(3):
+		cmds.connectAttr(joints[i] + ".worldMatrix[0]", ddm + ".matrix[{}]".format(i))
+		pass
+
+
+	# copy plug connections and weights to deltamush
+	copyPlugs = ("weightList", "bindPreMatrix")
+
+	size = cmds.getAttr(skin + ".weightList", size=1)
+	cmds.setAttr(ddm + ".weightList", size=size)
+
+	cmds.select(cl=1)
+	for i in copyPlugs:
+		sourcePlug = getMPlug(getMObject(skin), i)
+		sourceDH = om.MArrayDataHandle( sourcePlug.asMDataHandle())
+		sinkPlug = getMPlug(getMObject(ddm), i)
+		sinkDH = om.MArrayDataHandle( sinkPlug.asMDataHandle())
+
+		sinkDH.copy(sourceDH)
+
+
+
+		#sinkPlug.setMDataHandle(om.MDataHandle(sinkDH))
+
+		sourceDH = sourcePlug.asMDataHandle()
+		sinkPlug.setMDataHandle(om.MDataHandle(sourceDH))
+
+
+		cmds.select(ddm)
+		# plugCmds = (sourcePlug.getSetAttrCmds())
+		# plugString = ""
+		# mel.eval(plugCmds)
+		# for n in plugCmds:
+		# 	print(n)
+		# 	mel.eval(str(n))
+		# 	pass
+
+
+
+
+	return cube
+
+def testDeformers(mesh):
+	""" test uberDeformer system """
+	deformer = cmds.deformer(mesh, type="uberDeformer")[0]
+	baseNotion = cmds.createNode("deformerNotion", n="testNotion")
+
+	cmds.connectAttr(baseNotion + ".masterConnection",
+	                 deformer + ".notions[0]")
+
+
+
+def testMemory(cube):
 	# memory sources and sinks
 	source = cmds.createNode("memorySource")
 	sink = cmds.createNode("memorySink")
@@ -72,24 +154,12 @@ def baseTest():
 	cmds.connectAttr( source + ".data[0]", sink2 + ".data[0]")
 	cmds.connectAttr("time1.outTime", source2 + ".time")
 
-
 	cmds.connectAttr(source2 + ".data[0]", outputCube + ".translateY")
 	cmds.setAttr(outputCube + ".translateZ", 10)
 
 	cmds.setKeyframe(cube, at="translateY", time=1, value=0)
 	cmds.setKeyframe(cube, at="translateY", time=20, value=10)
 	cmds.setKeyframe(cube, at="translateY", time=40, value=0)
-
-	return cube
-
-def testDeformers(mesh):
-	""" test uberDeformer system """
-	deformer = cmds.deformer(mesh, type="uberDeformer")[0]
-	baseNotion = cmds.createNode("deformerNotion", n="testNotion")
-
-	cmds.connectAttr(baseNotion + ".masterConnection",
-	                 deformer + ".notions[0]")
-
 
 
 

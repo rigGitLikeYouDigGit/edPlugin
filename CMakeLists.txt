@@ -16,6 +16,7 @@ file(GLOB SOURCE_FILES "src/*.cpp" "src/*.h" "src/lib/*.cpp" "src/lib/*.h"
 
  
 include_directories("F:/all_projects_desktop/common/edCode/edPlugin/include/eigen-3.3.7")
+include_directories("F:/all_projects_desktop/common/edCode/edPlugin/include/libigl-master/include")
 include_directories(${MAYA_INCLUDE_DIR})
 
 link_directories(${MAYA_LIBRARY_DIR})

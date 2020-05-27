@@ -164,10 +164,16 @@ if __name__ == "__main__":
 	# """
 	# deformerNotion.write()
 
-	memory = NodeCode("memorySink", nodeType="MPxNode")
-	memory.description = """
-	memory cell passing on end result of evaluation
+	# memory = NodeCode("memorySink", nodeType="MPxNode")
+	# memory.description = """
+	# memory cell passing on end result of evaluation
+	# """
+	# memory.write()
+
+	skin = NodeCode("directDeltaMush", nodeType="MPxDeformerNode")
+	skin.description = """
+	test
 	"""
-	memory.write()
+	skin.write()
 
 

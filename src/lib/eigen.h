@@ -5,7 +5,4 @@
 
 #define _EIGEN
 
-
-
-
 #endif

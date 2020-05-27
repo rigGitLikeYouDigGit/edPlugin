@@ -9,6 +9,7 @@
 #include "meshToBuffers.h"
 
 
+using namespace ed;
 
 MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
 MString MeshToBuffers::kNODE_NAME( "meshToBuffers" );
@@ -174,8 +175,9 @@ MStatus MeshToBuffers::compute(
 		//DEBUGVI(faceOffsetVector);
 		
 
-		std::vector<int> pointConnects, pointOffsets;
-		tie(pointConnects, pointOffsets) = pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
+		//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
+		OffsetBuffer<int> result = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
+		std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
 
 		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
 		MObject pointObj = faceData.create(pointConnectsArray);

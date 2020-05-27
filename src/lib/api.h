@@ -17,6 +17,7 @@ as well as common plugin functions
 #include <maya/MStreamUtils.h>
 #include <maya/MPxNode.h>
 #include <maya/MPxDeformerNode.h>
+#include <maya/MPxSkinCluster.h>
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
@@ -46,6 +47,8 @@ as well as common plugin functions
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MFnIntArrayData.h>
 #include <maya/MFnFloatArrayData.h>
+#include <maya/MFnMeshData.h>
+#include <maya/MFnNurbsCurveData.h>
 #include <maya/MFnData.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnNurbsCurve.h>
@@ -214,13 +217,23 @@ inline MVectorArray vectorToMVectorArray(std::vector<float> &v) {
 
 
 // unable to find a good way to do this
-//void setAttributeAffectsAll(MPxNode &nodeType, MObject &driver, std::vector<MObject> &driven) {
-//	// sets driver to affect all driven
-//	for (auto &i : driven) {
-//		nodeType::attributeAffects(driver, i);
-//	}
-//}
-//
+template <typename T>
+inline void setAttributeAffectsAll(MObject &driver, std::vector<MObject> &driven) {
+	// sets driver to affect all driven
+	for (auto &i : driven) {
+		T::attributeAffects(driver, i);
+	}
+}
+
+template <typename T>
+inline void setAttributesAffect(std::vector<MObject> &driver, std::vector<MObject> &driven) {
+	// sets driver to affect all driven
+	for (auto &i : driver) {
+		for (auto &j : driven) {
+			T::attributeAffects(i, j);
+		}
+	}
+}
 
 
 #endif
