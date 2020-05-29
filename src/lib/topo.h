@@ -96,6 +96,12 @@ namespace ed {
 			nValues(static_cast<int>(initValues.size())),
 			nEntries(static_cast<int>(initValues.size()) / initStrideLength){}
 
+		void setVector(std::vector<T> &initValues, int initStrideLength) {
+			values = initValues;
+			nValues = static_cast<int>(initValues.size());
+			nEntries = (static_cast<int>(initValues.size()) / initStrideLength);
+		}
+
 		SmallList<T> entry(int entryIndex) {
 			int startIndex = entryIndex * strideLength;
 			int endIndex = startIndex + strideLength;
@@ -122,11 +128,13 @@ namespace ed {
 
 	template <typename T>
 	inline std::vector<T> entryFromBuffer(
+	//inline SmallList <T> entryFromBuffer(
 		std::vector<T> &values,
 		std::vector<int> &offsets,
 		int entryIndex) {
 		// use buffer indices to retrieve main values in entry
 		std::vector<T> result;
+		//SmallList<T> result;
 		int startIndex = offsets[entryIndex];
 		int endIndex;
 
@@ -145,14 +153,10 @@ namespace ed {
 	}
 
 
-
-	//inline std::tuple<std::vector<int>, std::vector<int>> pointBufferFromFaceBuffer(
-	inline OffsetBuffer<int> pointBufferFromFaceBuffer(
-		std::vector<int> &faceBuffer, std::vector<int> &faceOffsets)
+	static OffsetBuffer<int> pointBufferFromFaceBuffer(OffsetBuffer<int> &faceBuffer)
 	{
 		/*
 		for now gives points in unordered entries, with no consistent winding order
-
 		buffer entries are points connected to that index
 		buffer_entry[i] = iA, iB, iC, iD
 
@@ -160,11 +164,14 @@ namespace ed {
 		//DEBUGS("topo.h pointBufferFromFaceBuffer");
 		//DEBUGVI(faceBuffer);
 
+
 		// maximum point is number of points
-		int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end()) + 1;
+		//int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end()) + 1;
+		int nPoints = *max_element(faceBuffer.values.begin(), faceBuffer.values.end());
 		//DEBUGS("nPoints" << nPoints);
 
-		int nFaces = static_cast<int>(faceOffsets.size());
+		//int nFaces = static_cast<int>(faceOffsets.size());
+		int nFaces = faceBuffer.nEntries;
 		//DEBUGS("nFaces" << nFaces) // works
 
 		std::vector<int> pointConnects;
@@ -178,7 +185,8 @@ namespace ed {
 			// iterate over points in face entry
 			//DEBUGS("i " << i)
 
-			std::vector<int> facePoints = entryFromBuffer(faceBuffer, faceOffsets, i);
+			//std::vector<int> facePoints = entryFromBuffer(faceBuffer, faceOffsets, i);
+			SmallList<int> facePoints = faceBuffer.entry(i);
 			//DEBUGS("facePoints");
 			//DEBUGVI(facePoints);
 
@@ -219,8 +227,16 @@ namespace ed {
 			}
 		}
 
-		return OffsetBuffer<int> (pointConnects, pointOffsets);		
+		return OffsetBuffer<int>(pointConnects, pointOffsets);
 	}
+
+	static OffsetBuffer<int> pointBufferFromFaceVectors(
+		std::vector<int> &faceConnects, std::vector<int> &faceOffsets) {
+		// create offsetBuffer from input vectors if not supplied
+		OffsetBuffer<int> faceBuffer(faceConnects, faceOffsets);
+		return pointBufferFromFaceBuffer(faceBuffer);
+	}
+
 
 
 	// --- HALF EDGE MESH STRUCTURE ---
@@ -303,11 +319,11 @@ namespace ed {
 
 		// topo arrays - main mesh struct contains full object sequence
 		// arrays of structs, rip
-		std::vector<Point> points;
+		/*std::vector<Point> points;
 		std::vector<Vertex> vertices;
 		std::vector<Face> faces;
 		std::vector<Edge> edges;
-		std::vector<HalfEdge> hedges;
+		std::vector<HalfEdge> hedges; */
 
 		int nPoints;
 		int nFaces;
@@ -352,8 +368,7 @@ namespace ed {
 			std::vector<int> &initPointConnects,
 			std::vector<int> &initPointOffsets,
 			std::vector<int> &initFacePointConnects,
-			std::vector<int> &initFacePointOffsets,
-			std::vector<float> &initPointPositions
+			std::vector<int> &initFacePointOffsets
 		) {
 			// main method to build half-edge representation from raw buffers
 			nPoints = static_cast<int>(initPointConnects.size());
@@ -371,6 +386,13 @@ namespace ed {
 
 			// for half edges a continuous ring of points around face is needed
 
+		}
+
+		void setPositions(
+			std::vector<float> &initPointPositions
+		) {
+			// sets point positions externally, to be called after build
+			pointPositions->setVector(initPointPositions, 3);
 		}
 
 
@@ -395,6 +417,7 @@ namespace ed {
 			delete &pointConnects;
 			delete &facePointConnects;
 			delete &faceVertexConnects;
+			delete &pointPositions;
 		}
 
 	};
@@ -483,5 +506,5 @@ namespace ed {
 
 	};
 
-}
+} //ed
 #endif

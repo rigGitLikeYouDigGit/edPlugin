@@ -176,7 +176,7 @@ MStatus MeshToBuffers::compute(
 		
 
 		//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
-		OffsetBuffer<int> result = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
+		OffsetBuffer<int> result = ed::pointBufferFromFaceVectors(faceVector, faceOffsetVector);
 		std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
 
 		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);

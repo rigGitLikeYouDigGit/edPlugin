@@ -11,12 +11,12 @@
 #include "directDeltaMush.h"
 
 using namespace std;
+using namespace ed;
 
 MTypeId DirectDeltaMush::kNODE_ID(0x00122C1D);
 MString DirectDeltaMush::kNODE_NAME( "directDeltaMush" );
 
 MObject DirectDeltaMush::aBind;
-
 
 MObject DirectDeltaMush::aVertexWeightIndices;
 MObject DirectDeltaMush::aVertexWeightValues;
@@ -39,6 +39,7 @@ MObject bindPreMatrix - input prematrix array
 ALSO INHERIT ALL ATTRIBUTES FROM NORMAL SKINCLUSTER enjoy that node bloat lol
 
 */
+
 
 
 MStatus DirectDeltaMush::initialize()
@@ -88,6 +89,116 @@ MStatus DirectDeltaMush::initialize()
 //    return MS::kSuccess;
 //}
 
+OffsetBuffer<int> faceBufferFromMfnMesh(MFnMesh mfn) {
+	// construct face buffer from mfn info
+	int nPolys = mfn.numPolygons();
+	vector<int> facePointConnects;
+	vector<int> facePointOffsets(nPolys, -1);
+	int offsetIndex = 0;
+	for (int i = 0; i < nPolys; i++) {
+
+		// add offset to current index
+		facePointOffsets[i] = offsetIndex;
+
+		// get face vertices
+		MIntArray faceVertices;
+		mfn.getPolygonVertices(i, faceVertices);
+
+		for (unsigned int n = 0; n < faceVertices.length(); n++) {
+			//allFaceVertices.append(faceVertices[n]);
+			facePointConnects.push_back(faceVertices[n]);
+			offsetIndex += 1;
+		}
+	}
+	return OffsetBuffer<int>(facePointConnects, facePointOffsets);
+}
+
+void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build) {
+	// updates target mesh struct from mesh MObject
+	// if build, will rebuild topology buffers
+	// if not, will only copy point positions
+	//MFnMesh meshFn = MFnMesh(meshObj);
+	MStatus s = MS::kSuccess;
+	MFnMesh meshFn(meshObj);
+
+	int nPoints = meshFn.numVertices();
+	int nPolys = meshFn.numPolygons();
+
+	if (build > 0) {
+		// face buffers
+		//MIntArray allFaceVertices;
+		vector<int> allFaceVertices;
+		//MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
+		vector<int> faceVertexOffsets(nPolys, -1);
+		int offsetIndex = 0;
+		for (int i = 0; i < nPolys; i++) {
+
+				// add offset to current index
+			faceVertexOffsets[i] = offsetIndex;
+
+			// get face vertices
+			MIntArray faceVertices;
+			meshFn.getPolygonVertices(i, faceVertices);
+
+			for (unsigned int n = 0; n < faceVertices.length(); n++) {
+				//allFaceVertices.append(faceVertices[n]);
+				allFaceVertices.push_back(n);
+				offsetIndex += 1;
+			}
+		}
+		OffsetBuffer<int> faceBuffer(allFaceVertices, faceVertexOffsets);
+		OffsetBuffer<int> pointBuffer = pointBufferFromFaceBuffer(
+			faceBuffer);
+		hedgeMesh.build(
+			pointBuffer.values, pointBuffer.offsets,
+			faceBuffer.values, faceBuffer.offsets
+		);
+	}
+
+	// set mesh point positions
+	const float * rawPositions = meshFn.getRawPoints(&s);
+	vector<float> posVector(nPoints * 3, 0.0);
+	for (int i = 0; i < nPoints; i++) {
+		posVector[i] = rawPositions[i];
+	}
+	hedgeMesh.setPositions(posVector);
+}
+
+
+void DirectDeltaMush::runBind(MDataBlock& data, const MObject& meshObj) {
+	// precompute node
+	// first rebuild topological struct
+	HalfEdgeMeshFromMObject(*hedgeMesh, meshObj, 1);
+	
+	/* traverse basic skincluster weight system to build more efficient weight
+buffers, then transfer those into array attributes
+refresher:
+	weightList[ vtxId ].weights[ influenceIndex ] = influence weight
+*/
+	vector<int> vertexWeightIndices;
+	vector<float> vertexWeightValues;
+	vector<int> vertexWeightOffsets(hedgeMesh->nPoints, -1);
+
+	MArrayDataHandle weightHdl = data.outputArrayValue(weightList);
+	int offsetIndex = 0;
+	for (int i = 0; i < hedgeMesh->nPoints; i++) {
+		vertexWeightOffsets[i] = offsetIndex;
+		jumpToElement(weightHdl, i);
+		MArrayDataHandle vtxEntry = weightHdl.outputArrayValue();
+		unsigned int nWeights = vtxEntry.elementCount();
+		for (unsigned int n = 0; n < nWeights; n++) {
+			vertexWeightIndices.push_back(vtxEntry.elementIndex());
+			vertexWeightValues.push_back(vtxEntry.outputValue().asFloat());
+			offsetIndex++;
+		}
+
+	}
+
+
+	
+
+}
+
 MStatus DirectDeltaMush::compute(
 	const MPlug& plug, MDataBlock& data) {
 
@@ -98,30 +209,45 @@ MStatus DirectDeltaMush::compute(
 	jumpToElement(inputArray, 0);
 	MDataHandle geoHandle = (inputArray.inputValue().child(inputGeom));
 	MObject meshObj = geoHandle.asMesh();
+
+	int bind = data.inputValue(aBind).asInt();
+	if (bind == 1 || bind == 3) { // bind or live
+
+		runBind(data, meshObj);
+
+		if (bind == 1) { // set bind attr to bound
+			data.inputValue(aBind).setInt(2);
+		}
+	}
+
 	
-	//MFnMeshData meshData = MFnMeshData::create();
-	//MObject newMeshObj = MFnMeshData::create();
 
 	// check envelope
 	float envelopeValue = data.inputValue(envelope).asFloat();
 	if (envelopeValue < 0.001) {
-		//MObject mesh = MObject(data.inputValue(inputGeom).asMesh());
-		//data.outputValue(outputGeom).copy( data.inputValue(inputGeom));
+
+		// set output data directly
+		setOutputGeo(data, meshObj);
+		data.setClean(plug);
 		return MS::kSuccess;
 	}
-	//MObject mesh = MObject(data.inputValue(inputGeom).asMesh());
-	//data.outputValue(outputGeom).copy(data.inputValue(inputGeom));
-	//data.outputValue(outputGeom).setMObject(meshDatas );
+
 
 	// set output geometry plug
-	MArrayDataHandle outputArray = data.outputArrayValue(outputGeom);
-	jumpToElement(outputArray, 0);
-	MDataHandle outputGeoHandle = outputArray.outputValue();
-	outputGeoHandle.setMObject(meshObj);
+	setOutputGeo(data, meshObj);
+	data.setClean(plug);
 
 	return MS::kSuccess;
 }
 
+void DirectDeltaMush::setOutputGeo(MDataBlock& data, const MObject& meshGeo) {
+	// sets output plug to target mesh object
+	// we deform only one piece of geometry
+	MArrayDataHandle outputArray = data.outputArrayValue(outputGeom);
+	jumpToElement(outputArray, 0);
+	MDataHandle outputGeoHandle = outputArray.outputValue();
+	outputGeoHandle.setMObject(meshGeo);
+}
 
 /*
 use this opportunity to test a more efficient way of working with per-vertex weights
@@ -139,7 +265,10 @@ vertex index : 3  - offset buffer
 
 void* DirectDeltaMush::creator(){
 
-    return new DirectDeltaMush;
+     DirectDeltaMush *node = new DirectDeltaMush;
+	 node->hedgeMesh = new HalfEdgeMesh;
+
+	 return node;
 
 }
 
