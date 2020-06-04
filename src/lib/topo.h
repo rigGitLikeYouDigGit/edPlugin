@@ -7,6 +7,8 @@
 #include <set>
 #include <algorithm>
 #include <numeric>
+#include <string>
+#include <map>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
@@ -92,7 +94,7 @@ namespace ed {
 		int strideLength;
 
 		UniformBuffer( std::vector<T> &initValues, int initStrideLength) :
-			values(initValues), strideLength(initStrideLength), 
+			values(initValues), strideLength(initStrideLength),
 			nValues(static_cast<int>(initValues.size())),
 			nEntries(static_cast<int>(initValues.size()) / initStrideLength){}
 
@@ -358,6 +360,18 @@ namespace ed {
 		/* seems easier to hold pointers to buffers, but I don't know if this
 		messes up memory contiguity */
 
+		// uv system
+		std::map<string, int> uvSetNames; // set names to vector index
+		std::vector< UniformBuffer<float> > vertexUvPositions;
+		/*  vertexUvPositions:
+		face vertices mapped directly to uvs - this requires 2 floats for each vertex,
+		more tools to find uv connectivity, but is the simplest option for storage
+		*/
+		std::vector< UniformBuffer<int> > uvConnects;
+		/* uvConnects:
+		regenerated once
+		how???
+		*/
 
 
 		// buffer to check areas of mesh that have changed
