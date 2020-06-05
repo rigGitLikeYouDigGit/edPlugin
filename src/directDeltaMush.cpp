@@ -2,10 +2,10 @@
 
 /*
 
-	no copyright or breach of contract intended, 
+	no copyright or breach of contract intended,
 	it's just much more efficient to test this when I already have the environment set up
 	will delete once project is concluded
-	
+
 */
 
 #include "directDeltaMush.h"
@@ -169,7 +169,7 @@ void DirectDeltaMush::runBind(MDataBlock& data, const MObject& meshObj) {
 	// precompute node
 	// first rebuild topological struct
 	HalfEdgeMeshFromMObject(*hedgeMesh, meshObj, 1);
-	
+
 	/* traverse basic skincluster weight system to build more efficient weight
 buffers, then transfer those into array attributes
 refresher:
@@ -195,9 +195,19 @@ refresher:
 	}
 
 
-	
-
 }
+
+
+MMatrixArray extractMMatrixArray( const MArrayDataHandle& matArray){
+	// extract weight matrices from array
+	MMatrixArray result( matArray.elementCount());
+	for(int i=0; i < matArray.elementCount(); i++){
+		jumpToElement(matArray, i);
+		result[i] = matArray.outputValue().asMatrix();
+	}
+	return result;
+}
+
 
 MStatus DirectDeltaMush::compute(
 	const MPlug& plug, MDataBlock& data) {
@@ -220,8 +230,6 @@ MStatus DirectDeltaMush::compute(
 		}
 	}
 
-	
-
 	// check envelope
 	float envelopeValue = data.inputValue(envelope).asFloat();
 	if (envelopeValue < 0.001) {
@@ -232,6 +240,11 @@ MStatus DirectDeltaMush::compute(
 		return MS::kSuccess;
 	}
 
+	// extract joint matrix arrays
+	MMatrixArray transformMatrices = extractMMatrixArray(
+		data.outputArrayValue(matrix));
+	MMatrixArray bindPreMatrices = extractMMatrixArray(
+			data.outputArrayValue(bindPreMatrix));
 
 	// set output geometry plug
 	setOutputGeo(data, meshObj);
@@ -258,10 +271,13 @@ vertex index : influence1 weight, influence4 weight, influence5 weight    - infl
 vertex index : 1, 4, 5   - influence indices
 vertex index : 3  - offset buffer
 
-
-
 */
-
+struct SkinData{
+	// struct to store and query skincluster data
+	vector<int> vertexOffsets;
+	vector<int> influenceIndices;
+	vector<float> influenceWeights;
+};
 
 void* DirectDeltaMush::creator(){
 
@@ -274,4 +290,3 @@ void* DirectDeltaMush::creator(){
 
 DirectDeltaMush::DirectDeltaMush() {};
 DirectDeltaMush::~DirectDeltaMush() {};
-
