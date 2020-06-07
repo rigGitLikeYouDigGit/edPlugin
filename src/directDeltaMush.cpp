@@ -142,27 +142,7 @@ void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build
 	hedgeMesh.nFaces = nPolys;
 
 	if (build > 0) {
-		//// face buffers
-		////MIntArray allFaceVertices;
-		//vector<int> allFaceVertices;
-		////MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
-		//vector<int> faceVertexOffsets(nPolys, -1);
-		//int offsetIndex = 0;
-		//for (int i = 0; i < nPolys; i++) {
 
-		//		// add offset to current index
-		//	faceVertexOffsets[i] = offsetIndex;
-
-		//	// get face vertices
-		//	MIntArray faceVertices;
-		//	meshFn.getPolygonVertices(i, faceVertices);
-
-		//	for (unsigned int n = 0; n < faceVertices.length(); n++) {
-		//		//allFaceVertices.append(faceVertices[n]);
-		//		allFaceVertices.push_back(n);
-		//		offsetIndex += 1;
-		//	}
-		//}
 		DEBUGS("building hedgemesh");
 		OffsetBuffer<int> faceBuffer = faceBufferFromMfnMesh(meshFn);
 		//OffsetBuffer<int> faceBuffer(allFaceVertices, faceVertexOffsets);
@@ -179,14 +159,18 @@ void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build
 	}
 
 	// set mesh point positions
-	// DEBUGS("set positions")
-	const float * rawPositions = meshFn.getRawPoints(&s);
-	vector<float> posVector(nPoints * 3, 0.0);
+	DEBUGS("set positions")
+
+	const float * rawPositions = meshFn.getRawPoints(&s);	
+	float test = rawPositions[7];
+	vector<double> posVector(nPoints * 3, 0.0);
 	for (int i = 0; i < nPoints; i++) {
 		posVector[i*3] = rawPositions[i*3];
 		posVector[i*3 + 1] = rawPositions[i*3 + 1];
 		posVector[i*3 + 2] = rawPositions[i*3 + 2];
+
 	}
+
 
 	//DEBUGVI(posVector);
 	hedgeMesh.setPositions(posVector);
@@ -203,18 +187,19 @@ void extractSkinWeights(MArrayDataHandle& weightRoot, SkinData& skinInfo) {
 	DEBUGS("extractSkinWeights");
 	vector<int> vertexOffsets(weightRoot.elementCount());
 	vector<int> influenceIndices;
-	vector<float> influenceWeights;
+	vector<double> influenceWeights;
 	// eps value to discount negligible influences
 	static double e = 0.0001;
 
-	DEBUGS("elemcount");
-	DEBUGS(weightRoot.elementCount());
+	//DEBUGS("elemcount");
+	//DEBUGS(weightRoot.elementCount());
 
 	int offsetIndex = 0;
 	for (unsigned int i = 0; i < weightRoot.elementCount(); i++) {
 		vertexOffsets[i] = offsetIndex;
 		jumpToElement(weightRoot, i);
-		MArrayDataHandle vtxEntry = weightRoot.inputArrayValue();
+		MArrayDataHandle vtxEntry = weightRoot.inputValue().child(
+			DirectDeltaMush::weights);
 		unsigned int nWeights = vtxEntry.elementCount();
 		//DEBUGS("nWeights");
 		//DEBUGS(nWeights);
@@ -225,8 +210,9 @@ void extractSkinWeights(MArrayDataHandle& weightRoot, SkinData& skinInfo) {
 			continue;
 		}
 		for (unsigned int n = 0; n < nWeights; n++) {
+			jumpToElement(vtxEntry, n);
 			influenceIndices.push_back(vtxEntry.elementIndex());
-			influenceWeights.push_back(vtxEntry.outputValue().asFloat());
+			influenceWeights.push_back(vtxEntry.inputValue().asDouble());
 			offsetIndex++;
 		}
 	}
@@ -248,21 +234,22 @@ void DirectDeltaMush::runBind(MDataBlock& data, const MObject& meshObj) {
 	HalfEdgeMeshFromMObject(*hedgeMesh, meshObj, 1);
 
 	// still having serious trouble
-	SkinData &skinInfo = deformParams->skinData;
-	extractSkinWeights(data.outputArrayValue(weightList),
-		skinInfo);
-	DEBUGS("skinIndices");
-	DEBUGVI(skinInfo.influenceIndices)
+	
+	//DEBUGS("skinIndices");
+	//DEBUGVI(skinInfo.influenceIndices)
 }
 
 
 MMatrixArray extractMMatrixArray(MArrayDataHandle& matArray) {
-		//DEBUGS("ddm extract mmatrices")
-			// extract weight matrices from array
-			MMatrixArray result(matArray.elementCount());
+	DEBUGS("ddm extract mmatrices");
+		// extract weight matrices from array
+	// simple, right?
+
+		MMatrixArray result(matArray.elementCount());
 		for (unsigned int i = 0; i < matArray.elementCount(); i++) {
-			jumpToElement(matArray, i);
-			result[i] = matArray.outputValue().asMatrix();
+			result[i] = MFnMatrixData(matArray.inputValue().data()).matrix();
+			// guess again
+			matArray.next();
 		}
 		return result;
 	}
@@ -295,44 +282,29 @@ void DirectDeltaMush::deformPoint(
 	const DeformerParametres &params, 
 	vector<double> &outPositions, int index) {
 	// deform single vertex
-	DEBUGS("deformPoint");
-	DEBUGS(index);
-		/*MVector baseVector(
-			outPositions[index * 3],
-			outPositions[index * 3 + 1],
-			outPositions[index * 3 + 2]);*/
-	//DEBUGS(mesh->pointPositions.strideLength);
-	//SmallList<float> baseList = mesh.pointPositions.entry(index);
+
 	SmallList<double> baseList = mesh.pointPositions.entry(index);
-	//DEBUGVI(baseList);
-	//DEBUGS("above is baseList")
+
 
 	MVector baseVector(
-		static_cast<double>(baseList[0]), 
-		static_cast<double>(baseList[1]), 
-		static_cast<double>(baseList[2]));
+		baseList[0], baseList[1], baseList[2]);
 
-	//MFloatVector baseVector(
-	//	baseList[0],
-	//	baseList[1],
-	//	baseList[2]);
-
-	//DEBUGVI(mesh->pointPositions.values);
-	
-	//DEBUGVI(params.skinData.influenceIndices);
-	//DEBUGVI(params.skinData.vertexOffsets);
 	// get skin indices and weights
 	SmallList<int> weightIndices = entryFromBuffer(
 		params.skinData.influenceIndices, params.skinData.vertexOffsets, index);
 	//DEBUGVI(weightIndices);
-	SmallList<float> weightValues = entryFromBuffer(
+	SmallList<double> weightValues = entryFromBuffer(
 		params.skinData.influenceWeights, params.skinData.vertexOffsets, index);
 	//DEBUGVI(weightValues);
 
 	// output position
-	MVector result = baseVector;
+	MVector result(baseVector);
 	//DEBUGS("baseVector");
 
+	MVector tfPos(baseVector);
+	//MMatrix tfMat;
+	//MMatrix baseMat;
+	MMatrix diffMat;
 	
 	//DEBUGS("iterate weight values")
 	for (int i = 0; i < weightValues.size(); i++) {
@@ -340,30 +312,22 @@ void DirectDeltaMush::deformPoint(
 		int infIndex = weightIndices[i];
 		//DEBUGS(infIndex);
 		MMatrix baseMat = (params.refMats)[ infIndex ];
-		//DEBUGS("baseMat");
-		//DEBUGMM(baseMat);
 
-		MMatrix tfMat = (params.tfMats)[ infIndex ];
-		//DEBUGS("tfMat");
-		//DEBUGMM(tfMat);
-		MMatrix diffMat = baseMat.inverse() * tfMat;
-		MFloatMatrix floatDiffMat(diffMat.matrix);
-		/*MVector tfPos = diffMat * baseVector;*/
-		MFloatVector tfPos = floatDiffMat * baseVector;
-		//tfPos = baseVector * tfMat;
-		DEBUGMV(tfPos);
+		MMatrix tfMat = params.tfMats[ infIndex ];
 
-		// blend output by envelope
-		result = baseVector * (1 - params.envelope) + tfPos * params.envelope;
-		//result = baseVector * static_cast<double>(params.envelope);
-		
+		double weightVal = static_cast<double>(weightValues[i]);
+		//DEBUGS(weightVal);
+		diffMat = baseMat.inverse() * tfMat;
+		tfPos = tfPos + diffMat * baseVector * weightVal;
+
 	}
-	DEBUGS("resultVector");
-	DEBUGMV(result);
 
-	outPositions[index * 3] = static_cast<double>(result.x);
-	outPositions[index * 3 + 1] = static_cast<double>(result.y);
-	outPositions[index * 3 + 2] = static_cast<double>(result.z);
+	// blend output by envelope
+	result = baseVector * (1 - params.envelope) + tfPos * params.envelope;
+
+	outPositions[index * 3] = result.x;
+	outPositions[index * 3 + 1] = result.y;
+	outPositions[index * 3 + 2] = result.z;
 
 	//DEBUGS("outPositions");
 	//DEBUGVI(outPositions);
@@ -401,18 +365,13 @@ MStatus DirectDeltaMush::compute(
 	int weightCount = data.outputArrayValue(weightList).elementCount();
 	DEBUGS("weightCount");
 	DEBUGS(weightCount);
+	//data.inputArrayValue(weights);
 
 	initialiseWeightArray(data.inputArrayValue(weightList), meshFn.numVertices());
 
-
-	//if (weightCount == 0) {
-
-	//	// set output data directly
-	//	setOutputGeo(data, meshObj);
-	//	data.setClean(plug);
-	//	return MS::kSuccess;
-	//}
-
+	SkinData &skinInfo = deformParams->skinData;
+	extractSkinWeights(data.inputArrayValue(weightList),
+		skinInfo);
 
 
 	//if (weightCount != meshFn.numVertices()) {
@@ -442,9 +401,9 @@ MStatus DirectDeltaMush::compute(
 
 	// extract joint matrix arrays
 	MMatrixArray transformMatrices = extractMMatrixArray(
-		data.outputArrayValue(matrix));
+		data.inputArrayValue(matrix));
 	MMatrixArray bindPreMatrices = extractMMatrixArray(
-			data.outputArrayValue(bindPreMatrix));
+			data.inputArrayValue(bindPreMatrix));
 
 	deformParams->tfMats = transformMatrices;
 	deformParams->refMats = bindPreMatrices;
@@ -484,11 +443,6 @@ void* DirectDeltaMush::creator(){
      DirectDeltaMush *node = new DirectDeltaMush;
 	 node->hedgeMesh = new HalfEdgeMesh;
 	 node->deformParams = new DeformerParametres;
-	 //node->deformParams->skinData = new SkinData;
-	 /* 
-	 is it correct or safe to do this? without new keyword any
-	 attempt to access member structs crashes immediately
-	 */
 
 	 return node;
 

@@ -46,6 +46,14 @@ as well as common plugin functions
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnGenericAttribute.h>
 #include <maya/MFnAttribute.h>
+
+#include <maya/MFnMesh.h>
+#include <maya/MFnNurbsCurve.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MArrayDataBuilder.h>
+
+#include <maya/MFnMatrixArrayData.h>
+#include <maya/MFnMatrixData.h>
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnVectorArrayData.h>
 #include <maya/MFnIntArrayData.h>
@@ -53,10 +61,6 @@ as well as common plugin functions
 #include <maya/MFnMeshData.h>
 #include <maya/MFnNurbsCurveData.h>
 #include <maya/MFnData.h>
-#include <maya/MFnMesh.h>
-#include <maya/MFnNurbsCurve.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MArrayDataBuilder.h>
 
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>

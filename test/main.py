@@ -63,7 +63,7 @@ def baseTest():
 def testDdm():
 
 	# test for skin
-	mesh = cmds.polyCylinder(r=1, h=10, sx=16, sy=16, sz=16, ax=(0, 0, 1), ch=0)[0]
+	mesh = cmds.polyCylinder(r=1, h=10, sx=8, sy=8, sz=8, ax=(0, 0, 1), ch=0)[0]
 	# skin cluster to transfer base weights
 	skcMesh = cmds.duplicate(mesh, n="skcMesh")[0]
 	joints = []
@@ -103,6 +103,16 @@ def testDdm():
 		sinkPlug.setMDataHandle(om.MDataHandle(sourceDH))
 
 		cmds.select(ddm)
+
+	# direct weight connections from skincluster to allow live weight editing
+	for i in range( cmds.getAttr(skin + ".weightList", size=1)):
+		array = skin + ".weightList[{}]".format(i)
+		# for n in range( cmds.getAttr(array + ".weights", size=1 )):
+		# 	srcPlug = array + ".weights[{}]".format(n)
+
+		srcPlug = array
+		dstPlug = srcPlug.replace(skin, ddm)
+		cmds.connectAttr(srcPlug, dstPlug, f=1)
 
 	# move skc mesh off to side
 	group = cmds.group(skcMesh, n="skcOffsetGrp")

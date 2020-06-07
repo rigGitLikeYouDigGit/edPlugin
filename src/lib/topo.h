@@ -415,7 +415,9 @@ namespace ed {
 
 
 		// spatial information
-		UniformBuffer<float> pointPositions;
+		//UniformBuffer<float> pointPositions;
+		UniformBuffer<double> pointPositions;
+		// doubles are default in maya
 		UniformBuffer<float>* pointNormals;
 		UniformBuffer<float>* faceNormals;
 
@@ -466,11 +468,11 @@ namespace ed {
 		}
 
 		void setPositions(
-			std::vector<float> initPointPositions
+			std::vector<double> initPointPositions
 		) {
 			// sets point positions externally, to be called after build
 			//pointPositions->setVector(initPointPositions, 3);
-			UniformBuffer<float> newBuffer(initPointPositions, 3);
+			UniformBuffer<double> newBuffer(initPointPositions, 3);
 			//DEBUGS("strideLength");
 			//DEBUGS(newBuffer.strideLength);
 			pointPositions = newBuffer;
