@@ -42,12 +42,13 @@ namespace ed {
 	// struct to make buffers and offsets easier to interact with
 	template <typename T>
 	struct OffsetBuffer {
-		std::vector<T> &values;
-		std::vector<int> &offsets;
 		int nValues;
 		int nEntries;
 
-		OffsetBuffer( std::vector<T> &initValues, std::vector<int> &initOffsets) :
+		std::vector<T> values;
+		std::vector<int> offsets;
+
+		OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets) :
 			values(initValues), offsets(initOffsets),
 			nValues(static_cast<int>(initValues.size())),
 			nEntries(static_cast<int>(initOffsets.size())){}
@@ -67,10 +68,13 @@ namespace ed {
 			}
 
 			SmallList<T> result;
-			result.reserve(endIndex - startIndex);
+			//result.reserve(endIndex - startIndex);
+			int resultIndex = 0;
 			for (int i = startIndex; i < endIndex;) {
 				result.push_back(values[i]);
+				//result[resultIndex] = values[i];
 				i++;
+				resultIndex++;
 			}
 			return result;
 		}
@@ -88,18 +92,34 @@ namespace ed {
 	// corresponding wrapper for buffers of constant entry length
 	template <typename T>
 	struct UniformBuffer{
-		std::vector<T> &values;
 		int nValues;
 		int nEntries;
 		int strideLength;
+		std::vector<T> values;
 
-		UniformBuffer( std::vector<T> &initValues, int initStrideLength) :
+		UniformBuffer() {}
+
+
+		UniformBuffer( std::vector<T> initValues, int initStrideLength) :
 			values(initValues), strideLength(initStrideLength),
 			nValues(static_cast<int>(initValues.size())),
 			nEntries(static_cast<int>(initValues.size()) / initStrideLength){}
 
-		void setVector(std::vector<T> &initValues, int initStrideLength) {
-			values = initValues;
+		void setVector(std::vector<T> initValues, int initStrideLength) {
+			//values = std::vector<T>(initValues);
+			//copy(initValues.begin(), initValues.end(), back_inserter(values));
+			//values.swap(initValues);
+			//values.clear();
+			//for (auto &a : initValues) {
+			//	//values.push_back(a);
+			//}
+
+			// error std::_Container_base12::_Orphan_all
+			// for some reason
+			//DEBUGS(initValues[0]);
+			std::vector<T> p = initValues;
+			values = p;
+
 			nValues = static_cast<int>(initValues.size());
 			nEntries = (static_cast<int>(initValues.size()) / initStrideLength);
 		}
@@ -107,10 +127,17 @@ namespace ed {
 		SmallList<T> entry(int entryIndex) {
 			int startIndex = entryIndex * strideLength;
 			int endIndex = startIndex + strideLength;
+			//DEBUGS(startIndex);
+			//DEBUGS(strideLength);
+			//DEBUGS(endIndex);
+
 			SmallList<T> result;
-			result.reserve(strideLength);
-			for (int i = startIndex; i < endIndex) {
+			//result.reserve(endIndex - startIndex);
+			int resultIndex = 0;
+			for (int i = startIndex; i < endIndex;) {
 				result.push_back(values[i]);
+				//result[resultIndex] = values[i];
+				i++;
 			}
 			return result;
 		}
@@ -129,14 +156,13 @@ namespace ed {
 	// --- building buffers ---
 
 	template <typename T>
-	inline std::vector<T> entryFromBuffer(
-	//inline SmallList <T> entryFromBuffer(
+	inline SmallList <T> entryFromBuffer(
 		std::vector<T> &values,
 		std::vector<int> &offsets,
 		int entryIndex) {
 		// use buffer indices to retrieve main values in entry
-		std::vector<T> result;
-		//SmallList<T> result;
+		//std::vector<T> result;
+		SmallList<T> result;
 		int startIndex = offsets[entryIndex];
 		int endIndex;
 
@@ -146,6 +172,37 @@ namespace ed {
 		}
 		else {
 			endIndex = offsets[entryIndex + 1];
+		}
+		if (startIndex == endIndex) {
+			endIndex++;
+		}
+		for (int i = startIndex; i < endIndex;) {
+			result.push_back(values[i]);
+			i++;
+		}
+		return result;
+	}
+
+	template <typename T>
+	inline SmallList <T> entryFromBuffer(
+		const std::vector<T> &values,
+		const std::vector<int> &offsets,
+		int entryIndex) {
+		// use buffer indices to retrieve main values in entry
+		//std::vector<T> result;
+		SmallList<T> result;
+		int startIndex = offsets[entryIndex];
+		int endIndex;
+
+		// check if entry is last
+		if (entryIndex == offsets.size() - 1) {
+			endIndex = static_cast<int>(values.size());
+		}
+		else {
+			endIndex = offsets[entryIndex + 1];
+		}
+		if (startIndex == endIndex) {
+			endIndex++;
 		}
 		for (int i = startIndex; i < endIndex;) {
 			result.push_back(values[i]);
@@ -163,13 +220,14 @@ namespace ed {
 		buffer_entry[i] = iA, iB, iC, iD
 
 		*/
-		//DEBUGS("topo.h pointBufferFromFaceBuffer");
-		//DEBUGVI(faceBuffer);
+		DEBUGS("topo.h pointBufferFromFaceBuffer");
+		//DEBUGVI(faceBuffer.values);
+		//DEBUGVI(faceBuffer.offsets);
 
 
 		// maximum point is number of points
 		//int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end()) + 1;
-		int nPoints = *max_element(faceBuffer.values.begin(), faceBuffer.values.end());
+		int nPoints = *max_element(faceBuffer.values.begin(), faceBuffer.values.end()) + 1;
 		//DEBUGS("nPoints" << nPoints);
 
 		//int nFaces = static_cast<int>(faceOffsets.size());
@@ -229,11 +287,15 @@ namespace ed {
 			}
 		}
 
-		return OffsetBuffer<int>(pointConnects, pointOffsets);
+		DEBUGVI(pointConnects);
+		OffsetBuffer<int> result(pointConnects, pointOffsets);
+
+		return result;
 	}
 
 	static OffsetBuffer<int> pointBufferFromFaceVectors(
 		std::vector<int> &faceConnects, std::vector<int> &faceOffsets) {
+		DEBUGS("pointBufferFromFaceVectors")
 		// create offsetBuffer from input vectors if not supplied
 		OffsetBuffer<int> faceBuffer(faceConnects, faceOffsets);
 		return pointBufferFromFaceBuffer(faceBuffer);
@@ -353,7 +415,7 @@ namespace ed {
 
 
 		// spatial information
-		UniformBuffer<float>* pointPositions;
+		UniformBuffer<float> pointPositions;
 		UniformBuffer<float>* pointNormals;
 		UniformBuffer<float>* faceNormals;
 
@@ -361,7 +423,7 @@ namespace ed {
 		messes up memory contiguity */
 
 		// uv system
-		std::map<string, int> uvSetNames; // set names to vector index
+		std::map<std::string, int> uvSetNames; // set names to vector index
 		std::vector< UniformBuffer<float> > vertexUvPositions;
 		/*  vertexUvPositions:
 		face vertices mapped directly to uvs - this requires 2 floats for each vertex,
@@ -379,13 +441,14 @@ namespace ed {
 
 
 		void build(
-			std::vector<int> &initPointConnects,
-			std::vector<int> &initPointOffsets,
-			std::vector<int> &initFacePointConnects,
-			std::vector<int> &initFacePointOffsets
+			std::vector<int> initPointConnects,
+			std::vector<int> initPointOffsets,
+			std::vector<int> initFacePointConnects,
+			std::vector<int> initFacePointOffsets
 		) {
 			// main method to build half-edge representation from raw buffers
-			nPoints = static_cast<int>(initPointConnects.size());
+			DEBUGS("HalfEdgeMesh::build")
+			nPoints = static_cast<int>(initPointOffsets.size());
 			nFaces = static_cast<int>(initFacePointOffsets.size());
 			nVertices = static_cast<int>(initFacePointConnects.size()); // 1 per face per point
 
@@ -403,10 +466,15 @@ namespace ed {
 		}
 
 		void setPositions(
-			std::vector<float> &initPointPositions
+			std::vector<float> initPointPositions
 		) {
 			// sets point positions externally, to be called after build
-			pointPositions->setVector(initPointPositions, 3);
+			//pointPositions->setVector(initPointPositions, 3);
+			UniformBuffer<float> newBuffer(initPointPositions, 3);
+			//DEBUGS("strideLength");
+			//DEBUGS(newBuffer.strideLength);
+			pointPositions = newBuffer;
+			//DEBUGS(pointPositions.strideLength);
 		}
 
 
@@ -427,11 +495,13 @@ namespace ed {
 			return result;
 		}
 
+		HalfEdgeMesh() {}
+
 		~HalfEdgeMesh() {
 			delete &pointConnects;
 			delete &facePointConnects;
 			delete &faceVertexConnects;
-			delete &pointPositions;
+			//delete &pointPositions;
 		}
 
 	};

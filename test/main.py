@@ -29,7 +29,8 @@ def runTests():
 
 	#createPluginNodes()
 	cube = baseTest()
-	testDeformers(cube)
+	#testDeformers(cube)
+	testDdm()
 
 def getMObject(name):
 	sel = om.MSelectionList()
@@ -56,12 +57,15 @@ def baseTest():
 	print("testsRun")
 	#testMemory(cube)
 
+	return cube
+
+
+def testDdm():
+
 	# test for skin
 	mesh = cmds.polyCylinder(r=1, h=10, sx=16, sy=16, sz=16, ax=(0, 0, 1), ch=0)[0]
-
 	# skin cluster to transfer base weights
 	skcMesh = cmds.duplicate(mesh, n="skcMesh")[0]
-
 	joints = []
 	refJoints = []
 
@@ -95,27 +99,16 @@ def baseTest():
 
 		sinkDH.copy(sourceDH)
 
-
-
-		#sinkPlug.setMDataHandle(om.MDataHandle(sinkDH))
-
 		sourceDH = sourcePlug.asMDataHandle()
 		sinkPlug.setMDataHandle(om.MDataHandle(sourceDH))
 
-
 		cmds.select(ddm)
-		# plugCmds = (sourcePlug.getSetAttrCmds())
-		# plugString = ""
-		# mel.eval(plugCmds)
-		# for n in plugCmds:
-		# 	print(n)
-		# 	mel.eval(str(n))
-		# 	pass
+
+	# move skc mesh off to side
+	group = cmds.group(skcMesh, n="skcOffsetGrp")
+	cmds.setAttr(group + ".translateX", 5)
 
 
-
-
-	return cube
 
 def testDeformers(mesh):
 	""" test uberDeformer system """

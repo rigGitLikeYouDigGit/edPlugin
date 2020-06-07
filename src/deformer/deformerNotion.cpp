@@ -14,7 +14,7 @@ MString DeformerNotion::kNODE_NAME( "deformerNotion" );
 MObject DeformerNotion::aWeights;
 MObject DeformerNotion::aUseWeights;
 MObject DeformerNotion::aLocalIterations;
-MObject DeformerNotion::aMasterConnection;
+MObject DeformerNotion::aUberDeformer;
 
 
 MStatus DeformerNotion::initialize()
@@ -24,12 +24,12 @@ MStatus DeformerNotion::initialize()
 	MFnTypedAttribute tFn;
 
 	// boolean plug to connect to master deformer
-	aMasterConnection = nFn.create("masterConnection", "masterConnection", MFnNumericData::kBoolean, 0);
-	addAttribute(aMasterConnection);
+	aUberDeformer = nFn.create("uberDeformer", "uberDeformer", MFnNumericData::kBoolean, 0);
+	addAttribute(aUberDeformer);
 	
 	// check whether to use per-point weights for deformation
 	aUseWeights = nFn.create("useWeights", "useWeights", MFnNumericData::kBoolean, 0);
-	addAttribute(aMasterConnection);
+	addAttribute(aUberDeformer);
 
 	// weight array attribute
 	aWeights = tFn.create("weights", "weights", MFnData::kDoubleArray);
@@ -42,7 +42,7 @@ MStatus DeformerNotion::initialize()
 	// set affects
 	std::vector<MObject> drivers = { aUseWeights, aWeights, aLocalIterations };
 	for (auto &it : drivers) {
-		attributeAffects(it, aMasterConnection);
+		attributeAffects(it, aUberDeformer);
 	}
 
     return MStatus::kSuccess;
@@ -56,8 +56,8 @@ MStatus DeformerNotion::compute(
 
 	// "balance wheel" mechanism to mark node dirty to uberDeformer
 	// thanks Matt
-	bool old = data.outputValue(aMasterConnection).asBool();
-	data.outputValue(aMasterConnection).setBool( !old );
+	bool old = data.outputValue(aUberDeformer).asBool();
+	data.outputValue(aUberDeformer).setBool( !old );
 	
 
 	data.setClean(plug);

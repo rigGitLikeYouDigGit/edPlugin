@@ -35,7 +35,7 @@ public:
 	static MObject aWeights;
 	static MObject aUseWeights;
 	static MObject aLocalIterations;
-	static MObject aMasterConnection;
+	static MObject aUberDeformer;
 
 };
 #endif

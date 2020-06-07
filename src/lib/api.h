@@ -21,14 +21,17 @@ as well as common plugin functions
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
+//#include <maya/MSpace.h>
 #include <maya/MString.h>
 #include <maya/MPoint.h>
 #include <maya/MFloatPoint.h>
 #include <maya/MVector.h>
 #include <maya/MFloatVector.h>
+#include <maya/MFloatMatrix.h>
 #include <maya/MVectorArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MDoubleArray.h>
+#include <maya/MMatrixArray.h>
 #include <maya/MIntArray.h>
 #include <maya/MPointArray.h>
 #include <maya/MFloatPointArray.h>
@@ -71,7 +74,19 @@ COUT << info << std::endl;
 #define DEBUGVI(vec) \
 for(auto const& i: vec){ \
 	COUT << i << " "; \
-} COUT << "length " << vec.size() << std::endl; 
+} COUT << "length " << vec.size() << std::endl;
+
+// as in "debugMVector"
+#define DEBUGMV(vec) \
+COUT << vec[0] << ", " << vec[1] << ", " << vec[2] << std::endl;
+
+// as in "debugMMatrix"
+#define DEBUGMM(m) \
+COUT << std::endl; \
+COUT <<m[0] << ", " << m[1] << ", " << m[2] << ", " << m[3] << std::endl; \
+COUT <<m[4] << ", " << m[5] << ", " << m[6] << ", " << m[7] << std::endl; \
+COUT <<m[8] << ", " << m[9] << ", " << m[10] << ", " << m[11] << std::endl; \
+COUT <<m[12] << ", " << m[13] << ", " << m[14] << ", " << m[15] << std::endl;
 
 
 #define DEBUGVF(vec) \

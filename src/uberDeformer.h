@@ -4,6 +4,7 @@
 #define UBERDEFORMER_H
 
 #include "lib/api.h"
+#include "lib/topo.h"
 
 class UberDeformer : public MPxDeformerNode {
     public:
@@ -17,8 +18,14 @@ class UberDeformer : public MPxDeformerNode {
         static void* creator();
         static MStatus initialize();
 
-		// function to find connected deformerNotions
-		std::vector<MObject> findConnectedNotions();
+		MStatus connectionMade(
+			const MPlug &plug, const MPlug &otherPlug, bool asSrc);
+		MStatus connectionBroken(
+			const MPlug &plug, const MPlug &otherPlug, bool asSrc);
+
+		// vector of MObjects for each connected deformerNotion
+		std::vector<MObject> getConnectedNotions();
+		std::vector<MObject> connectedNotions;
 
 public:
     static MTypeId kNODE_ID;

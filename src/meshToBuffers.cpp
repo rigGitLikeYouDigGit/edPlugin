@@ -156,6 +156,7 @@ MStatus MeshToBuffers::compute(
 		/* currently gives an offset buffer with 0 as first value - this is redundant,
 		but allows direct indexing into main values, and I think it's convention
 		*/
+		DEBUGS("meshToBuffers face buffer done")
 
 	    MFnIntArrayData faceData;
 	    MObject faceObj = faceData.create( allFaceVertices );
@@ -169,15 +170,19 @@ MStatus MeshToBuffers::compute(
 		// find point connections
 		std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
 		std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
-		//DEBUGS("faceVector" );
-		//DEBUGVI(faceVector);
-		//DEBUGS("faceOffsets");
-		//DEBUGVI(faceOffsetVector);
+		DEBUGS("faceVector" );
+		DEBUGVI(faceVector);
+		DEBUGS("faceOffsets");
+		DEBUGVI(faceOffsetVector);
 		
 
 		//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
 		OffsetBuffer<int> result = ed::pointBufferFromFaceVectors(faceVector, faceOffsetVector);
 		std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
+
+		DEBUGS("point buffer");
+		DEBUGVI(pointConnects);
+		DEBUGVI(pointOffsets);
 
 		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
 		MObject pointObj = faceData.create(pointConnectsArray);

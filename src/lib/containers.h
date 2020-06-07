@@ -1,10 +1,6 @@
 
 // small and efficient containers given by DragonEnergy on SO
 // I don't know who you are, but I'm in your debt
-
-// ************************************************************************************
-// SmallList.hpp
-// ************************************************************************************
 #ifndef _CONTAINERS_LIB
 #define _CONTAINERS_LIB
 
@@ -12,6 +8,11 @@
 #include <cstring>
 #include <cassert>
 #include <vector>
+
+// ************************************************************************************
+// SmallList.hpp
+// ************************************************************************************
+
 
 namespace ed {
 
@@ -67,6 +68,10 @@ namespace ed {
 
 		// Returns a pointer to the underlying buffer.
 		const T* data() const;
+
+		T * begin() { return &data()[0]; }
+
+		T * end() { return &data()[size()]; }
 
 	private:
 		enum { fixed_cap = 256 };
@@ -125,8 +130,13 @@ namespace ed {
 		int first_free;
 	};
 
-	// couldn't find a way to put this in a cpp file
+	//// basic iterators by yours truly
+	//template< typename T, typename C, size_t const Size>
 
+
+
+
+	// couldn't find a way to put this in a cpp file
 	// ---------------------------------------------------------------------------------
 	// SmallList Implementation
 	// ---------------------------------------------------------------------------------
