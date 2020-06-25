@@ -151,7 +151,7 @@ void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build
 		DEBUGVI(faceBuffer.values);
 		OffsetBuffer<int> pointBuffer = pointBufferFromFaceBuffer(
 			faceBuffer);
-		
+
 		hedgeMesh.build(
 			pointBuffer.values, pointBuffer.offsets,
 			faceBuffer.values, faceBuffer.offsets
@@ -161,7 +161,7 @@ void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build
 	// set mesh point positions
 	DEBUGS("set positions")
 
-	const float * rawPositions = meshFn.getRawPoints(&s);	
+	const float * rawPositions = meshFn.getRawPoints(&s);
 	float test = rawPositions[7];
 	vector<double> posVector(nPoints * 3, 0.0);
 	for (int i = 0; i < nPoints; i++) {
@@ -234,7 +234,7 @@ void DirectDeltaMush::runBind(MDataBlock& data, const MObject& meshObj) {
 	HalfEdgeMeshFromMObject(*hedgeMesh, meshObj, 1);
 
 	// still having serious trouble
-	
+
 	//DEBUGS("skinIndices");
 	//DEBUGVI(skinInfo.influenceIndices)
 }
@@ -264,7 +264,7 @@ void DirectDeltaMush::setOutputGeo(MDataBlock& data, const MObject& meshGeo) {
 	outputGeoHandle.setMObject(meshGeo);
 }
 
-void DirectDeltaMush::deformGeo(HalfEdgeMesh& mesh, 
+void DirectDeltaMush::deformGeo(HalfEdgeMesh& mesh,
 	const DeformerParametres& params,
 	vector<double> &outputPositions) {
 	// kicks off full deformation process
@@ -278,8 +278,8 @@ void DirectDeltaMush::deformGeo(HalfEdgeMesh& mesh,
 }
 
 void DirectDeltaMush::deformPoint(
-	HalfEdgeMesh & mesh, 
-	const DeformerParametres &params, 
+	HalfEdgeMesh & mesh,
+	const DeformerParametres &params,
 	vector<double> &outPositions, int index) {
 	// deform single vertex
 
@@ -305,7 +305,7 @@ void DirectDeltaMush::deformPoint(
 	//MMatrix tfMat;
 	//MMatrix baseMat;
 	MMatrix diffMat;
-	
+
 	//DEBUGS("iterate weight values")
 	for (int i = 0; i < weightValues.size(); i++) {
 		//DEBUGS(i);
@@ -318,7 +318,8 @@ void DirectDeltaMush::deformPoint(
 		double weightVal = static_cast<double>(weightValues[i]);
 		//DEBUGS(weightVal);
 		diffMat = baseMat.inverse() * tfMat;
-		tfPos = tfPos + diffMat * baseVector * weightVal;
+		//tfPos = tfPos + diffMat * baseVector * weightVal;
+		tfPos = tfPos + ((baseVector * baseMat.inverse()) * tfMat) * weightVal;
 
 	}
 
