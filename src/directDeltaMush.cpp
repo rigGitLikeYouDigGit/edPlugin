@@ -226,6 +226,10 @@ void extractSkinWeights(MArrayDataHandle& weightRoot, SkinData& skinInfo) {
 
 }
 
+void localiseSkinMatrices(MMatrixArray &refChain, MMatrixArray &tfChain) {
+	// extract final matrices to apply to vertex positions
+}
+
 
 void DirectDeltaMush::runBind(MDataBlock& data, const MObject& meshObj) {
 	// precompute node
@@ -317,7 +321,9 @@ void DirectDeltaMush::deformPoint(
 
 		double weightVal = static_cast<double>(weightValues[i]);
 		//DEBUGS(weightVal);
-		diffMat = baseMat.inverse() * tfMat;
+		//diffMat = baseMat.inverse() * tfMat;
+		//diffMat = tfMat * baseMat.inverse();
+		diffMat = tfMat * baseMat;
 		tfPos = tfPos + diffMat * baseVector * weightVal;
 
 	}
