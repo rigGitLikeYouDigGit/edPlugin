@@ -96,7 +96,7 @@ COUT <<m[12] << ", " << m[13] << ", " << m[14] << ", " << m[15] << std::endl;
 #define DEBUGVF(vec) \
 copy( vec.begin(), vec.end(), ostream_iterator<float>(MStreamUtils::stdOutStream, " "));
 
-
+namespace ed{
 // common functions
 static MObject makeBindAttr( ){
     MObject aBind;
@@ -111,7 +111,7 @@ static MObject makeBindAttr( ){
     return aBind;
 }
 
-static MPlugArray getAllConnectedPlugs(MObject &mainNode, MObject &plugAttr, 
+static MPlugArray getAllConnectedPlugs(MObject &mainNode, MObject &plugAttr,
 		bool asSource, bool asSink) {
 	// returns nodes connected to attribute
 	DEBUGS("api.h getAllConnectedPlugs")
@@ -203,7 +203,7 @@ inline std::vector<float> MVectorArrayToVector(MVectorArray &arr) {
 inline MIntArray vectorToMIntArray(std::vector<int> &v) {
 	// constructs MIntArray from stl float vector
 	DEBUGS("api.h vectorToMIntArray");
-	MIntArray output( static_cast<int>(v.size()) );	
+	MIntArray output( static_cast<int>(v.size()) );
 	for (unsigned int i = 0; i < v.size(); i++) {
 		output[i] = v[i];
 	}
@@ -234,6 +234,14 @@ inline MVectorArray vectorToMVectorArray(std::vector<float> &v) {
 	return output;
 }
 
+inline MVector MVectorFromArray(float arr[]){
+	return MVector( arr[0], arr[1], arr[2]);
+}
+
+inline MPoint MPointFromArray(float arr[]){
+	return MPoint( arr[0], arr[1], arr[2]);
+}
+
 
 // unable to find a good way to do this
 template <typename T>
@@ -254,5 +262,6 @@ inline void setAttributesAffect(std::vector<MObject> &driver, std::vector<MObjec
 	}
 }
 
+}
 
 #endif
