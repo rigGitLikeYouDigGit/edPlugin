@@ -79,6 +79,28 @@ namespace ed {
 			return result;
 		}
 
+		T* entry2(int entryIndex){ // returns basic arrays, to replace base version
+			int startIndex = offsets[entryIndex];
+			int endIndex;
+
+			// check if entry is last
+			if (entryIndex == nEntries - 1) {
+				endIndex = nValues;
+			}
+			else {
+				endIndex = offsets[entryIndex + 1];
+			}
+
+			T result[1 + endIndex - startIndex];
+
+			int resultIndex = 0;
+			for (int i = startIndex; i < endIndex; i++) {
+				result[resultIndex] = values[i];
+				resultIndex++;
+			}
+			return result;
+		}
+
 		//OffsetBuffer& operator=(const OffsetBuffer &other) {
 		//	*this->values = other.values;
 		//	*this->offsets = other.offsets;
@@ -138,6 +160,14 @@ namespace ed {
 				result.push_back(values[i]);
 				//result[resultIndex] = values[i];
 				i++;
+			}
+			return result;
+		}
+
+		T* entry2(int entryIndex) {
+			T result[strideLength];
+			for (int i = 0; i < strideLength; i++){
+				result[i] = values[entryIndex*strideLength + i];
 			}
 			return result;
 		}
@@ -210,6 +240,49 @@ namespace ed {
 		}
 		return result;
 	}
+
+	template <typename T>
+	T* entry(
+		const std::vector<T> &values,
+		const std::vector<int> &offsets,
+		int entryIndex) {
+		// use buffer indices to retrieve main values in entry
+		int startIndex = offsets[entryIndex];
+		int endIndex;
+
+		// check if entry is last
+		if (entryIndex == offsets.size() - 1) {
+			endIndex = static_cast<int>(values.size());
+		}
+		else {
+			endIndex = offsets[entryIndex + 1];
+		}
+		if (startIndex == endIndex) {
+			endIndex++;
+		}
+
+		T result[endIndex - startIndex];
+
+		for (int i = 0; i < endIndex - startIndex; i++) {
+			result[i] = values[startIndex + i]);
+		}
+		return result;
+	}
+
+	template <typename T>
+	T* entry(
+		const std::vector<T> &values,
+		int strideLength,
+		int entryIndex) { // variant for uniform buffers
+
+		T result[strideLength];
+
+		for (int i = 0; i < strideLength; i++) {
+			result[i] = values[entryIndex*strideLength + i]);
+		}
+		return result;
+	}
+
 
 
 	static OffsetBuffer<int> pointBufferFromFaceBuffer(OffsetBuffer<int> &faceBuffer)
