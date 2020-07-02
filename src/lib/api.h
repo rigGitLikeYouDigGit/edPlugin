@@ -155,10 +155,6 @@ inline MStatus mirrorArrayDataHandle(MArrayDataHandle &masterArrayDH, MArrayData
 		jumpToElement(masterArrayDH, index);
 		jumpToElement(slaveArrayDH, index);
 
-		/*if (slaveArrayDH.outputValue() == masterArrayDH.outputValue()) {
-			continue;
-		}*/
-
 		slaveArrayDH.outputValue().copy(
 			masterArrayDH.outputValue()
 		);
@@ -203,21 +199,23 @@ inline std::vector<float> MVectorArrayToVector(MVectorArray &arr) {
 inline MIntArray vectorToMIntArray(std::vector<int> &v) {
 	// constructs MIntArray from stl float vector
 	DEBUGS("api.h vectorToMIntArray");
-	MIntArray output( static_cast<int>(v.size()) );
-	for (unsigned int i = 0; i < v.size(); i++) {
-		output[i] = v[i];
-	}
+	// MIntArray output( static_cast<int>(v.size()) );
+	// for (unsigned int i = 0; i < v.size(); i++) {
+	// 	output[i] = v[i];
+	// }
+	MIntArray output( v.data(), static_cast<int>(v.size()));
 	return output;
 }
 
 inline MFloatArray vectorToMFloatArray(std::vector<float> &v) {
 	// constructs MFloatArray from stl float vector
 	DEBUGS("api.h vectorToMFloatArray");
-	MFloatArray output( static_cast<int>(v.size()) );
-	// static casting size_t is among the most annoying c++ I've found
-	for (unsigned int i = 0; i < v.size(); i++) {
-		output[i] = v[i];
-	}
+	// MFloatArray output( static_cast<int>(v.size()) );
+	// // static casting size_t is among the most annoying c++ I've found
+	// for (unsigned int i = 0; i < v.size(); i++) {
+	// 	output[i] = v[i];
+	// }
+	MFloatArray output( v.data(), static_cast<int>(v.size()));
 	return output;
 }
 

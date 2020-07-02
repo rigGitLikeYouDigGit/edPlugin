@@ -28,6 +28,12 @@ to be converted to and from raw buffers at interfaces between software*/
 namespace ed {
 
 	template <typename T>
+	inline int arraySize( T arr[]){
+		//return sizeof(arr) / sizeof(arr[0]);
+		return sizeof(arr) / sizeof(T);
+	}
+
+	template <typename T>
 	inline int index(const std::vector<T> &vec, const T &element) {
 		// returns index in array or -1 if not found
 		int result = -1;
@@ -53,12 +59,10 @@ namespace ed {
 			nValues(static_cast<int>(initValues.size())),
 			nEntries(static_cast<int>(initOffsets.size())){}
 
-		//std::vector<T> entry(int entryIndex) {
-		SmallList<T> entry(int entryIndex) { // building whole vectors in critical loops is slow
-			//std::vector<T> result;
+		int entryLength(int entryIndex){
+			// get length of specific entry
 			int startIndex = offsets[entryIndex];
 			int endIndex;
-
 			// check if entry is last
 			if (entryIndex == nEntries - 1) {
 				endIndex = nValues;
@@ -66,40 +70,37 @@ namespace ed {
 			else {
 				endIndex = offsets[entryIndex + 1];
 			}
+			return endIndex - startIndex;
+		}
+
+		// would be more efficient to just return next start index
+		// not bothered right now
+
+		SmallList<T> listEntry(int entryIndex) { // building whole vectors in critical loops is slow
+			int startIndex = offsets[entryIndex];
+			int length = entryLength(startIndex);
 
 			SmallList<T> result;
-			//result.reserve(endIndex - startIndex);
-			int resultIndex = 0;
-			for (int i = startIndex; i < endIndex;) {
-				result.push_back(values[i]);
-				//result[resultIndex] = values[i];
-				i++;
-				resultIndex++;
+			result.reserve(length);
+			for (int i = 0; i < length; i++) {
+				result[i] = values[startIndex + i];
 			}
 			return result;
 		}
 
-		T* entry2(int entryIndex){ // returns basic arrays, to replace base version
+		T* entry(int entryIndex){ // returns basic arrays, to replace base version
 			int startIndex = offsets[entryIndex];
-			int endIndex;
+			int length = entryLength(entryIndex);
 
-			// check if entry is last
-			if (entryIndex == nEntries - 1) {
-				endIndex = nValues;
-			}
-			else {
-				endIndex = offsets[entryIndex + 1];
-			}
+			T* result[length];
 
-			T result[1 + endIndex - startIndex];
-
-			int resultIndex = 0;
-			for (int i = startIndex; i < endIndex; i++) {
-				result[resultIndex] = values[i];
-				resultIndex++;
+			for (int i = 0; i < length; i++) {
+				result[resultIndex] = values[startIndex + i];
 			}
 			return result;
 		}
+
+
 
 		//OffsetBuffer& operator=(const OffsetBuffer &other) {
 		//	*this->values = other.values;
@@ -146,25 +147,25 @@ namespace ed {
 			nEntries = (static_cast<int>(initValues.size()) / initStrideLength);
 		}
 
-		SmallList<T> entry(int entryIndex) {
-			int startIndex = entryIndex * strideLength;
-			int endIndex = startIndex + strideLength;
-			//DEBUGS(startIndex);
-			//DEBUGS(strideLength);
-			//DEBUGS(endIndex);
+		// SmallList<T> entry(int entryIndex) {
+		// 	int startIndex = entryIndex * strideLength;
+		// 	int endIndex = startIndex + strideLength;
+		// 	//DEBUGS(startIndex);
+		// 	//DEBUGS(strideLength);
+		// 	//DEBUGS(endIndex);
+		//
+		// 	SmallList<T> result;
+		// 	//result.reserve(endIndex - startIndex);
+		// 	int resultIndex = 0;
+		// 	for (int i = startIndex; i < endIndex;) {
+		// 		result.push_back(values[i]);
+		// 		//result[resultIndex] = values[i];
+		// 		i++;
+		// 	}
+		// 	return result;
+		// }
 
-			SmallList<T> result;
-			//result.reserve(endIndex - startIndex);
-			int resultIndex = 0;
-			for (int i = startIndex; i < endIndex;) {
-				result.push_back(values[i]);
-				//result[resultIndex] = values[i];
-				i++;
-			}
-			return result;
-		}
-
-		T* entry2(int entryIndex) {
+		T* entry(int entryIndex) {
 			T result[strideLength];
 			for (int i = 0; i < strideLength; i++){
 				result[i] = values[entryIndex*strideLength + i];
@@ -319,13 +320,15 @@ namespace ed {
 			//DEBUGS("i " << i)
 
 			//std::vector<int> facePoints = entryFromBuffer(faceBuffer, faceOffsets, i);
-			SmallList<int> facePoints = faceBuffer.entry(i);
+			SmallList<int> facePoints = faceBuffer.listEntry(i);
+			//int* facePoints = faceBuffer.entry(i);
 			//DEBUGS("facePoints");
 			//DEBUGVI(facePoints);
 
 			// if triangle, add all other points
 			int entryLength = 4;
 			entryLength = static_cast<int>(facePoints.size());
+			// entryLength = faceBuffer.entryLength(i);
 
 			// gather connected points
 			for (int n = 0; n < entryLength; n++) {

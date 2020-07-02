@@ -3,7 +3,7 @@
 /*
 
 	converts maya mesh to raw float and int buffers of position and topo data
-	
+
 */
 
 #include "meshToBuffers.h"
@@ -107,6 +107,7 @@ MStatus MeshToBuffers::compute(
     // going with floats for now, can easily switch to doubles if needed
 	// initialise MFnMesh
 	//DEBUGS("MeshToBuffers compute")
+	MStatus s = MS::kSuccess;
 	MObject meshObj = data.inputValue( aInMesh ).asMesh() ;
 	MFnMesh meshFn;
 	meshFn.setObject(meshObj);
@@ -114,15 +115,18 @@ MStatus MeshToBuffers::compute(
 	int nPolys = meshFn.numPolygons();
 
 	// positions first
-	MFloatArray positions = MFloatArray( nPoints * 3, 0.0);
+	const float * rawPoints = meshFn.getRawPoints(&s);
+
+	//MFloatArray positions = MFloatArray( nPoints * 3, 0.0);
+	MFloatArray positions = MFloatArray( rawPoints, nPoints * 3);
 	// don't know how to do rawPoints yet
-	MFloatPointArray points;
-	meshFn.getPoints( points );
-	for( int i=0; i < nPoints; i++){
-	    positions.set( points[ i ].x, i*3 );
-	    positions.set( points[ i ].y, i*3+1 );
-	    positions.set( points[ i ].z, i*3+2 );
-	}
+	// MFloatPointArray points;
+	// meshFn.getPoints( points );
+	// for( int i=0; i < nPoints; i++){
+	//     positions.set( points[ i ].x, i*3 );
+	//     positions.set( points[ i ].y, i*3+1 );
+	//     positions.set( points[ i ].z, i*3+2 );
+	// }
 	MFnFloatArrayData floatData;
 	MObject positionsData = floatData.create( positions );
 
@@ -130,7 +134,7 @@ MStatus MeshToBuffers::compute(
 	int bind = data.inputValue( aBind ).asInt() ;
 	if( bind == 1 || bind == 3 ){ // bind or live
 	    // do binding with topology buffers
-	    
+
 		// face buffers
 	    MIntArray allFaceVertices;
 		MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
@@ -174,7 +178,7 @@ MStatus MeshToBuffers::compute(
 		DEBUGVI(faceVector);
 		DEBUGS("faceOffsets");
 		DEBUGVI(faceOffsetVector);
-		
+
 
 		//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
 		OffsetBuffer<int> result = ed::pointBufferFromFaceVectors(faceVector, faceOffsetVector);
@@ -220,4 +224,3 @@ void* MeshToBuffers::creator(){
 
 MeshToBuffers::MeshToBuffers() {};
 MeshToBuffers::~MeshToBuffers() {};
-
