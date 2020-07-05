@@ -88,11 +88,11 @@ namespace ed {
 			return result;
 		}
 
-		T* entry(int entryIndex){ // returns basic arrays, to replace base version
+		const T* entry(int entryIndex){ // returns basic arrays, to replace base version
 			int startIndex = offsets[entryIndex];
 			int length = entryLength(entryIndex);
 
-			T* result[length];
+			const T* result[length];
 
 			for (int i = 0; i < length; i++) {
 				result[resultIndex] = values[startIndex + i];
@@ -165,13 +165,14 @@ namespace ed {
 		// 	return result;
 		// }
 
-		T* entry(int entryIndex) {
-			T result[strideLength];
-			for (int i = 0; i < strideLength; i++){
-				result[i] = values[entryIndex*strideLength + i];
-			}
-			return result;
-		}
+		//const T* entry(int entryIndex) const {
+		//	int strideLength = this->strideLength;
+		//	const T* result[strideLength];
+		//	for (int i = 0; i < strideLength; i++){
+		//		result[i] = values[entryIndex*strideLength + i];
+		//	}
+		//	return result;
+		//}
 
 		//UniformBuffer& operator=(const UniformBuffer &other) {
 		//	*this->values = other.values;
@@ -265,7 +266,7 @@ namespace ed {
 		T result[endIndex - startIndex];
 
 		for (int i = 0; i < endIndex - startIndex; i++) {
-			result[i] = values[startIndex + i]);
+			result[i] = values[startIndex + i];
 		}
 		return result;
 	}
@@ -279,7 +280,7 @@ namespace ed {
 		T result[strideLength];
 
 		for (int i = 0; i < strideLength; i++) {
-			result[i] = values[entryIndex*strideLength + i]);
+			result[i] = values[entryIndex*strideLength + i];
 		}
 		return result;
 	}
@@ -492,7 +493,7 @@ namespace ed {
 
 		// spatial information
 		//UniformBuffer<float> pointPositions;
-		UniformBuffer<double> pointPositions;
+		UniformBuffer<float> pointPositions;
 		// doubles are default in maya
 		UniformBuffer<float>* pointNormals;
 		UniformBuffer<float>* faceNormals;
@@ -544,11 +545,11 @@ namespace ed {
 		}
 
 		void setPositions(
-			std::vector<double> initPointPositions
+			std::vector<float> initPointPositions
 		) {
 			// sets point positions externally, to be called after build
 			//pointPositions->setVector(initPointPositions, 3);
-			UniformBuffer<double> newBuffer(initPointPositions, 3);
+			UniformBuffer<float> newBuffer(initPointPositions, 3);
 			//DEBUGS("strideLength");
 			//DEBUGS(newBuffer.strideLength);
 			pointPositions = newBuffer;

@@ -159,11 +159,11 @@ void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build
 	}
 
 	// set mesh point positions
-	DEBUGS("set positions")
-
-	const float * rawPositions = meshFn.getRawPoints(&s);
-	float test = rawPositions[7];
-	vector<double> posVector(nPoints * 3, 0.0);
+	DEBUGS("set positions");
+	const float* rawPositions = meshFn.getRawPoints(&s);
+	//meshFn.getRawPoints(&s);
+	//float test = rawPositions[7];
+	vector<float> posVector(nPoints * 3, 0.0);
 	for (int i = 0; i < nPoints; i++) {
 		posVector[i*3] = rawPositions[i*3];
 		posVector[i*3 + 1] = rawPositions[i*3 + 1];
@@ -287,7 +287,8 @@ void DirectDeltaMush::deformPoint(
 	vector<double> &outPositions, int index) {
 	// deform single vertex
 
-	SmallList<double> baseList = mesh.pointPositions.entry(index);
+	//SmallList<double> baseList = mesh.pointPositions.entry(index);
+	const float* baseList = mesh.pointPositions.entry(index);
 
 
 	MVector baseVector(

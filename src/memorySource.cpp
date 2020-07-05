@@ -13,6 +13,9 @@
 #include "memorySource.h"
 #include "memorySink.h"
 
+using namespace ed;
+using namespace std;
+
 MTypeId MemorySource::kNODE_ID(0x00122C1B);
 MString MemorySource::kNODE_NAME( "memorySource" );
 
