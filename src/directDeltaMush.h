@@ -20,7 +20,7 @@ struct SkinData {
 	// struct to store and query skincluster data
 	std::vector<int> vertexOffsets;
 	std::vector<int> influenceIndices;
-	std::vector<double> influenceWeights;
+	std::vector<float> influenceWeights;
 };
 
 // argument struct for deformation

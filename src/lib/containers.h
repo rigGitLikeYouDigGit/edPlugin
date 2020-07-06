@@ -191,14 +191,14 @@ namespace ed {
 	template <class T>
 	T& SmallList<T>::operator[](int n)
 	{
-		assert(n >= 0 && n < ld.num);
+		assert((n >= 0) && (n < ld.num));
 		return ld.data[n];
 	}
 
 	template <class T>
 	const T& SmallList<T>::operator[](int n) const
 	{
-		assert(n >= 0 && n < ld.num);
+		assert((n >= 0 )&& (n < ld.num));
 		return ld.data[n];
 	}
 
@@ -222,17 +222,23 @@ namespace ed {
 	template <class T>
 	void SmallList<T>::reserve(int n)
 	{
+		//DEBUGS("small list reserve n " << n);
 		enum { type_size = sizeof(T) };
+		//DEBUGS(ld.cap);
 		if (n > ld.cap)
 		{
+			//DEBUGS("n > ld.cap");
 			if (ld.cap == fixed_cap)
 			{
+				//DEBUGS("ld.cap == fixed_cap");
 				ld.data = static_cast<T*>(malloc(n * type_size));
 				memcpy(ld.data, ld.buf, sizeof(ld.buf));
 			}
 			else
+				//DEBUGS("ld.data static cast")
 				ld.data = static_cast<T*>(realloc(ld.data, n * type_size));
 			ld.cap = n;
+			//ld.num = n;
 		}
 	}
 

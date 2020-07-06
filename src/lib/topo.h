@@ -61,7 +61,7 @@ namespace ed {
 
 		int entryLength(int entryIndex){
 			// get length of specific entry
-			int startIndex = offsets[entryIndex];
+			int startIndex = offsets[entryIndex]; // oor
 			int endIndex;
 			// check if entry is last
 			if (entryIndex == nEntries - 1) {
@@ -76,31 +76,34 @@ namespace ed {
 		// would be more efficient to just return next start index
 		// not bothered right now
 
-		SmallList<T> listEntry(int entryIndex) { // building whole vectors in critical loops is slow
-			int startIndex = offsets[entryIndex];
-			int length = entryLength(startIndex);
-
-			SmallList<T> result;
-			result.reserve(length);
-			for (int i = 0; i < length; i++) {
-				result[i] = values[startIndex + i];
-			}
-			return result;
-		}
-
-		const T* entry(int entryIndex){ // returns basic arrays, to replace base version
+		SmallList<T> entry(int entryIndex) { // building whole vectors in critical loops is slow
+			//DEBUGS("entryIndex " << entryIndex << "offsetsSize" << static_cast<int>(offsets.size()));
 			int startIndex = offsets[entryIndex];
 			int length = entryLength(entryIndex);
+			//DEBUGS("startIndex " << startIndex << " length " << length);
 
-			const T* result[length];
-
+			SmallList<T> result;
+			result.reserve(length); // reserve doesn't work :(
+			//DEBUGS("list length " << result.size());
 			for (int i = 0; i < length; i++) {
-				result[resultIndex] = values[startIndex + i];
+				//DEBUGS("entry i " << i);
+				//result[i] = values[startIndex + i];
+				result.push_back(values[startIndex + i]);
 			}
 			return result;
 		}
 
+		//const T* entry(int entryIndex){ // returns basic arrays, to replace base version
+		//	int startIndex = offsets[entryIndex];
+		//	int length = entryLength(entryIndex);
 
+		//	const T* result[length];
+
+		//	for (int i = 0; i < length; i++) {
+		//		result[resultIndex] = values[startIndex + i];
+		//	}
+		//	return result;
+		//}
 
 		//OffsetBuffer& operator=(const OffsetBuffer &other) {
 		//	*this->values = other.values;
@@ -147,23 +150,16 @@ namespace ed {
 			nEntries = (static_cast<int>(initValues.size()) / initStrideLength);
 		}
 
-		// SmallList<T> entry(int entryIndex) {
-		// 	int startIndex = entryIndex * strideLength;
-		// 	int endIndex = startIndex + strideLength;
-		// 	//DEBUGS(startIndex);
-		// 	//DEBUGS(strideLength);
-		// 	//DEBUGS(endIndex);
-		//
-		// 	SmallList<T> result;
-		// 	//result.reserve(endIndex - startIndex);
-		// 	int resultIndex = 0;
-		// 	for (int i = startIndex; i < endIndex;) {
-		// 		result.push_back(values[i]);
-		// 		//result[resultIndex] = values[i];
-		// 		i++;
-		// 	}
-		// 	return result;
-		// }
+		 SmallList<T> entry(int entryIndex) {
+		
+		 	SmallList<T> result;
+		 	result.reserve(strideLength);
+		 	for (int i = 0; i < strideLength; i++) {
+		 		result.push_back(values[entryIndex * strideLength + i]);
+				//result[i] = values[entryIndex * strideLength + i];
+		 	}
+		 	return result;
+		 }
 
 		//const T* entry(int entryIndex) const {
 		//	int strideLength = this->strideLength;
@@ -189,11 +185,10 @@ namespace ed {
 
 	template <typename T>
 	inline SmallList <T> entryFromBuffer(
-		std::vector<T> &values,
-		std::vector<int> &offsets,
+		const std::vector<T> &values,
+		const std::vector<int> &offsets,
 		int entryIndex) {
 		// use buffer indices to retrieve main values in entry
-		//std::vector<T> result;
 		SmallList<T> result;
 		int startIndex = offsets[entryIndex];
 		int endIndex;
@@ -208,9 +203,8 @@ namespace ed {
 		if (startIndex == endIndex) {
 			endIndex++;
 		}
-		for (int i = startIndex; i < endIndex;) {
+		for (int i = startIndex; i < endIndex; i++) {
 			result.push_back(values[i]);
-			i++;
 		}
 		return result;
 	}
@@ -218,72 +212,59 @@ namespace ed {
 	template <typename T>
 	inline SmallList <T> entryFromBuffer(
 		const std::vector<T> &values,
-		const std::vector<int> &offsets,
-		int entryIndex) {
-		// use buffer indices to retrieve main values in entry
-		//std::vector<T> result;
-		SmallList<T> result;
-		int startIndex = offsets[entryIndex];
-		int endIndex;
-
-		// check if entry is last
-		if (entryIndex == offsets.size() - 1) {
-			endIndex = static_cast<int>(values.size());
-		}
-		else {
-			endIndex = offsets[entryIndex + 1];
-		}
-		if (startIndex == endIndex) {
-			endIndex++;
-		}
-		for (int i = startIndex; i < endIndex;) {
-			result.push_back(values[i]);
-			i++;
-		}
-		return result;
-	}
-
-	template <typename T>
-	T* entry(
-		const std::vector<T> &values,
-		const std::vector<int> &offsets,
-		int entryIndex) {
-		// use buffer indices to retrieve main values in entry
-		int startIndex = offsets[entryIndex];
-		int endIndex;
-
-		// check if entry is last
-		if (entryIndex == offsets.size() - 1) {
-			endIndex = static_cast<int>(values.size());
-		}
-		else {
-			endIndex = offsets[entryIndex + 1];
-		}
-		if (startIndex == endIndex) {
-			endIndex++;
-		}
-
-		T result[endIndex - startIndex];
-
-		for (int i = 0; i < endIndex - startIndex; i++) {
-			result[i] = values[startIndex + i];
-		}
-		return result;
-	}
-
-	template <typename T>
-	T* entry(
-		const std::vector<T> &values,
 		int strideLength,
-		int entryIndex) { // variant for uniform buffers
+		int entryIndex) { // for uniform buffers
 
-		T result[strideLength];
+		SmallList<T> result;
+		result.reserve(strideLength);
 
 		for (int i = 0; i < strideLength; i++) {
 			result[i] = values[entryIndex*strideLength + i];
 		}
 		return result;
 	}
+
+	//template <typename T>
+	//T* entry(
+	//	const std::vector<T> &values,
+	//	const std::vector<int> &offsets,
+	//	int entryIndex) {
+	//	// use buffer indices to retrieve main values in entry
+	//	int startIndex = offsets[entryIndex];
+	//	int endIndex;
+
+	//	// check if entry is last
+	//	if (entryIndex == offsets.size() - 1) {
+	//		endIndex = static_cast<int>(values.size());
+	//	}
+	//	else {
+	//		endIndex = offsets[entryIndex + 1];
+	//	}
+	//	if (startIndex == endIndex) {
+	//		endIndex++;
+	//	}
+
+	//	T result[endIndex - startIndex];
+
+	//	for (int i = 0; i < endIndex - startIndex; i++) {
+	//		result[i] = values[startIndex + i];
+	//	}
+	//	return result;
+	//}
+
+	//template <typename T>
+	//T* entry(
+	//	const std::vector<T> &values,
+	//	int strideLength,
+	//	int entryIndex) { // variant for uniform buffers
+
+	//	T result[strideLength];
+
+	//	for (int i = 0; i < strideLength; i++) {
+	//		result[i] = values[entryIndex*strideLength + i];
+	//	}
+	//	return result;
+	//}
 
 
 
@@ -295,19 +276,10 @@ namespace ed {
 		buffer_entry[i] = iA, iB, iC, iD
 
 		*/
-		DEBUGS("topo.h pointBufferFromFaceBuffer");
-		//DEBUGVI(faceBuffer.values);
-		//DEBUGVI(faceBuffer.offsets);
-
 
 		// maximum point is number of points
-		//int nPoints = *max_element(faceBuffer.begin(), faceBuffer.end()) + 1;
 		int nPoints = *max_element(faceBuffer.values.begin(), faceBuffer.values.end()) + 1;
-		//DEBUGS("nPoints" << nPoints);
-
-		//int nFaces = static_cast<int>(faceOffsets.size());
 		int nFaces = faceBuffer.nEntries;
-		//DEBUGS("nFaces" << nFaces) // works
 
 		std::vector<int> pointConnects;
 		std::vector<int> pointOffsets(nPoints, -1);
@@ -318,40 +290,28 @@ namespace ed {
 		// iterate over faces in buffer
 		for (int i = 0; i < nFaces; i++) {
 			// iterate over points in face entry
-			//DEBUGS("i " << i)
 
-			//std::vector<int> facePoints = entryFromBuffer(faceBuffer, faceOffsets, i);
-			SmallList<int> facePoints = faceBuffer.listEntry(i);
-			//int* facePoints = faceBuffer.entry(i);
-			//DEBUGS("facePoints");
-			//DEBUGVI(facePoints);
+			SmallList<int> facePoints = faceBuffer.entry(i);
 
 			// if triangle, add all other points
-			int entryLength = 4;
-			entryLength = static_cast<int>(facePoints.size());
-			// entryLength = faceBuffer.entryLength(i);
+			int entryLength = facePoints.size();
 
 			// gather connected points
 			for (int n = 0; n < entryLength; n++) {
-				//DEBUGS("faceIndex" << (facePoints[n]));
 				int pointIndex = facePoints[n];
-
-				//DEBUGS("pointIndex" << pointIndex);
 
 				int left = (n - 1 + entryLength) % entryLength;
 				int right = (n + 1) % entryLength;
-
 				//DEBUGS("modulo wrapping : n " << n << " left " << left << " right " << right)
 
 				pointSets[pointIndex].insert(facePoints[left]);
 				pointSets[pointIndex].insert(facePoints[right]);
 			}
 		}
+
 		// flatten pointSets to vector
-		//DEBUGS("iterating points")
 		std::set<int>::iterator it;
 		int n = 0;
-
 		for (int i = 0; i < nPoints; i++)
 		{
 			// set offset index
@@ -364,9 +324,7 @@ namespace ed {
 			}
 		}
 
-		DEBUGVI(pointConnects);
 		OffsetBuffer<int> result(pointConnects, pointOffsets);
-
 		return result;
 	}
 
