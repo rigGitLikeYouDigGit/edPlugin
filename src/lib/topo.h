@@ -12,6 +12,11 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
+#include <Eigen/Dense>
+#define EIGEN_NO_DEBUG
+
+#define <igl/cotmatrix.h>
+
 
 #include "containers.h"
 
@@ -93,17 +98,19 @@ namespace ed {
 			return result;
 		}
 
-		//const T* entry(int entryIndex){ // returns basic arrays, to replace base version
-		//	int startIndex = offsets[entryIndex];
-		//	int length = entryLength(entryIndex);
+		T* rawEntry(int entryIndex){ // returns basic dynamic arrays, to replace base version
+			// FIRST ENTRY of array is array's own size
+			int startIndex = offsets[entryIndex];
+			int length = entryLength(entryIndex);
 
-		//	const T* result[length];
+			T* result = new T[length + 1];
+			result[0] = static_cast<T>(length);
 
-		//	for (int i = 0; i < length; i++) {
-		//		result[resultIndex] = values[startIndex + i];
-		//	}
-		//	return result;
-		//}
+			for (int i = 0; i < length; i++) {
+				result[i + 1] = values[startIndex + i];
+			}
+			return result;
+		}
 
 		//OffsetBuffer& operator=(const OffsetBuffer &other) {
 		//	*this->values = other.values;
@@ -151,7 +158,7 @@ namespace ed {
 		}
 
 		 SmallList<T> entry(int entryIndex) {
-		
+
 		 	SmallList<T> result;
 		 	result.reserve(strideLength);
 		 	for (int i = 0; i < strideLength; i++) {

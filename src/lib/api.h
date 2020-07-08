@@ -111,6 +111,20 @@ static MObject makeBindAttr( ){
     return aBind;
 }
 
+static MObject makeDoubleArrayAttr( string &name ){
+    MObject aArray;
+    MFnTypedAttribute fn;
+		aArray = fn.create( name, name, MFnData::kDoubleArray)
+    return aArray;
+}
+
+MDoubleArray accessDoubleArrayAttr( MDataHandle &dh ){
+	// returns live double array of attribute
+	MFnDoubleArrayData fn( dh.data() );
+	return fn.array();
+}
+
+
 static MPlugArray getAllConnectedPlugs(MObject &mainNode, MObject &plugAttr,
 		bool asSource, bool asSink) {
 	// returns nodes connected to attribute
