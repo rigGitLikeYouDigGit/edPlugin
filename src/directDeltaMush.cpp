@@ -330,7 +330,7 @@ void DirectDeltaMush::deformPoint(
 	// output position
 	MPoint result(basePos);
 	MPoint tfPos(0, 0, 0, 1.0);
-	MMatrix diffMat;
+	//MMatrix diffMat;
 
 	// main deformation
 	Mat4 qmat;
@@ -341,7 +341,7 @@ void DirectDeltaMush::deformPoint(
 	for (auto e : omegas[index]) { // e is pair<int, mat4>
 		Mat4 Mi;
 		mmatrix_to_eigen(params.diffMats[e.first], Mi);
-		Mat4 tmp = getOmega(index, e.first);
+		Mat4 tmp = getOmega(index, e.first) * Mi;
 		qmat += tmp;
 	}
 
@@ -356,16 +356,21 @@ void DirectDeltaMush::deformPoint(
 	svd.compute(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	Mat3 U = svd.matrixU(); // svd decomposition of difference between base pos and target pos
 	Mat3 V = svd.matrixV().transpose();
-	Mat3 R = U * V; // rotation matrix
+	Mat3 R = (U * V); // rotation matrix
 
 	// translation
 	Vec3 ti = qi - (R * pi);
 	Mat4 gamma;
 	gamma << R, ti, 0, 0, 0, 1;
-	MMatrix mGamma = eigen_to_mmatrix(gamma);
-	//Vec4 ptH(basePos.x, basePos.y, basePos.z, 1);
-	//tfPos = mGamma * basePos;
-	tfPos = basePos * mGamma;
+
+	/*Vec4 pt_h( basePos.x)*/
+
+	//MMatrix mGamma = eigen_to_mmatrix(gamma);
+	Vec4 ptH(basePos.x, basePos.y, basePos.z, 1);
+	Vec4 finalPt = gamma * ptH;
+	tfPos = MPoint(finalPt[0], finalPt[1], finalPt[2]);
+	
+	//tfPos = basePos * mGamma;
 
 
 
@@ -473,13 +478,15 @@ MStatus DirectDeltaMush::compute(
 	// bind skin data
 	SkinData &skinInfo = deformParams->skinData;
 
-	if (bindSkin == BindState::bind || bindSkin == BindState::live) { // bind or live
-		extractSkinWeights(data.inputArrayValue(weightList),
-			skinInfo, nPoints);
-		if (bindSkin == BindState::bind) { // set bind attr to bound
-			data.inputValue(aBindSkinWeights).setInt(BindState::bound);
-		}
-	}
+	extractSkinWeights(data.inputArrayValue(weightList), skinInfo, nPoints);
+
+	//if (bindSkin == BindState::bind || bindSkin == BindState::live) { // bind or live
+	//	extractSkinWeights(data.inputArrayValue(weightList),
+	//		skinInfo, nPoints);
+	//	if (bindSkin == BindState::bind) { // set bind attr to bound
+	//		data.inputValue(aBindSkinWeights).setInt(BindState::bound);
+	//	}
+	//}
 
 
 	// bind mesh data
@@ -491,15 +498,21 @@ MStatus DirectDeltaMush::compute(
 		DEBUGS("bind complete")
 	}
 
+	if (!hedgeMesh->hasBuilt) {
+		// don't compute without building mesh
+		setOutputGeo(data, meshObj);
+		data.setClean(plug);
 
+		return MS::kFailure;
+	}
 
 
 	// deformation call - optimise this
 	vector<double> outPositions(meshFn.numVertices()*3, 0.0);
 	deformGeo(*hedgeMesh, *deformParams, outPositions);
 
-	DEBUGS("output")
-	DEBUGVI(outPositions);
+	//DEBUGS("output")
+	//DEBUGVI(outPositions);
 
 	// convert to point array
 	MPointArray outputPoints(meshFn.numVertices());
@@ -580,18 +593,6 @@ MStatus DirectDeltaMush::precompute(MDataBlock& block)
 
 	// Transform matrices
 
-	//MArrayDataHandle transformsHandle = block.inputArrayValue(matrix);
-	//int numTransforms = transformsHandle.elementCount();
-	//if (numTransforms == 0) {
-	//	return MS::kSuccess;
-	//}
-
-	//MMatrixArray transforms;
-	//for (int i = 0; i < numTransforms; ++i) {
-	//	transforms.append(MFnMatrixData(transformsHandle.inputValue().data()).matrix());
-	//	transformsHandle.next();
-	//}
-
 	MMatrixArray transforms = deformParams->tfMats;
 	int numTransforms = transforms.length();
 
@@ -603,7 +604,7 @@ MStatus DirectDeltaMush::precompute(MDataBlock& block)
 	//MArrayDataHandle hRotSmoothMap = block.inputArrayValue(aRotSmoothMap);
 	//MArrayDataHandle hTransSmoothMap = block.inputArrayValue(aTransSmoothMap);
 
-	long ii = 0;
+	//long ii = 0;
 	//for (iter.reset(); !iter.isDone(); iter.next(), ii++) {
 	//	MArrayDataHandle weightsHandle = hWeightList.inputValue().child(weights);
 	//	for (long widx = 0; widx < numTransforms; widx++) {
@@ -640,7 +641,8 @@ MStatus DirectDeltaMush::precompute(MDataBlock& block)
 
 		// for every weight, add to matrix
 		for (int n = 0; n < vertIndices.size(); n++) {
-			WeightMat.insert(i, n) = vertWeights[n];
+			double weightVal = vertWeights[n];
+			WeightMat.insert(i, n) = weightVal;
 		}
 	}
 	DEBUGS("weight bind complete")

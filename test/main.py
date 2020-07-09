@@ -114,6 +114,11 @@ def testDdm():
 		dstPlug = srcPlug.replace(skin, ddm)
 		cmds.connectAttr(srcPlug, dstPlug, f=1)
 
+	cmds.setAttr(ddm + ".iterations", 10)
+	cmds.setAttr(ddm + ".alpha", 0.5)
+	cmds.setAttr(ddm + ".smoothTranslation", 10.0)
+	cmds.setAttr(ddm + ".smoothRotation", 10.0)
+
 	# move skc mesh off to side
 	group = cmds.group(skcMesh, n="skcOffsetGrp")
 	cmds.setAttr(group + ".translateX", 5)

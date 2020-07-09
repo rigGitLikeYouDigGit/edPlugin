@@ -104,7 +104,7 @@ namespace ed{
 static MObject makeBindAttr( char* name ){
     MObject newBind;
     MFnEnumAttribute fn;
-	newBind = fn.create( name, name, 1 );
+	newBind = fn.create( name, name, 0 );
     fn.addField("off", 0);
     fn.addField("bind", 1);
     fn.addField("bound", 2);
