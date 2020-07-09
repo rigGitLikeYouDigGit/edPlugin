@@ -27,7 +27,13 @@ struct SkinData {
 struct DeformerParametres {
 	MMatrixArray tfMats;
 	MMatrixArray refMats;
+	MMatrixArray diffMats; // product matrices
 	float envelope;
+
+	double smoothTranslation;
+	double smoothRotation;
+	double alpha;
+	int iterations;
 
 	SkinData skinData; // stores vertex joint influences
 };
@@ -60,6 +66,12 @@ class DirectDeltaMush : public MPxSkinCluster {
 		ed::HalfEdgeMesh * hedgeMesh; // pointer to halfEdge mesh for deformed geo
 		DeformerParametres * deformParams; // deformation arguments
 
+		ed::Mat4 getOmega(int i, int j);
+		MStatus precompute(MDataBlock& block);
+		// bit crazy but working on it
+		//std::vector<std::list<std::pair<int, ed::Mat4>>> omegas; 
+		std::vector<std::vector<std::pair<int, ed::Mat4>>> omegas; 
+
 
 public:
     static MTypeId kNODE_ID;
@@ -67,11 +79,18 @@ public:
     
     // attribute MObjects
 	static MObject aBind;
+	static MObject aBindSkinWeights;
+
+	static MObject aTransSmooth;
+	static MObject aRotSmooth;
+	static MObject aAlpha;
+	static MObject aIterations;
 
 	// weight buffers
 	static MObject aVertexWeightOffsets;
 	static MObject aVertexWeightIndices;
 	static MObject aVertexWeightValues;
+	
 	
 
     

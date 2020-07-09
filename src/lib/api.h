@@ -13,6 +13,7 @@ as well as common plugin functions
 #include <string>
 #include <iostream>
 #include <memory>
+#include <list>
 
 #include <maya/MStreamUtils.h>
 #include <maya/MPxNode.h>
@@ -66,6 +67,8 @@ as well as common plugin functions
 #include <maya/MPlugArray.h>
 #include <maya/MItGeometry.h>
 
+#include <maya/MTimer.h>
+
 // debug macros
 #define COUT MStreamUtils::stdOutStream()
 #define CERR MStreamUtils::stdErrorStream()
@@ -98,27 +101,29 @@ copy( vec.begin(), vec.end(), ostream_iterator<float>(MStreamUtils::stdOutStream
 
 namespace ed{
 // common functions
-static MObject makeBindAttr( ){
-    MObject aBind;
+static MObject makeBindAttr( char* name ){
+    MObject newBind;
     MFnEnumAttribute fn;
-    aBind = fn.create( "bind", "bind", 1 );
+	newBind = fn.create( name, name, 1 );
     fn.addField("off", 0);
     fn.addField("bind", 1);
     fn.addField("bound", 2);
     fn.addField("live", 3);
     fn.setKeyable(true);
     fn.setHidden(false);
-    return aBind;
+    return newBind;
 }
+enum BindState {off, bind, bound, live};
 
-static MObject makeDoubleArrayAttr( string &name ){
+//static MObject makeDoubleArrayAttr( std::string &name ){
+static MObject makeDoubleArrayAttr( char * name ){
     MObject aArray;
     MFnTypedAttribute fn;
-		aArray = fn.create( name, name, MFnData::kDoubleArray)
+	aArray = fn.create(name, name, MFnData::kDoubleArray);
     return aArray;
 }
 
-MDoubleArray accessDoubleArrayAttr( MDataHandle &dh ){
+static MDoubleArray accessDoubleArrayAttr( MDataHandle &dh ){
 	// returns live double array of attribute
 	MFnDoubleArrayData fn( dh.data() );
 	return fn.array();

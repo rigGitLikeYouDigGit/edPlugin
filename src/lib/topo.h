@@ -13,9 +13,10 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 #define EIGEN_NO_DEBUG
 
-#define <igl/cotmatrix.h>
+#include <igl/cotmatrix.h>
 
 
 #include "containers.h"
@@ -431,6 +432,8 @@ namespace ed {
 		std::vector<Edge> edges;
 		std::vector<HalfEdge> hedges; */
 
+		int hasBuilt = 0;
+
 		int nPoints;
 		int nFaces;
 		int nVertices;
@@ -507,6 +510,10 @@ namespace ed {
 
 			// for half edges a continuous ring of points around face is needed
 
+			hasBuilt = 1;
+
+			DEBUGS("HalfEdgeMesh built")
+
 		}
 
 		void setPositions(
@@ -552,6 +559,37 @@ namespace ed {
 
 	// if two faces are connected by an edge, and share a pair of indices in point order,
 	// those faces have consistent winding order
+
+
+	// ---- EIGEN STUFF -----
+	typedef Eigen::SparseMatrix<double> Sparse;
+	typedef Eigen::Matrix<double, 4, 4> Mat4;
+	typedef Eigen::Matrix<double, 4, 1> Vec4;
+	typedef Eigen::Matrix<double, 3, 3> Mat3;
+	typedef Eigen::Matrix<double, 3, 1> Vec3;
+	typedef Eigen::Matrix<double, -1, -1> MatX;
+
+
+	static void mmatrix_to_eigen(const MMatrix& M, Mat4& D)
+	{
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				D.coeffRef(i, j) = M.matrix[i][j];
+			}
+		}
+	}
+
+	static MMatrix eigen_to_mmatrix(const Mat4& E)
+	{
+		double res[4][4];
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				res[i][j] = E.coeff(i, j);
+			}
+		}
+		return MMatrix(res);
+	}
+
 
 
 	// --- LAPLACIAN AND CHILL ---
