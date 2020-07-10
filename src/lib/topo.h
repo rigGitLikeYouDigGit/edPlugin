@@ -113,15 +113,56 @@ namespace ed {
 			return result;
 		}
 
-		//OffsetBuffer& operator=(const OffsetBuffer &other) {
-		//	*this->values = other.values;
-		//	*this->offsets = other.offsets;
-		//	*this->nValues = other.nValues;
-		//	*this->nEntries = other.nEntries;
-		//	return *this;
-		//}
-
 	};
+
+	// improving buffer by adding entry length into offsets
+	template <typename T>
+	struct OffsetBuffer2 {
+		int nValues;
+		int nEntries;
+
+		std::vector<T> values;
+		std::vector<int> offsets;
+
+		OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets) :
+			values(initValues), offsets(initOffsets),
+			nValues(static_cast<int>(initValues.size())),
+			nEntries(static_cast<int>(initOffsets.size())){}
+
+		void buildEntryLengths( std::vector<T> &baseOffsets,
+			std::vector<T> &baseValues){
+			// insert length as 2n+1 entry in offset buffer
+			std::vector<T> newOffsets( baseOffsets.size() * 2);
+			for( int i = 0; i < baseOffsets.size(); i++){
+				newOffsets[2 * i] = baseOffsets[i];
+				if( i == baseOffsets.size() - 1){ // at end
+					newOffsets[2 * i + 1] = baseValues.size() - baseOffsets[i];
+				}
+				else{
+					newOffsets[2 * i + 1] = baseOffsets[i] - baseOffsets[i + 1];
+				}
+			}
+			offsets = newOffsets;
+		}
+
+		int entryLength(int entryIndex){
+			// get length of specific entry
+			return offsets[ 2 * entryIndex + 1];
+		}
+
+		SmallList<T> entry(int entryIndex) { // building whole vectors in critical loops is slow
+			int startIndex = offsets[entryIndex];
+			int length = entryLength(entryIndex);
+			SmallList<T> result;
+			result.reserve(length); // reserve doesn't work :(
+			for (int i = 0; i < length; i++) {
+				result.push_back(values[startIndex + i]);
+			}
+			return result;
+		}
+	};
+
+
 
 	// corresponding wrapper for buffers of constant entry length
 	template <typename T>
