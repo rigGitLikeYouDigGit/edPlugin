@@ -16,6 +16,8 @@ register all plugins
 
 // END PROCEDURAL CONTROL INCLUDE
 
+#include "refDDM.h"
+
 #include <maya/MFnPlugin.h>
 #include <maya/MTypeId.h>
 #include <maya/MString.h>
@@ -72,15 +74,6 @@ macros shamelessly lifted from yantor3d
 thanks mate
 */
 
-// node IDs in one place for ease of use
-//MTypeId MeshAnalysis::kNODE_ID(0x00122C04);
-//MTypeId EdPush::kNODE_ID(0x00122C05);
-
-
-//MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
-//MTypeId UberDeformer::kNODE_ID(0x00122C09);
-//MTypeId DeformerNotion::kNODE_ID(0x00122C10);
-
 
 MStatus initializePlugin( MObject obj ){
 	DEBUGS("");
@@ -106,13 +99,15 @@ MStatus initializePlugin( MObject obj ){
 	status = REGISTER_NODE(MemorySource);
 	status = REGISTER_NODE(MemorySink);
 	status = REGISTER_NODE_TYPE(DirectDeltaMush, MPxNode::kSkinCluster);
+	//status = REGISTER_NODE_TYPE(RefDDM, MPxNode::kSkinCluster);
 
-	//status = fnPlugin.registerNode( // reference implementation, remove once we have a better solution
-	//	"directDeltaMush",
-	//	directDeltaMush::id,
-	//	directDeltaMush::creator,
-	//	directDeltaMush::initialize,
-	//	MPxNode::kSkinCluster);
+	status = fnPlugin.registerNode( // reference implementation, remove once we have a better solution
+		"refDDM",
+		//directDeltaMush::id,
+		RefDDM::kNODE_ID,
+		RefDDM::creator,
+		RefDDM::initialize,
+		MPxNode::kSkinCluster);
 
     // END PROCEDURAL CONTROL REGISTER
 
@@ -134,7 +129,7 @@ MStatus uninitializePlugin( MObject obj ){
 	status = DEREGISTER_NODE(MemorySource);
 	status = DEREGISTER_NODE(MemorySink);
 	status = DEREGISTER_NODE(DirectDeltaMush);
-	//status = fnPlugin.deregisterNode(directDeltaMush::id);
+	status = fnPlugin.deregisterNode(RefDDM::kNODE_ID);
     // END PROCEDURAL CONTROL DEREGISTER
 
     return status;

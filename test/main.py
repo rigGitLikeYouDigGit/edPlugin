@@ -63,9 +63,10 @@ def baseTest():
 def testDdm():
 
 	# test for skin
-	mesh = cmds.polyCylinder(r=1, h=10, sx=8, sy=8, sz=8, ax=(0, 0, 1), ch=0)[0]
+	mesh = cmds.polyCylinder(r=1, h=10, sx=8, sy=40, sz=8, ax=(0, 0, 1), ch=0)[0]
 	# skin cluster to transfer base weights
 	skcMesh = cmds.duplicate(mesh, n="skcMesh")[0]
+	refMesh = cmds.duplicate(mesh, n="refDdmMesh")[0]
 	joints = []
 	refJoints = []
 
@@ -77,51 +78,58 @@ def testDdm():
 
 	skin = cmds.skinCluster(joints, skcMesh)[0]
 	ddm = cmds.deformer(mesh, type="directDeltaMush")[0]
+	refDdm = cmds.deformer(refMesh, type="refDDM")[0]
 
-	# copy matrix connections
-	for i in range(3):
-		cmds.connectAttr(joints[i] + ".worldMatrix[0]", ddm + ".matrix[{}]".format(i))
-		pass
+	for mush in [ddm, refDdm]:
+
+		# copy matrix connections
+		for i in range(3):
+			cmds.connectAttr(joints[i] + ".worldMatrix[0]", mush + ".matrix[{}]".format(i))
+			#cmds.connectAttr(joints[i] + ".worldMatrix[0]", refDdm + ".matrix[{}]".format(i))
+			pass
 
 
-	# copy plug connections and weights to deltamush
-	copyPlugs = ("weightList", "bindPreMatrix")
+		# copy plug connections and weights to deltamush
+		copyPlugs = ("weightList", "bindPreMatrix")
 
-	size = cmds.getAttr(skin + ".weightList", size=1)
-	cmds.setAttr(ddm + ".weightList", size=size)
+		size = cmds.getAttr(skin + ".weightList", size=1)
+		cmds.setAttr(mush + ".weightList", size=size)
 
-	cmds.select(cl=1)
-	for i in copyPlugs:
-		sourcePlug = getMPlug(getMObject(skin), i)
-		sourceDH = om.MArrayDataHandle( sourcePlug.asMDataHandle())
-		sinkPlug = getMPlug(getMObject(ddm), i)
-		sinkDH = om.MArrayDataHandle( sinkPlug.asMDataHandle())
+		cmds.select(cl=1)
+		for i in copyPlugs:
+			sourcePlug = getMPlug(getMObject(skin), i)
+			sourceDH = om.MArrayDataHandle( sourcePlug.asMDataHandle())
+			sinkPlug = getMPlug(getMObject(mush), i)
+			sinkDH = om.MArrayDataHandle( sinkPlug.asMDataHandle())
 
-		sinkDH.copy(sourceDH)
+			sinkDH.copy(sourceDH)
 
-		sourceDH = sourcePlug.asMDataHandle()
-		sinkPlug.setMDataHandle(om.MDataHandle(sourceDH))
+			sourceDH = sourcePlug.asMDataHandle()
+			sinkPlug.setMDataHandle(om.MDataHandle(sourceDH))
 
-		cmds.select(ddm)
+			cmds.select(mush)
 
-	# direct weight connections from skincluster to allow live weight editing
-	for i in range( cmds.getAttr(skin + ".weightList", size=1)):
-		array = skin + ".weightList[{}]".format(i)
-		# for n in range( cmds.getAttr(array + ".weights", size=1 )):
-		# 	srcPlug = array + ".weights[{}]".format(n)
+		# direct weight connections from skincluster to allow live weight editing
+		for i in range( cmds.getAttr(skin + ".weightList", size=1)):
+			array = skin + ".weightList[{}]".format(i)
+			# for n in range( cmds.getAttr(array + ".weights", size=1 )):
+			# 	srcPlug = array + ".weights[{}]".format(n)
 
-		srcPlug = array
-		dstPlug = srcPlug.replace(skin, ddm)
-		cmds.connectAttr(srcPlug, dstPlug, f=1)
+			srcPlug = array
+			dstPlug = srcPlug.replace(skin, mush)
+			cmds.connectAttr(srcPlug, dstPlug, f=1)
 
-	cmds.setAttr(ddm + ".iterations", 10)
-	cmds.setAttr(ddm + ".alpha", 0.5)
-	cmds.setAttr(ddm + ".smoothTranslation", 10.0)
-	cmds.setAttr(ddm + ".smoothRotation", 10.0)
+		cmds.setAttr(ddm + ".iterations", 10)
+		cmds.setAttr(ddm + ".alpha", 0.5)
+		cmds.setAttr(ddm + ".smoothTranslation", 10.0)
+		cmds.setAttr(ddm + ".smoothRotation", 10.0)
 
 	# move skc mesh off to side
 	group = cmds.group(skcMesh, n="skcOffsetGrp")
 	cmds.setAttr(group + ".translateX", 5)
+
+	group = cmds.group(refMesh, n="refOffsetGrp")
+	cmds.setAttr(group + ".translateX", -5)
 
 
 

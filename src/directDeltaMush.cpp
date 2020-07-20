@@ -546,11 +546,6 @@ Mat4 DirectDeltaMush::getOmega(int i, int j)
 	return z;
 }
 
-Vec4 hmg(const Vec3& v)
-{
-	auto res = Vec4(v[0], v[1], v[2], 1);
-	return res;
-}
 
 MStatus DirectDeltaMush::precompute(MDataBlock& block)
 {

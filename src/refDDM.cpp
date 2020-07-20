@@ -1,25 +1,25 @@
-#include "refDDM.h"
+#include "RefDDM.h"
 
+using namespace ed;
+//const MTypeId RefDDM::id(0x00131200);
 
+MTypeId RefDDM::kNODE_ID(0x00122D1D);
+MString RefDDM::kNODE_NAME("RefDDM");
 
-#define EIGEN_NO_DEBUG
-
-const MTypeId directDeltaMush::id(0x00131200);
-
-void* directDeltaMush::creator()
+void* RefDDM::creator()
 {
-	return new directDeltaMush();
+	return new RefDDM;
 }
 
-MObject directDeltaMush::aTransSmooth;
-// MObject directDeltaMush::aTransSmoothMap;
-MObject directDeltaMush::aRotSmooth;
-// MObject directDeltaMush::aRotSmoothMap;
-MObject directDeltaMush::aAlpha;
-MObject directDeltaMush::aRecalc;
-MObject directDeltaMush::aSteps;
+MObject RefDDM::aTransSmooth;
+// MObject RefDDM::aTransSmoothMap;
+MObject RefDDM::aRotSmooth;
+// MObject RefDDM::aRotSmoothMap;
+MObject RefDDM::aAlpha;
+MObject RefDDM::aRecalc;
+MObject RefDDM::aSteps;
 
-MStatus directDeltaMush::initialize()
+MStatus RefDDM::initialize()
 {
 	MFnNumericAttribute nAttr;
 	MFnMatrixAttribute mAttr;
@@ -81,33 +81,33 @@ MStatus directDeltaMush::initialize()
 	attributeAffects(aSteps, outputGeom);
 	attributeAffects(aRecalc, outputGeom);
 
-	// MGlobal::executeCommand("makePaintable -attrType multiDouble -sm deformer directDeltaMush translationSmoothingMap");
-	// MGlobal::executeCommand("makePaintable -attrType multiDouble -sm deformer directDeltaMush rotationSmoothingMap");
+	// MGlobal::executeCommand("makePaintable -attrType multiDouble -sm deformer RefDDM translationSmoothingMap");
+	// MGlobal::executeCommand("makePaintable -attrType multiDouble -sm deformer RefDDM rotationSmoothingMap");
 
 	return MStatus::kSuccess;
 }
 
-void mmatrix_to_eigen(const MMatrix& M, Mat4& D)
-{
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			D.coeffRef(i, j) = M.matrix[i][j];
-		}
-	}
-}
+//void mmatrix_to_eigen(const MMatrix& M, Mat4& D)
+//{
+//	for (int i = 0; i < 4; i++) {
+//		for (int j = 0; j < 4; j++) {
+//			D.coeffRef(i, j) = M.matrix[i][j];
+//		}
+//	}
+//}
+//
+//MMatrix eigen_to_mmatrix(const Mat4& E)
+//{
+//	double res[4][4];
+//	for (int i = 0; i < 4; i++) {
+//		for (int j = 0; j < 4; j++) {
+//			res[i][j] = E.coeff(i, j);
+//		}
+//	}
+//	return MMatrix(res);
+//}
 
-MMatrix eigen_to_mmatrix(const Mat4& E)
-{
-	double res[4][4];
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			res[i][j] = E.coeff(i, j);
-		}
-	}
-	return MMatrix(res);
-}
-
-MStatus directDeltaMush::JumpToElement(MArrayDataHandle& hArray, unsigned int index)
+MStatus RefDDM::JumpToElement(MArrayDataHandle& hArray, unsigned int index)
 {
 	// Borrowed from Chad Vernon. Thanks Chad!
 	MStatus status;
@@ -126,7 +126,7 @@ MStatus directDeltaMush::JumpToElement(MArrayDataHandle& hArray, unsigned int in
 }
 
 MStatus
-directDeltaMush::deform(MDataBlock& block,
+RefDDM::deform(MDataBlock& block,
 	MItGeometry& iter,
 	const MMatrix& /*m*/,
 	unsigned int multiIndex)
@@ -230,13 +230,7 @@ directDeltaMush::deform(MDataBlock& block,
 	return returnStatus;
 }
 
-Vec4 hmg(const Vec3& v)
-{
-	auto res = Vec4(v[0], v[1], v[2], 1);
-	return res;
-}
-
-Mat4 directDeltaMush::getOmega(int i, int j)
+Mat4 RefDDM::getOmega(int i, int j)
 {
 	//Get omega, or if it doesn't exist, return the zero matrix.
 	auto l = omegas.at(i);
@@ -249,7 +243,7 @@ Mat4 directDeltaMush::getOmega(int i, int j)
 	return z;
 }
 
-MStatus directDeltaMush::precompute(MDataBlock& block, MItGeometry& iter)
+MStatus RefDDM::precompute(MDataBlock& block, MItGeometry& iter)
 {
 	// Time the precomputation stage
 	MTimer timer;

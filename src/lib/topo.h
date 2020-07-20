@@ -14,10 +14,10 @@
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/SVD>
-#define EIGEN_NO_DEBUG
+//#define EIGEN_NO_DEBUG
 
 #include <igl/cotmatrix.h>
-
+//#define EIGEN_NO_DEBUG 1
 
 #include "containers.h"
 
@@ -116,6 +116,7 @@ namespace ed {
 	};
 
 	// improving buffer by adding entry length into offsets
+	// length and start index are interleaved
 	template <typename T>
 	struct OffsetBuffer2 {
 		int nValues;
@@ -124,7 +125,7 @@ namespace ed {
 		std::vector<T> values;
 		std::vector<int> offsets;
 
-		OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets) :
+		OffsetBuffer2( std::vector<T> initValues, std::vector<int> initOffsets) :
 			values(initValues), offsets(initOffsets),
 			nValues(static_cast<int>(initValues.size())),
 			nEntries(static_cast<int>(initOffsets.size())){}
@@ -631,7 +632,11 @@ namespace ed {
 		return MMatrix(res);
 	}
 
-
+	static Vec4 hmg(const Vec3& v)
+	{
+		auto res = Vec4(v[0], v[1], v[2], 1);
+		return res;
+	}
 
 	// --- LAPLACIAN AND CHILL ---
 
@@ -691,27 +696,6 @@ namespace ed {
 	// either builds buffers or accepts prebuilt
 	// assumes max vertex valence of 4
 
-	struct Topo {
-		int nPoints;
-		std::vector<int> pointConnects;
-		std::vector<int> faceConnects;
-
-		Topo(int nPointsIn) {
-			// initialise arrays to -1
-			pointConnects.assign(nPointsIn * 4, -1);
-			faceConnects.assign(nPointsIn * 4, -1);
-			nPoints = nPointsIn;
-		}
-
-		Topo(std::vector<int> pointConnectsIn, std::vector<int> faceConnectsIn) {
-			// copy input arrays, Topo struct owns its values in memory
-			pointConnects = pointConnectsIn;
-			faceConnects = faceConnectsIn;
-			nPoints = int(pointConnects.size());
-		}
-
-
-	};
 
 } //ed
 #endif
