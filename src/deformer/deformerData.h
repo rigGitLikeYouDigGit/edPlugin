@@ -8,10 +8,13 @@
 #include <vector>
 #include <set>
 
-// deformer data structs for notion system
+// structures to support deformers
 
 /* values that will change with every iteration,
 to be updated by the deformation functions */
+
+namespace ed{
+
 struct MeshLiveData {
 
 	std::vector<float> positions; // vertex positions
@@ -38,10 +41,10 @@ struct MeshAuxData;
 
 /* values specific to deformation function, effectively
 function arguments*/
-struct DeformParametres;
+struct DeformerParametres;
 
 
-
+}
 
 
 #endif

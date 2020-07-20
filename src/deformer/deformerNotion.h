@@ -4,13 +4,14 @@
 #define DEFORMERNOTION_H
 
 #include "../lib/api.h"
+#include "../lib/topo.h"
+#include "deformerData.h"
 
-struct MeshData {
-	std::vector<float> pointPositions;
-	std::vector<int> faceConnects;
-	std::vector<int> pointConnects;
-};
-
+// base class for individual components of deformer system
+// each deformer node specifies functions:
+//		 bind(), extractParametres(), and deform()
+//
+// each deformer node specifies struct DeformerParametres
 
 class DeformerNotion : public MPxNode {
     public:
@@ -20,9 +21,19 @@ class DeformerNotion : public MPxNode {
         virtual MStatus compute(
 				const MPlug& plug, MDataBlock& data);
 
-		// deformation function for each notion scheme
-		void notionDeform(int maxGlobalIterations, int currentGlobalIteration,
-			int maxLocalIterations, int currentLocalIteration, MeshData &meshData);
+				ed::DeformerParametres * params;
+
+				// EXECUTION FUNCTIONS
+				// extractParametres is run every evaluation,
+				// transfers datablock values to params struct
+				virtual int extractParametres(
+					MDataBlock &data, ed::DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+
+				// bind is run once on bind
+				virtual int bind( MDataBlock &data, ed::DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+
+				// deform 
+				virtual int deform( ed::DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
         static void* creator();
         static MStatus initialize();
@@ -30,7 +41,7 @@ class DeformerNotion : public MPxNode {
 public:
     static MTypeId kNODE_ID;
     static MString kNODE_NAME;
-    
+
     // attribute MObjects
 	static MObject aWeights;
 	static MObject aUseWeights;
@@ -39,4 +50,3 @@ public:
 
 };
 #endif
-	
