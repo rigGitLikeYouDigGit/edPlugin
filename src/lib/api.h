@@ -100,6 +100,10 @@ COUT <<m[12] << ", " << m[13] << ", " << m[14] << ", " << m[15] << std::endl;
 copy( vec.begin(), vec.end(), ostream_iterator<float>(MStreamUtils::stdOutStream, " "));
 
 namespace ed{
+
+// registering IDs of plugin nodes
+const unsigned int pluginPrefix = 101997;
+
 // common functions
 static MObject makeBindAttr( char* name ){
     MObject newBind;
@@ -114,6 +118,18 @@ static MObject makeBindAttr( char* name ){
     return newBind;
 }
 enum BindState {off, bind, bound, live};
+
+static MObject makeSpaceAttr( char* name ){
+    MObject newSpace;
+    MFnEnumAttribute fn;
+	newSpace = fn.create( name, name, 0 );
+    fn.addField("naive", 0);
+    fn.addField("partitioning", 1);
+    fn.setKeyable(false);
+    fn.setHidden(false);
+    return newSpace;
+}
+enum SpaceMethod {naive, partitioning};
 
 //static MObject makeDoubleArrayAttr( std::string &name ){
 static MObject makeDoubleArrayAttr( char * name ){
@@ -276,6 +292,14 @@ inline void setAttributesAffect(std::vector<MObject> &driver, std::vector<MObjec
 		for (auto &j : driven) {
 			T::attributeAffects(i, j);
 		}
+	}
+}
+
+template <typename T>
+inline void addAttributes(std::vector<MObject> &attrs){
+	// adds all attributes at once
+	for( auto &attrObj : attrs ){
+		T::addAttribute(attrObj);
 	}
 }
 

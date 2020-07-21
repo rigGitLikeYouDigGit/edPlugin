@@ -3,16 +3,18 @@
 /*
 
 	individual component deformation of uberDeformer
-	
+
 */
 
 #include "deformerNotion.h"
 
-MTypeId DeformerNotion::kNODE_ID(0x00122C10);
+using namespace ed;
+using namespace stl;
+
+MTypeId DeformerNotion::kNODE_ID(pluginPrefix, 0x00122C11);
 MString DeformerNotion::kNODE_NAME( "deformerNotion" );
 
-MObject DeformerNotion::aWeights;
-MObject DeformerNotion::aUseWeights;
+MObject DeformerNotion::aMasterWeights;
 MObject DeformerNotion::aLocalIterations;
 MObject DeformerNotion::aUberDeformer;
 
@@ -25,44 +27,64 @@ MStatus DeformerNotion::initialize()
 
 	// boolean plug to connect to master deformer
 	aUberDeformer = nFn.create("uberDeformer", "uberDeformer", MFnNumericData::kBoolean, 0);
-	addAttribute(aUberDeformer);
-	
-	// check whether to use per-point weights for deformation
-	aUseWeights = nFn.create("useWeights", "useWeights", MFnNumericData::kBoolean, 0);
-	addAttribute(aUberDeformer);
+	// addAttribute(aUberDeformer);
+
+	aEnvelope = nFn.create("envelope", "envelope", MFnNumericData::kFloat, 1.0);
+	// addAttribute(aEnvelope);
 
 	// weight array attribute
-	aWeights = tFn.create("weights", "weights", MFnData::kDoubleArray);
-	addAttribute(aWeights);
+	aMasterWeights = tFn.create("weights", "weights", MFnData::kDoubleArray);
+	// addAttribute(aMasterWeights);
 
 	// local iterations, how many times to loop this operation on each cycle
 	aLocalIterations = nFn.create("localIterations", "localIteration", MFnNumericData::kInt, 1);
-	addAttribute(aLocalIterations);
-	
+	// addAttribute(aLocalIterations);
+
 	// set affects
-	std::vector<MObject> drivers = { aUseWeights, aWeights, aLocalIterations };
-	for (auto &it : drivers) {
-		attributeAffects(it, aUberDeformer);
-	}
+	vector<MObject> drivers = { aMasterWeights, aLocalIterations, aEnvelope };
+	vector<MObject> driven = { aUberDeformer };
+
+	addAttributes( drivers );
+	addAttributes( driven );
+
+	setAttributeAffectsAll(drivers, driven);
 
     return MStatus::kSuccess;
 }
 
+virtual int DeformerNotion::extractParametres(
+	MDataBlock &data, DeformerParametres &params
+){
+	params.envelope = data.inputValue(aEnvelope).asFloat();
+	params.localIterations = data.inputValue(aLocalIterations).asInt();
+	params.masterWeights = accessDoubleArrayAttr(data.inputValue(aMasterWeights));
+	return 1;
 
+}
 
 
 MStatus DeformerNotion::compute(
 				const MPlug& plug, MDataBlock& data) {
 
+	extractParametres(data, this->params);
+
 	// "balance wheel" mechanism to mark node dirty to uberDeformer
 	// thanks Matt
 	bool old = data.outputValue(aUberDeformer).asBool();
 	data.outputValue(aUberDeformer).setBool( !old );
-	
+
 
 	data.setClean(plug);
     return MS::kSuccess;
 }
+
+virtual int bind( MDataBlock &data, DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+	// runs precomputation for deformerNotion, saves results into params
+
+	// DO EXPENSIVE PRECOMPUTATION HERE
+	return 1;
+}
+
 
 void* DeformerNotion::creator(){
 
@@ -72,4 +94,3 @@ void* DeformerNotion::creator(){
 
 DeformerNotion::DeformerNotion() {};
 DeformerNotion::~DeformerNotion() {};
-

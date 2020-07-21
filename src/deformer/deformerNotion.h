@@ -5,13 +5,25 @@
 
 #include "../lib/api.h"
 #include "../lib/topo.h"
-#include "deformerData.h"
+//#include "deformerData.h"
 
-// base class for individual components of deformer system
-// each deformer node specifies functions:
-//		 bind(), extractParametres(), and deform()
-//
-// each deformer node specifies struct DeformerParametres
+/*
+base class for individual components of deformer system
+each deformer node specifies functions:
+		 bind(), extractParametres(), and deform()
+
+each deformer node specifies struct DeformerParametres
+no hard distinction between precomputed information and keyable -
+everything is placed in deformer params. This may become an issue if
+uploading cost grows too serious.
+
+*/
+
+struct DeformerParametres {
+  int localIterations;
+  float envelope;
+  MDoubleArray masterWeights;
+}
 
 class DeformerNotion : public MPxNode {
     public:
@@ -21,19 +33,19 @@ class DeformerNotion : public MPxNode {
         virtual MStatus compute(
 				const MPlug& plug, MDataBlock& data);
 
-				ed::DeformerParametres * params;
+				DeformerParametres * params;
 
 				// EXECUTION FUNCTIONS
 				// extractParametres is run every evaluation,
 				// transfers datablock values to params struct
 				virtual int extractParametres(
-					MDataBlock &data, ed::DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+					MDataBlock &data, DeformerParametres &params );
 
 				// bind is run once on bind
-				virtual int bind( MDataBlock &data, ed::DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				virtual int bind( MDataBlock &data, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
-				// deform 
-				virtual int deform( ed::DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				// deform
+				virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
         static void* creator();
         static MStatus initialize();
@@ -43,8 +55,8 @@ public:
     static MString kNODE_NAME;
 
     // attribute MObjects
-	static MObject aWeights;
-	static MObject aUseWeights;
+  static MObject aEnvelope;
+	static MObject aMasterWeights;
 	static MObject aLocalIterations;
 	static MObject aUberDeformer;
 
