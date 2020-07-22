@@ -145,6 +145,18 @@ static MDoubleArray accessDoubleArrayAttr( MDataHandle &dh ){
 	return fn.array();
 }
 
+static MMatrixArray extractMMatrixArray(MArrayDataHandle& matArray) {
+	// extracts matrices from array plug
+	// simple, right?
+
+		MMatrixArray result(matArray.elementCount());
+		for (unsigned int i = 0; i < matArray.elementCount(); i++) {
+			result[i] = MFnMatrixData(matArray.inputValue().data()).matrix();
+			// guess again
+			matArray.next();
+		}
+		return result;
+	}
 
 static MPlugArray getAllConnectedPlugs(MObject &mainNode, MObject &plugAttr,
 		bool asSource, bool asSink) {

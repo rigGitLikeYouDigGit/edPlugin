@@ -37,7 +37,13 @@ class SkinNotion : public DeformerNotion {
 				virtual int bind( MDataBlock &data, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
 				// deform
-				virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				// virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+
+				virtual int deformPoint(int index, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+
+        // specific functions
+        void extractSkinWeights(MArrayDataHandle& weightRoot,
+          SkinNotionParametres& skinInfo, int nPoints) {
 
         static void* creator();
         static MStatus initialize();

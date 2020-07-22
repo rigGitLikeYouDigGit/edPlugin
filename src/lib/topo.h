@@ -9,6 +9,7 @@
 #include <numeric>
 #include <string>
 #include <map>
+#include <tuple>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
