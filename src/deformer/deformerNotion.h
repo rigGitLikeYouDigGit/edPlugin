@@ -45,7 +45,10 @@ class DeformerNotion : public MPxNode {
 				virtual int bind( MDataBlock &data, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
 				// deform
-				virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				//virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+
+        virtual int deformPoint( int index,
+          DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
         static void* creator();
         static MStatus initialize();

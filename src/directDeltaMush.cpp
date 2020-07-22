@@ -223,7 +223,7 @@ void extractSkinWeights(MArrayDataHandle& weightRoot, SkinData& skinInfo, int nP
 		MArrayDataHandle vtxEntry = weightRoot.inputValue().child(
 			DirectDeltaMush::weights);
 		unsigned int nWeights = vtxEntry.elementCount();
-		
+
 		for (unsigned int n = 0; n < nWeights; n++) {
 
 			float weightVal = vtxEntry.inputValue().asDouble();
@@ -245,13 +245,13 @@ void extractSkinWeights(MArrayDataHandle& weightRoot, SkinData& skinInfo, int nP
 			if (entryCreated == 0) {
 				//DEBUGS("no entry created for vertex " << i);
 			}
-			
-			influenceIndices.push_back(-1); // 
+
+			influenceIndices.push_back(-1); //
 			influenceWeights.push_back(0.0);
 			offsetIndex++;
 			continue;
 		}
-		
+
 	}
 
 	skinInfo.vertexOffsets = vertexOffsets;
@@ -369,7 +369,7 @@ void DirectDeltaMush::deformPoint(
 	Vec4 ptH(basePos.x, basePos.y, basePos.z, 1);
 	Vec4 finalPt = gamma * ptH;
 	tfPos = MPoint(finalPt[0], finalPt[1], finalPt[2]);
-	
+
 	//tfPos = basePos * mGamma;
 
 
