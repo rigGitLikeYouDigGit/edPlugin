@@ -612,24 +612,26 @@ namespace ed {
 	typedef Eigen::Matrix<double, -1, -1> MatX;
 
 
-	static void mmatrix_to_eigen(const MMatrix& M, Mat4& D)
+	static void mmatrix_to_eigen(const MMatrix& M, Mat4& E)
 	{
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
-				D.coeffRef(i, j) = M.matrix[i][j];
-			}
-		}
+		DEBUGS("topo mmatrix_to_eigen");
+		const double *matData = reinterpret_cast<const double*>(&M);
+		//D << matData[0], matData[1], matData[2], matData[3],
+		//	matData[4], matData[5], matData[6], matData[7],
+		//	matData[8], matData[9], matData[10], matData[11],
+		//	matData[12], matData[13], matData[14], matData[15];
+
+		std::copy(matData, matData + 16, E.data());
+
 	}
 
 	static MMatrix eigen_to_mmatrix(const Mat4& E)
 	{
-		double res[4][4];
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
-				res[i][j] = E.coeff(i, j);
-			}
-		}
-		return MMatrix(res);
+		DEBUGS("topo eigen_to_mmatrix");
+		MMatrix result;
+		double *matData = reinterpret_cast<double*>(&result);
+		std::copy(E.data(), E.data() + 16, matData);
+		return result;
 	}
 
 	static Vec4 hmg(const Vec3& v)
