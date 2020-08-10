@@ -116,8 +116,24 @@ namespace ed {
 
 	};
 
-	// improving buffer by adding entry length into offsets
-	// length and start index are interleaved
+	static std::vector<int> interleaveOffsets(
+			std::vector<int> baseOffsets, int maxIndex ){
+		// interleave difference between each item, between items themselves
+		std::vector<int> newOffsets( baseOffsets.size() * 2, -1);
+		for( int i = 0; i < baseOffsets.size(); i++){
+			newOffsets[2 * i] = baseOffsets[i];
+			if( i == baseOffsets.size() - 1){ // at end
+				newOffsets[2 * i + 1] = maxIndex - baseOffsets[i];
+			}
+			else{
+				newOffsets[2 * i + 1] = baseOffsets[i] - baseOffsets[i + 1];
+			}
+		}
+		return newOffsets;
+
+	}
+
+	// improving buffer by interleaving entry length into entry offsets
 	template <typename T>
 	struct OffsetBuffer2 {
 		int nValues;
@@ -129,41 +145,25 @@ namespace ed {
 		OffsetBuffer2( std::vector<T> initValues, std::vector<int> initOffsets) :
 			values(initValues), offsets(initOffsets),
 			nValues(static_cast<int>(initValues.size())),
-			nEntries(static_cast<int>(initOffsets.size())){}
-
-		void buildEntryLengths( std::vector<T> &baseOffsets,
-			std::vector<T> &baseValues){
-			// insert length as 2n+1 entry in offset buffer
-			std::vector<T> newOffsets( baseOffsets.size() * 2);
-			for( int i = 0; i < baseOffsets.size(); i++){
-				newOffsets[2 * i] = baseOffsets[i];
-				if( i == baseOffsets.size() - 1){ // at end
-					newOffsets[2 * i + 1] = baseValues.size() - baseOffsets[i];
-				}
-				else{
-					newOffsets[2 * i + 1] = baseOffsets[i] - baseOffsets[i + 1];
-				}
+			nEntries(static_cast<int>(initOffsets.size())){
+				offsets = interleaveOffsets(initOffsets, nValues);
 			}
-			offsets = newOffsets;
-		}
 
 		int entryLength(int entryIndex){
-			// get length of specific entry
 			return offsets[ 2 * entryIndex + 1];
 		}
 
-		SmallList<T> entry(int entryIndex) { // building whole vectors in critical loops is slow
+		SmallList<T> entry(int entryIndex) {
 			int startIndex = offsets[entryIndex];
 			int length = entryLength(entryIndex);
 			SmallList<T> result;
-			result.reserve(length); // reserve doesn't work :(
+			result.reserve(length);
 			for (int i = 0; i < length; i++) {
 				result.push_back(values[startIndex + i]);
 			}
 			return result;
 		}
 	};
-
 
 
 	// corresponding wrapper for buffers of constant entry length
@@ -183,17 +183,6 @@ namespace ed {
 			nEntries(static_cast<int>(initValues.size()) / initStrideLength){}
 
 		void setVector(std::vector<T> initValues, int initStrideLength) {
-			//values = std::vector<T>(initValues);
-			//copy(initValues.begin(), initValues.end(), back_inserter(values));
-			//values.swap(initValues);
-			//values.clear();
-			//for (auto &a : initValues) {
-			//	//values.push_back(a);
-			//}
-
-			// error std::_Container_base12::_Orphan_all
-			// for some reason
-			//DEBUGS(initValues[0]);
 			std::vector<T> p = initValues;
 			values = p;
 
@@ -211,15 +200,6 @@ namespace ed {
 		 	}
 		 	return result;
 		 }
-
-		//const T* entry(int entryIndex) const {
-		//	int strideLength = this->strideLength;
-		//	const T* result[strideLength];
-		//	for (int i = 0; i < strideLength; i++){
-		//		result[i] = values[entryIndex*strideLength + i];
-		//	}
-		//	return result;
-		//}
 
 		//UniformBuffer& operator=(const UniformBuffer &other) {
 		//	*this->values = other.values;
@@ -274,49 +254,6 @@ namespace ed {
 		}
 		return result;
 	}
-
-	//template <typename T>
-	//T* entry(
-	//	const std::vector<T> &values,
-	//	const std::vector<int> &offsets,
-	//	int entryIndex) {
-	//	// use buffer indices to retrieve main values in entry
-	//	int startIndex = offsets[entryIndex];
-	//	int endIndex;
-
-	//	// check if entry is last
-	//	if (entryIndex == offsets.size() - 1) {
-	//		endIndex = static_cast<int>(values.size());
-	//	}
-	//	else {
-	//		endIndex = offsets[entryIndex + 1];
-	//	}
-	//	if (startIndex == endIndex) {
-	//		endIndex++;
-	//	}
-
-	//	T result[endIndex - startIndex];
-
-	//	for (int i = 0; i < endIndex - startIndex; i++) {
-	//		result[i] = values[startIndex + i];
-	//	}
-	//	return result;
-	//}
-
-	//template <typename T>
-	//T* entry(
-	//	const std::vector<T> &values,
-	//	int strideLength,
-	//	int entryIndex) { // variant for uniform buffers
-
-	//	T result[strideLength];
-
-	//	for (int i = 0; i < strideLength; i++) {
-	//		result[i] = values[entryIndex*strideLength + i];
-	//	}
-	//	return result;
-	//}
-
 
 
 	static OffsetBuffer<int> pointBufferFromFaceBuffer(OffsetBuffer<int> &faceBuffer)
@@ -389,72 +326,6 @@ namespace ed {
 
 
 
-	// --- HALF EDGE MESH STRUCTURE ---
-
-
-	struct IndexedComponent {
-		// base class for index comparison
-		int index;
-		bool operator==(const IndexedComponent& other) {
-			// common sense rules - don't compare face with edge
-			return (index == other.index);
-		}
-	};
-
-
-	// topology types, no spatial info
-	struct Point; // point in space
-	struct Vertex; // unique vertex, split by face
-	struct Face; // polygonal face
-	struct Edge; // undirected shared edge
-	struct HalfEdge; // directed unique edge
-
-	// topo types shelved until I can stop relying on loads std::vectors,
-	// the memory bloat is real
-
-	struct Point : IndexedComponent {
-		std::vector<Vertex*> vertices; // vertices owned by this point, maybe ordered
-		std::vector<Edge*> edges; // edges owned by this point, maybe ordered
-		std::vector<Face*> faces; // faces to which this point belongs
-	};
-
-	struct Vertex : IndexedComponent {
-		Point* point; // point to which this vertex belongs
-		Face* face; // face to which this vertex belongs
-		Edge* edges[2]; // previous and next edges
-		HalfEdge* hedges[2]; // previous and next halfEdges
-	};
-
-	struct Face : IndexedComponent {
-		std::vector<Point*> points; // points in this face
-		std::vector<Edge*> edges; // edges shared by this face
-		std::vector<HalfEdge*> hedges; // ordered half edges
-		std::vector<Vertex*> vertices; // ordered vertices
-	};
-
-	struct Edge : IndexedComponent {
-		Point* points[2]; // connected points, unordered
-		std::vector<Face*> faces; // faces which share this edge
-		std::vector<HalfEdge*> hedges; // hedges owned by this edge
-
-	};
-
-	struct HalfEdge : IndexedComponent {
-		Vertex* vertices[2]; // unique source and sink vertices
-		Point* points[2]; // source and sink points to which vertices belong
-		HalfEdge* next; // next half edge in polygon
-		HalfEdge* prev; // previous half edge in polygon
-		Edge* edge; // edge to which this halfEdge belongs
-		Face* face; // face to which this halfEdge belongs
-		std::vector<HalfEdge*> equivalents; // equivalent half edges (lying along the same edge)
-	};
-
-	// topo operations
-	//int isAdjacent(IndexedComponent &a, IndexedComponent &b) {
-	//	// returns 1 if order is a -> b or no order, -1 if b <- a, 0 otherwise
-	//	return 0;
-	//}
-
 	struct HalfEdgeMesh {
 		// half-edge data structure
 		// also includes some extra features
@@ -505,12 +376,9 @@ namespace ed {
 		// spatial information
 		//UniformBuffer<float> pointPositions;
 		UniformBuffer<float> pointPositions;
-		// doubles are default in maya
-		UniformBuffer<float>* pointNormals;
-		UniformBuffer<float>* faceNormals;
+		UniformBuffer<float> pointNormals;
+		UniformBuffer<float> faceNormals;
 
-		/* seems easier to hold pointers to buffers, but I don't know if this
-		messes up memory contiguity */
 
 		// uv system
 		std::map<std::string, int> uvSetNames; // set names to vector index

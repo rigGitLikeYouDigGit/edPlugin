@@ -10,12 +10,12 @@
 /*
 base class for individual components of deformer system
 each deformer node specifies functions:
-		 bind(), extractParametres(), and deform()
+		 bind(), extractParametres(), and deform() and upload*()
 
 each deformer node specifies struct DeformerParametres
 no hard distinction between precomputed information and keyable -
-everything is placed in deformer params. This may become an issue if
-uploading cost grows too serious.
+everything is placed in deformer params.
+upload() lets node micromanage what gets passed to gpu and when
 
 */
 
@@ -42,13 +42,23 @@ class DeformerNotion : public MPxNode {
 					MDataBlock &data, DeformerParametres &params );
 
 				// bind is run once on bind
-				virtual int bind( MDataBlock &data, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				virtual int bind( MDataBlock &data, DeformerParametres &params,
+           ed::HalfEdgeMesh &hedgeMesh );
 
 				// deform
 				//virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
+        // deform individual point
+        // this method will be executed from threads, so must be entirely threadsafe
         virtual int deformPoint( int index,
           DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+
+        // GPU methods
+        virtual int uploadParametres(
+          DeformerParametres &params);
+
+        int uploadMesh(
+          HalfEdgeMesh &hedgeMesh );
 
         static void* creator();
         static MStatus initialize();
