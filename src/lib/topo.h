@@ -379,6 +379,10 @@ namespace ed {
 		UniformBuffer<float> pointNormals;
 		UniformBuffer<float> faceNormals;
 
+		// separate buffers allowing threadsafe read-writing
+		UniformBuffer<float> deltaPointPositions;
+		UniformBuffer<float> deltaPointNormals;
+
 
 		// uv system
 		std::map<std::string, int> uvSetNames; // set names to vector index
@@ -437,6 +441,12 @@ namespace ed {
 			//DEBUGS(newBuffer.strideLength);
 			pointPositions = newBuffer;
 			//DEBUGS(pointPositions.strideLength);
+		}
+
+		void swapDeltaBuffers(){
+			// swaps pointPositions and deltaPointPositions
+			// used for parallel modification
+			pointPositions.values.swap( deltaPointPositions.values );
 		}
 
 

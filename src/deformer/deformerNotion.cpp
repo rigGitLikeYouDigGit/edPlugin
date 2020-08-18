@@ -27,18 +27,17 @@ MStatus DeformerNotion::initialize()
 
 	// boolean plug to connect to master deformer
 	aUberDeformer = nFn.create("uberDeformer", "uberDeformer", MFnNumericData::kBoolean, 0);
-	// addAttribute(aUberDeformer);
 
 	aEnvelope = nFn.create("envelope", "envelope", MFnNumericData::kFloat, 1.0);
-	// addAttribute(aEnvelope);
+	nFn.setMin(0.0);
+	nFn.setMax(1.0);
 
 	// weight array attribute
 	aMasterWeights = tFn.create("weights", "weights", MFnData::kDoubleArray);
-	// addAttribute(aMasterWeights);
 
 	// local iterations, how many times to loop this operation on each cycle
 	aLocalIterations = nFn.create("localIterations", "localIteration", MFnNumericData::kInt, 1);
-	// addAttribute(aLocalIterations);
+	nFn.setMin(0);
 
 	// set affects
 	vector<MObject> drivers = { aMasterWeights, aLocalIterations, aEnvelope };
@@ -78,11 +77,28 @@ MStatus DeformerNotion::compute(
     return MS::kSuccess;
 }
 
-virtual int bind( MDataBlock &data, DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
-	// runs precomputation for deformerNotion, saves results into params
+///// DEFORMATION /////
+virtual int DeformerNotion::deform( DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+	// if needed, override mesh-wide deformation system here
+	for(int iteration=0; iteration < params.localIterations; iteration++){
 
-	// DO EXPENSIVE PRECOMPUTATION HERE
+		// multithread this sick filth
+		for(int i=0; i < hedgeMesh.nPoints; i++){
+			deformPoint(i, params, hedgeMesh);
+		}
+		// swap new and old buffers to update mesh to result
+		hedgeMesh.swapDeltaBuffers();
+	}
 	return 1;
+}
+
+virtual int DeformerNotion::deformPoint( int index, DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+	// example for how to interface with HalfEdgeMesh in parallel
+	SmallList<float> oldPositions = hedgeMesh.pointPositions.entry(index);
+	for(int i=0; i < 3; i++){
+		// update new point positions from calculation
+		hedgeMesh.deltaPointPositions.values[3*index + i] = oldPositions[i];
+	}
 }
 
 

@@ -25,7 +25,7 @@ class SkinNotion : public DeformerNotion {
         // virtual MStatus compute(
 				// const MPlug& plug, MDataBlock& data);
 
-				SkinNotionParametres * params;
+				SkinNotionParametres params;
 
 				// EXECUTION FUNCTIONS
 				// extractParametres is run every evaluation,

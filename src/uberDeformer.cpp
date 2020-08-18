@@ -3,12 +3,12 @@
 /*
 
 	build deformation scheme by iterating over deformation functions
-	
+
 */
 
 #include "uberDeformer.h"
 
-#include "deformer/deformerNotion.h" // satellite nodes to track
+
 
 using namespace std;
 using namespace ed;
@@ -18,7 +18,10 @@ MString UberDeformer::kNODE_NAME( "uberDeformer" );
 
 MObject UberDeformer::aBind;
 MObject UberDeformer::aGlobalIterations;
+MObject UberDeformer::aGlobalEnvelope;
 MObject UberDeformer::aNotions;
+
+MObject UberDeformer::aOutputGeo;
 
 
 MStatus UberDeformer::initialize()
@@ -28,14 +31,7 @@ MStatus UberDeformer::initialize()
 	MFnNumericAttribute nFn;
 
 	// standard bind system
-	aBind = eFn.create("bind", "bind", 1);
-	eFn.addField("off", 0);
-	eFn.addField("bind", 1);
-	eFn.addField("bound", 2);
-	eFn.addField("live", 3);
-	eFn.setKeyable(true);
-	eFn.setHidden(false);
-	addAttribute(aBind);
+	aBind = makeBindAttr("bind");
 
 	// array of booleans to connect to deformerNotions
 	aNotions = nFn.create("notions", "notions", MFnNumericData::kBoolean, 0);
@@ -44,33 +40,90 @@ MStatus UberDeformer::initialize()
 	nFn.setWritable(true);
 	nFn.setReadable(false);
 	nFn.setKeyable(false);
-	addAttribute(aNotions);
 
 	// iterations to run over entire deformer system
 	aGlobalIterations = nFn.create("iterations", "iterations", MFnNumericData::kInt, 1);
+	nFn.setMin(0);
 	addAttribute(aGlobalIterations);
 
+	aGlobalEnvelope = nFn.create("envelope", "envelope", MFnNumericData::kFloat, 1);
+	nFn.setMin(0);
+
+	vector<MObject> drivers = {aGlobalIterations, aGlobalEnvelope, aBind, aNotions};
+	setAttributesAffect(drivers, outputGeom);
 
     return MStatus::kSuccess;
 }
 
 
-MStatus UberDeformer::deform(
-	            MDataBlock& data, MItGeometry& iter, const MMatrix& mat,
-	            unsigned int MIndex) {
-	
-	// check bind
-	int bind = data.inputValue(aBind).asInt();
-	if (bind == 1 || bind == 3) { // bind or live
+MStatus UberDeformer::compute(
+	MDataBlock& data, const MPlug& plug
+){
+	// bind first if needed, then compute
+	int bindVal = data.inputValue(aBind).asInt();
 
-		if (bind == 1) {
-			data.inputValue(aBind).setInt(2);
+	MArrayDataHandle inputArray = data.inputArrayValue(input);
+	jumpToElement(inputArray, 0);
+	MObject meshObj = (inputArray.inputValue().child(inputGeom)).asMesh();
+	//MObject meshObj = geoHandle.asMesh();
+
+	if(plug != outputGeom | bindVal == BindState::off | meshObj.isNull()){
+		hedgeMesh.hasBuilt = 0;
+		data.setClean(plug);
+		return MStatus::kSuccess;
+	}
+
+	// build hedgemesh if not already built
+	if(!meshObj.isNull() && !hedgeMesh.hasBuilt){
+		HalfEdgeMeshFromMObject(hedgeMesh, meshObj, 1);
+	}
+	else{
+		// only update positions
+		HalfEdgeMeshFromMObject(hedgeMesh, meshObj, 0);
+	}
+
+	MFnMesh meshFn( meshObj );
+
+	if( bindVal == BindState::bind | bindVal == BindState::live){
+		bindDeformerNetwork();
+		if( bindVal == BindState::bind){
+			data.outputValue(aBind).setInt( BindState::bound);
 		}
 	}
-    return MS::kSuccess;
+
+	int globalIterations = data.inputValue(aGlobalIterations).asInt();
+	float globalEnvelope = data.inputValue(aGlobalEnvelope).asFloat();
+	globalDeform(globalIterations, globalEnvelope);
+
+
+	// set output geometry points
+
 }
 
-vector<MObject> UberDeformer::getConnectedNotions() {
+
+
+
+
+void UberDeformer::bindDeformerNetwork(){
+	bindUberDeformer();
+	bindDeformerNotions();
+}
+
+void UberDeformer::bindUberDeformer(){
+	// handled automatically right now
+}
+
+void UberDeformer::bindDeformerNotions(){
+	// runs bind method on all connected components
+	for(unsigned int i = 0; i < connectedNotions.size(); i++){
+		DeformerNotion node = *connectedNotions[i];
+		MFnDependencyNode mfnNode(node);
+		node::bind(mfnNode, node->params, hedgeMesh);
+	}
+}
+
+//vector<MObject*> UberDeformer::getConnectedNotions() {
+void UberDeformer::getConnectedNotions() {
 	// returns sequential vector of all deformerNotions connected to deformer
 	connectedNotions.clear();
 	MPlugArray connectedPlugs;
@@ -81,7 +134,6 @@ vector<MObject> UberDeformer::getConnectedNotions() {
 		DEBUGS("plug " << connectedPlugs[i].name());
 		connectedNotions.push_back(connectedPlugs[i].node());
 	}
-	return connectedNotions;
 }
 
 
@@ -99,8 +151,6 @@ MStatus UberDeformer::connectionMade(
 
 MStatus UberDeformer::connectionBroken(
 	const MPlug &plug, const MPlug &otherPlug, bool asSrc) {
-	// clear connected sink node
-	DEBUGS("memorySource connectionBroken");
 
 	if (plug.attribute() != aNotions) {
 		return MPxNode::connectionBroken(plug, otherPlug, asSrc);
@@ -121,4 +171,3 @@ void* UberDeformer::creator(){
 
 UberDeformer::UberDeformer() {};
 UberDeformer::~UberDeformer() {};
-

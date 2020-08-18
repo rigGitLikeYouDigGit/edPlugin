@@ -6,7 +6,13 @@
 #include "lib/api.h"
 #include "lib/topo.h"
 
+#include "deformer/deformerNotion.h" // satellite nodes to track
+//#include "deformer/deformerData.h"
+
+
 // master node managing chain of DeformerNotions
+
+
 
 
 class UberDeformer : public MPxDeformerNode {
@@ -14,9 +20,21 @@ class UberDeformer : public MPxDeformerNode {
         UberDeformer();
         virtual ~UberDeformer();
 
-        virtual MStatus deform(
-	            MDataBlock& data, MItGeometry& iter, const MMatrix& mat,
-	            unsigned int MIndex);
+        virtual MStatus compute(
+              MDataBlock& data, const MPlug& plug
+        );
+
+        // virtual MStatus deform(
+	      //       MDataBlock& data, MItGeometry& iter, const MMatrix& mat,
+	      //       unsigned int MIndex);
+
+
+        // binding system
+        void bindDeformerNetwork();
+        void bindUberDeformer();
+        void bindDeformerNotions();
+
+        void globalDeform(int globalIterations, float globalEnvelope);
 
         static void* creator();
         static MStatus initialize();
@@ -26,9 +44,11 @@ class UberDeformer : public MPxDeformerNode {
 		MStatus connectionBroken(
 			const MPlug &plug, const MPlug &otherPlug, bool asSrc);
 
-		// vector of MObjects for each connected deformerNotion
-		std::vector<MObject> getConnectedNotions();
-		std::vector<MObject> connectedNotions;
+		// connected deformerNotions
+    void getConnectedNotions();
+		std::vector<DeformerNotion*> connectedNotions;
+
+    ed::HalfEdgeMesh hedgeMesh;
 
 public:
     static MTypeId kNODE_ID;
@@ -37,8 +57,10 @@ public:
     // attribute MObjects
 	static MObject aBind;
 	static MObject aGlobalIterations;
+  static MObject aGlobalEnvelope;
 	static MObject aNotions;
 
+  static MObject aOutputGeo
 
 
 };
