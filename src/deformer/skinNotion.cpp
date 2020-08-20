@@ -13,6 +13,10 @@ MString SkinNotion::kNODE_NAME( "skinNotion" );
 
 MObject SkinNotion::aWeightList;
 MObject SkinNotion::aWeights;
+MObject SkinNotion::aWeightMode;
+
+MObject SkinNotion::aTransformMatrices;
+MObject SkinNotion::aBindMatrices;
 
 
 MStatus SkinNotion::initialize()
@@ -21,6 +25,7 @@ MStatus SkinNotion::initialize()
 	MFnNumericAttribute nFn;
 	MFnTypedAttribute tFn;
   MFnCompoundAttribute cFn;
+	MFnEnumAttribute eFn;
 
 	// multi attributes mirroring skincluster weights
   // weight entry for single vertex
@@ -35,6 +40,11 @@ MStatus SkinNotion::initialize()
   cFn.setUsesArrayDataBuilder(true);
   cFn.addChild(aWeights);
 
+	// should weights be looked up live or only on bind?
+	aWeightMode = eFn.create("weightMode", "weightMode", 0);
+	eFn.addField("live");
+	eFn.addField("static");
+	eFn.setHidden(false);
 
   // transform joint matrices
   aTransformMatrices = tFn.create("matrix", "matrix", MFnData::kMatrix);
@@ -47,12 +57,50 @@ MStatus SkinNotion::initialize()
 
 
 	// set affects
-	std::vector<MObject> drivers = {aWeightList, aWeights,
+	std::vector<MObject> drivers = {aWeightList, aWeightMode,
     aTransformMatrices, aBindMatrices };
   addAttributes( drivers );
   setAttributesAffect(drivers, aUberDeformer);
   return MStatus::kSuccess;
 }
+
+
+int SkinNotion::deformPoint(int index, SkinNotionParametres &params,
+	ed::HalfEdgeMesh &hedgeMesh){
+
+			//SmallList<float> baseList = mesh.pointPositions.entry(index);
+			float * baseList = mesh.pointPositions.rawEntry(index);
+			MPoint basePos(
+				baseList[0], baseList[1], baseList[2], 1.0);
+
+			// get skin indices and weights
+			SmallList<int> weightIndices = entryFromBuffer(
+				params.skinData.influenceIndices, params.skinData.vertexOffsets, index);
+			SmallList<float> weightValues = entryFromBuffer(
+				params.skinData.influenceWeights, params.skinData.vertexOffsets, index);
+
+			// output position
+			MPoint result;
+			MPoint tfPos(0, 0, 0, 1.0);
+			MMatrix diffMat;
+			int infIndex;
+			float weightVal;
+
+			for (int i = 0; i < weightValues.size(); i++) {
+				infIndex = weightIndices[i];
+				weightVal = weightValues[i];
+				if (infIndex == -1) { // no valid transform index
+					continue;
+				}
+				diffMat = params.refMats[i] * params.tfMats[i];
+				tfPos += (basePos * diffMat) * weightVal;
+			}
+
+			// blend output by envelope
+			result = basePos * (1 - params.envelope) + tfPos * params.envelope;
+			hedgeMesh.deltaPointPositions.setEntry<MPoint>(i, result);
+
+	}
 
 
 /* traverse basic skincluster weight system to build more efficient weight
@@ -63,14 +111,12 @@ refresher:
 void SkinNotion::extractSkinWeights(MArrayDataHandle& weightRoot,
   SkinNotionParametres& params) {
 	// extracts skin data to buffers
-	// restricted to nPoints
   int nPoints = weightRoot.elementCount();
 	vector<int> vertexOffsets(nPoints);
 	vector<int> influenceIndices;
 	vector<float> influenceWeights;
 	// eps value to discount negligible influences
 	static const float e = 0.001f;
-
 
 	int offsetIndex = 0;
 	int entryCreated = 0;
@@ -106,26 +152,75 @@ void SkinNotion::extractSkinWeights(MArrayDataHandle& weightRoot,
 	params.weightValues = influenceWeights;
 }
 
+void SkinNotion::extractSkinWeights(MPlug& weightRoot,
+  SkinNotionParametres& params) {
+	// alt implementation for ansynchronous access with MPlugs
+  int nPoints = weightRoot.numElements();
+	vector<int> vertexOffsets(nPoints);
+	vector<int> influenceIndices;
+	vector<float> influenceWeights;
+	// eps value to discount negligible influences
+	static const float e = 0.001f;
+	MPlug weightIndexPlug;
+	MPlug weightChildArrayPlug;
+	MPlug weightValPlug;
+	float weightVal;
 
+	int offsetIndex = 0;
+	int entryCreated = 0;
+	for (unsigned int i = 0; i < nPoints; i++) {
+		entryCreated = 0;
+		vertexOffsets[i] = offsetIndex;
+		weightIndexPlug = weightRoot.elementByPhysicalIndex(i);
+		// MArrayDataHandle vtxEntry = weightRoot.inputValue().child(
+		// 	aWeights);
+		weightChildArrayPlug = weightIndexPlug.child(aWeights)
+		unsigned int nWeights = weightChildArrayPlug.numElements();
 
-// MStatus DeformerNotion::compute(
-// 				const MPlug& plug, MDataBlock& data) {
-//
-// 	// "balance wheel" mechanism to mark node dirty to uberDeformer
-// 	// thanks Matt
-// 	bool old = data.outputValue(aUberDeformer).asBool();
-// 	data.outputValue(aUberDeformer).setBool( !old );
-//
-//
-// 	data.setClean(plug);
-//     return MS::kSuccess;
-// }
-//
-// void* DeformerNotion::creator(){
-//
-//     return new DeformerNotion;
-//
-// }
-//
-// DeformerNotion::DeformerNotion() {};
-// DeformerNotion::~DeformerNotion() {};
+		for (unsigned int n = 0; n < nWeights; n++) {
+			weightValPlug = weightChildArrayPlug.elementByPhysicalIndex(n);
+			weightVal = weightValPlug.asFloat();
+			if (weightVal > e) {
+				influenceIndices.push_back(weightValPlug.logicalIndex());
+				influenceWeights.push_back(weightVal);
+				offsetIndex++;
+				entryCreated = 1;
+			}
+			//vtxEntry.next();
+		}
+
+		// no entry for vertex created yet
+		if (nWeights == 0 || entryCreated == 0) {
+			influenceIndices.push_back(-1); //
+			influenceWeights.push_back(0.0);
+			offsetIndex++;
+			continue;
+		}
+	}
+	params.vertexOffsets = vertexOffsets;
+	params.weightIndices = influenceIndices;
+	params.weightValues = influenceWeights;
+}
+
+void SkinNotion::extractParametres(
+	MDataBlock &data, SkinNotionParametres &params){
+	// retrieve skin data and joint matrices
+	DeformerNotion::extractParametres(data, params);
+
+	int weightModeVal = data.inputValue(aWeightMode).asInt();
+	if (weightModeVal == 0){ // live weights
+		extractSkinWeights(
+			data.inputArrayValue(aWeightList), params);
+	}
+	params.refMats = extractMMatrixArray(
+		data.inputArrayValue(aBindMatrices));
+	params.transformMats = extractMMatrixArray(
+		data.inputArrayValue(aTransformMatrices));
+}
+
+void SkinNotion::bind(
+	MFnDependencyNode &mfn, SkinNotionParametres &params,
+	ed::HalfEdgeMesh &hedgeMesh){
+		MPlug plugRoot = mfn.findPlug(aWeightList, false);
+		extractSkinWeights(plugRoot, params);
+	}

@@ -470,24 +470,10 @@ MStatus DirectDeltaMush::compute(
 	int bindSkin = data.inputValue(aBindSkinWeights).asInt();
 	int bind = data.inputValue(aBind).asInt();
 
-	//if (!hedgeMesh->hasBuilt) {
-	//	bindSkin = 1;
-	//	bind = 1;
-	//}
-
 	// bind skin data
 	SkinData &skinInfo = deformParams->skinData;
 
 	extractSkinWeights(data.inputArrayValue(weightList), skinInfo, nPoints);
-
-	//if (bindSkin == BindState::bind || bindSkin == BindState::live) { // bind or live
-	//	extractSkinWeights(data.inputArrayValue(weightList),
-	//		skinInfo, nPoints);
-	//	if (bindSkin == BindState::bind) { // set bind attr to bound
-	//		data.inputValue(aBindSkinWeights).setInt(BindState::bound);
-	//	}
-	//}
-
 
 	// bind mesh data
 	if (bind == BindState::bind || bind == BindState::live) { // bind or live
@@ -505,7 +491,6 @@ MStatus DirectDeltaMush::compute(
 
 		return MS::kFailure;
 	}
-
 
 	// deformation call - optimise this
 	vector<double> outPositions(meshFn.numVertices()*3, 0.0);

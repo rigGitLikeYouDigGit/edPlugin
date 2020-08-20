@@ -20,8 +20,13 @@ upload() lets node micromanage what gets passed to gpu and when
 */
 
 struct DeformerParametres {
+  int globalIterations;
+  int globalIteration;
+  float globalEnvelope; // packing global stuff in here seems fine
+
   int localIterations;
-  float envelope;
+  int localIteration;
+  float localEnvelope;
   MDoubleArray masterWeights;
 }
 
@@ -42,8 +47,8 @@ class DeformerNotion : public MPxNode {
 					MDataBlock &data, DeformerParametres &params );
 
 				// bind is run once on bind
-				virtual int bind( MDataBlock &data, DeformerParametres &params,
-           ed::HalfEdgeMesh &hedgeMesh );
+				// virtual int bind( MDataBlock &data, DeformerParametres &params,
+        //    ed::HalfEdgeMesh &hedgeMesh );
 
        // bind actually has to be run asynchronously by uberDeformer,
        // so must be passed an MFnDependencyNode instead of a datablock
@@ -51,7 +56,7 @@ class DeformerNotion : public MPxNode {
           ed::HalfEdgeMesh &hedgeMesh );
 
 				// deform
-				virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				virtual int deformGeo( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
         // deform individual point
         // this method will be executed from threads, so must be entirely threadsafe
@@ -73,9 +78,10 @@ public:
     static MString kNODE_NAME;
 
     // attribute MObjects
-  static MObject aEnvelope;
+  static MObject aLocalEnvelope;
 	static MObject aMasterWeights;
 	static MObject aLocalIterations;
+  static MObject aDeformationMode;
 	static MObject aUberDeformer;
 
 };

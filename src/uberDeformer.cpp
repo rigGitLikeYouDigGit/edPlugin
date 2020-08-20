@@ -7,9 +7,6 @@
 */
 
 #include "uberDeformer.h"
-
-
-
 using namespace std;
 using namespace ed;
 
@@ -18,11 +15,16 @@ MString UberDeformer::kNODE_NAME( "uberDeformer" );
 
 MObject UberDeformer::aBind;
 MObject UberDeformer::aGlobalIterations;
-MObject UberDeformer::aGlobalEnvelope;
+//MObject UberDeformer::aGlobalEnvelope; // inherited
 MObject UberDeformer::aNotions;
-
 MObject UberDeformer::aOutputGeo;
 
+/*
+MObject input - input attribute, array
+MObject inputGeom - input geometry attribute
+MObject outputGeom - output geometry attribute, array
+MObject envelope - envelope attribute
+*/
 
 MStatus UberDeformer::initialize()
 {
@@ -43,13 +45,11 @@ MStatus UberDeformer::initialize()
 
 	// iterations to run over entire deformer system
 	aGlobalIterations = nFn.create("iterations", "iterations", MFnNumericData::kInt, 1);
-	nFn.setMin(0);
+	nFn.setMin(1);
 	addAttribute(aGlobalIterations);
 
-	aGlobalEnvelope = nFn.create("envelope", "envelope", MFnNumericData::kFloat, 1);
-	nFn.setMin(0);
-
-	vector<MObject> drivers = {aGlobalIterations, aGlobalEnvelope, aBind, aNotions};
+	vector<MObject> drivers = {aGlobalIterations,
+		aBind, aNotions};
 	setAttributesAffect(drivers, outputGeom);
 
     return MStatus::kSuccess;
@@ -61,13 +61,24 @@ MStatus UberDeformer::compute(
 ){
 	// bind first if needed, then compute
 	int bindVal = data.inputValue(aBind).asInt();
+	float envelopeValue = data.inputValue(envelope).asFloat();
 
 	MArrayDataHandle inputArray = data.inputArrayValue(input);
 	jumpToElement(inputArray, 0);
 	MObject meshObj = (inputArray.inputValue().child(inputGeom)).asMesh();
 	//MObject meshObj = geoHandle.asMesh();
 
-	if(plug != outputGeom | bindVal == BindState::off | meshObj.isNull()){
+	if( plug != outputGeom){
+		data.setClean(plug);
+		return MStatus::kSuccess;
+	}
+
+	if( envelopeValue < 0.001){
+		// set output geo
+		return MStatus::kSuccess;
+	}
+
+	if(bindVal == BindState::off | meshObj.isNull()){
 		hedgeMesh.hasBuilt = 0;
 		data.setClean(plug);
 		return MStatus::kSuccess;
@@ -75,11 +86,11 @@ MStatus UberDeformer::compute(
 
 	// build hedgemesh if not already built
 	if(!meshObj.isNull() && !hedgeMesh.hasBuilt){
-		HalfEdgeMeshFromMObject(hedgeMesh, meshObj, 1);
+		HalfEdgeMeshFromMObject(hedgeMesh, meshObj, 1); // build topo
 	}
 	else{
 		// only update positions
-		HalfEdgeMeshFromMObject(hedgeMesh, meshObj, 0);
+		HalfEdgeMeshFromMObject(hedgeMesh, meshObj, 0); // only set positions
 	}
 
 	MFnMesh meshFn( meshObj );
@@ -92,18 +103,41 @@ MStatus UberDeformer::compute(
 	}
 
 	int globalIterations = data.inputValue(aGlobalIterations).asInt();
-	float globalEnvelope = data.inputValue(aGlobalEnvelope).asFloat();
-	globalDeform(globalIterations, globalEnvelope);
-
+	globalDeform(globalIterations, envelopeValue);
 
 	// set output geometry points
+	meshFnFromHalfEdgeMesh(hedgeMesh, meshFn);
+	setOutputGeo(meshObj);
+	// what up now swedes
+}
+
+
+void UberDeformer::globalDeform(int globalIterations, float globalEnvelope){
+	for( int globalI = 0; globalI < globalIterations; globalI++){
+		for( unsigned int deformerI = 0;
+			deformerI < connectedNotions.size(); deformerI++){
+
+				deformer->params.globalIterations = globalIterations;
+				deformer->params.globalIteration = globalI;
+				DeformerNotion* deformer = connectedNotions[i];
+				deformer->deformGeo( deformer->params, hedgeMesh);
+		}
+	}
 
 }
 
 
+void UberDeformer::setOutputGeo(MDataBlock& data, const MObject& meshGeo) {
+	// sets output plug to target mesh object
+	// we deform only one piece of geometry
+	MArrayDataHandle outputArray = data.outputArrayValue(outputGeom);
+	jumpToElement(outputArray, 0);
+	MDataHandle outputGeoHandle = outputArray.outputValue();
+	outputGeoHandle.setMObject(meshGeo);
+}
 
 
-
+///// binding /////
 void UberDeformer::bindDeformerNetwork(){
 	bindUberDeformer();
 	bindDeformerNotions();
@@ -122,7 +156,8 @@ void UberDeformer::bindDeformerNotions(){
 	}
 }
 
-//vector<MObject*> UberDeformer::getConnectedNotions() {
+
+//// managing connected deformers
 void UberDeformer::getConnectedNotions() {
 	// returns sequential vector of all deformerNotions connected to deformer
 	connectedNotions.clear();
@@ -160,13 +195,9 @@ MStatus UberDeformer::connectionBroken(
 }
 
 
-
 void* UberDeformer::creator(){
-
      UberDeformer *node = new UberDeformer;
-
 	 return node;
-
 }
 
 UberDeformer::UberDeformer() {};

@@ -12,6 +12,8 @@ struct SkinNotionParametres : DeformerParametres{
   std::vector<int> weightIndices; // joint indices per vertex
   std::vector<float> weightValues; // joint values per vertex
 
+  MMatrixArray refMats;
+  MMatrixArray transformMats;
 
 };
 
@@ -31,19 +33,20 @@ class SkinNotion : public DeformerNotion {
 				// extractParametres is run every evaluation,
 				// transfers datablock values to params struct
 				virtual int extractParametres(
-					MDataBlock &data, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+					MDataBlock &data, SkinNotionParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
 				// bind is run once on bind
-				virtual int bind( MDataBlock &data, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				virtual int bind( MFnDependencyNode &mfn,
+          SkinNotionParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
 				// deform
 				// virtual int deform( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
-				virtual int deformPoint(int index, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+				virtual int deformPoint(int index, SkinNotionParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
         // specific functions
         void extractSkinWeights(MArrayDataHandle& weightRoot,
-          SkinNotionParametres& skinInfo, int nPoints) {
+          SkinNotionParametres& skinInfo) {
 
         static void* creator();
         static MStatus initialize();
@@ -55,6 +58,7 @@ public:
     // attribute MObjects
   	static MObject aWeightList;
     static MObject aWeights;
+    static MObject aWeightMode;
 
     static MObject aTransformMatrices;
     static MObject aBindMatrices;

@@ -370,7 +370,16 @@ void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build
 	hedgeMesh.setPositions(posVector);
 }
 
-
+void meshFnFromHalfEdgeMesh(HalfEdgeMesh &hedgeMesh, MFnMesh &meshFn){
+	// convert to point array
+	MPointArray outputPoints(meshFn.numVertices());
+	for (int i = 0; i < meshFn.numVertices(); i++) {
+		outputPoints[i].x = outPositions[i * 3];
+		outputPoints[i].y = outPositions[i * 3 + 1];
+		outputPoints[i].z = outPositions[i * 3 + 2];
+	}
+	meshFn.setPoints(outputPoints, MSpace::kObject);
+}
 
 } // namespace ed
 

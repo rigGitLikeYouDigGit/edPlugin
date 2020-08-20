@@ -8,7 +8,8 @@
 #include <algorithm>
 #include <numeric>
 #include <string>
-#include <map>
+//#include <map>
+#include <unordered_map>
 #include <tuple>
 
 #include <Eigen/Core>
@@ -191,7 +192,6 @@ namespace ed {
 		}
 
 		 SmallList<T> entry(int entryIndex) {
-
 		 	SmallList<T> result;
 		 	result.reserve(strideLength);
 		 	for (int i = 0; i < strideLength; i++) {
@@ -201,14 +201,25 @@ namespace ed {
 		 	return result;
 		 }
 
-		//UniformBuffer& operator=(const UniformBuffer &other) {
-		//	*this->values = other.values;
-		//	*this->nValues = other.nValues;
-		//	*this->nEntries = other.nEntries;
-		//	*this->strideLength = other.strideLength;
-		//	return *this;
-		//}
+		 T* rawEntry(int entryIndex){
+			 // return raw pointer to values starting at entryIndex
+			 T* ptr = values.data();
+			 ptr = ptr + entryIndex * strideLength;
+			 return ptr;
+		 }
 
+		 void setEntry(int index, T* data){
+			 for(int i = 0; i < strideLength; i++){
+				 values[index * strideLength + i] = data[i];
+			 }
+		 }
+
+		 template< typename V>
+		 void setEntry(int index, V obj){
+			 for(int i = 0; i < strideLength; i++){
+				 values[index * strideLength + i] = obj[i];
+			 }
+		 }
 	};
 
 
@@ -324,27 +335,20 @@ namespace ed {
 		return pointBufferFromFaceBuffer(faceBuffer);
 	}
 
+	// static UniformBuffer<int> edgeBufferFromPointBuffer(
+	// 	OffsetBuffer<int> &pointBuffer){
+	// 		// maybe?
+	// 	}
 
+	static void pointEdgeBuffersFromFaceBuffer(
+		OffsetBuffer<int> &pointBuffer, UniformBuffer<int> &edgeBuffer,
+	){
+		// I am in great pain, please help me
+	}
 
 	struct HalfEdgeMesh {
-		// half-edge data structure
-		// also includes some extra features
-		// we follow the pattern of points, vertices, faces, edges, half-edges
-		// explored in Keenan Crane Discrete Differential Geometry
-		// this also largely lines up with the Houdini model, except full edges exist
+		// ignore the name, this is nothing like a real half-edge mesh
 
-		// realistically this is nothing like a proper half-edge
-
-		// one point -> many vertices
-		// one edge -> many half-edges
-
-		// topo arrays - main mesh struct contains full object sequence
-		// arrays of structs, rip
-		/*std::vector<Point> points;
-		std::vector<Vertex> vertices;
-		std::vector<Face> faces;
-		std::vector<Edge> edges;
-		std::vector<HalfEdge> hedges; */
 
 		int hasBuilt = 0;
 
@@ -354,30 +358,21 @@ namespace ed {
 		int nEdges;
 		int nHalfEdges;
 
-		// topo raw buffers
-		//std::vector<int> pointConnects; // points to points
-		//std::vector<int> pointOffsets;
-
-
-		//std::vector<int> facePointConnects; // faces to points
-		//std::vector<int> faceVertexConnects; // faces to vertices
-		//std::vector<int> faceOffsets;
-
-		//std::vector<int> edgeConnects; // edges to points
 
 		//std::vector<int> halfEdgeConnects; // uniform info : [prevVertex, nextVertex, prevHedge, nextHedge, face]
 
 		// offsetBuffer structs for easier manipulation
-		OffsetBuffer<int>* pointConnects; // points to points
-		OffsetBuffer<int>* facePointConnects; // faces to points
-		OffsetBuffer<int>* faceVertexConnects; // faces to vertices
+		OffsetBuffer<int> pointConnects; // points to points
+		OffsetBuffer<int> facePointConnects; // faces to points
+		OffsetBuffer<int> faceVertexConnects; // faces to vertices
 
 
 		// spatial information
-		//UniformBuffer<float> pointPositions;
 		UniformBuffer<float> pointPositions;
 		UniformBuffer<float> pointNormals;
 		UniformBuffer<float> faceNormals;
+		// positions at least should be put to double
+		// will also allow direct pointer processing between maya types and buffers
 
 		// separate buffers allowing threadsafe read-writing
 		UniformBuffer<float> deltaPointPositions;
@@ -385,17 +380,21 @@ namespace ed {
 
 
 		// uv system
-		std::map<std::string, int> uvSetNames; // set names to vector index
-		std::vector< UniformBuffer<float> > vertexUvPositions;
-		/*  vertexUvPositions:
-		face vertices mapped directly to uvs - this requires 2 floats for each vertex,
-		more tools to find uv connectivity, but is the simplest option for storage
-		*/
-		std::vector< UniformBuffer<int> > uvConnects;
-		/* uvConnects:
-		regenerated once
-		how???
-		*/
+		//std::unordered_map<std::string, int> uvSetNames; // set names to vector index
+		// std::vector< UniformBuffer<float> > vertexUvPositions;
+		// /*  vertexUvPositions:
+		// face vertices mapped directly to uvs - this requires 2 floats for each vertex,
+		// more tools to find uv connectivity, but is the simplest option for storage
+		// */
+		// std::vector< UniformBuffer<int> > uvConnects;
+		// /* uvConnects:
+		// regenerated once
+		// how???
+		// */
+
+		// take houdini approach: uvs stored as per-vertex attributes
+		// point attributes
+		// std::unordered_map< *char,
 
 
 		// buffer to check areas of mesh that have changed
@@ -414,39 +413,34 @@ namespace ed {
 			nFaces = static_cast<int>(initFacePointOffsets.size());
 			nVertices = static_cast<int>(initFacePointConnects.size()); // 1 per face per point
 
-			pointConnects = new OffsetBuffer<int>(initPointConnects, initPointOffsets);
-			facePointConnects = new OffsetBuffer<int>(initFacePointConnects, initFacePointOffsets);
+			// pointConnects = new OffsetBuffer<int>(initPointConnects, initPointOffsets);
+			// facePointConnects = new OffsetBuffer<int>(initFacePointConnects, initFacePointOffsets);
+
+			OffsetBuffer<int> pointConnects(initPointConnects, initPointOffsets);
+			OffsetBuffer<int> facePointConnects(initFacePointConnects, initFacePointOffsets);
 
 			int n = 0;
 			// loop over faces
 			for (int i = 0; i < nFaces; i++) {
-
 			}
-
 			// for half edges a continuous ring of points around face is needed
-
 			hasBuilt = 1;
-
 			DEBUGS("HalfEdgeMesh built")
-
 		}
 
 		void setPositions(
 			std::vector<float> initPointPositions
 		) {
 			// sets point positions externally, to be called after build
-			//pointPositions->setVector(initPointPositions, 3);
 			UniformBuffer<float> newBuffer(initPointPositions, 3);
-			//DEBUGS("strideLength");
-			//DEBUGS(newBuffer.strideLength);
 			pointPositions = newBuffer;
-			//DEBUGS(pointPositions.strideLength);
 		}
 
 		void swapDeltaBuffers(){
 			// swaps pointPositions and deltaPointPositions
 			// used for parallel modification
 			pointPositions.values.swap( deltaPointPositions.values );
+			pointNormals.values.swap( deltaPointNormals.values );
 		}
 
 

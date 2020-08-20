@@ -16,7 +16,10 @@ MString DeformerNotion::kNODE_NAME( "deformerNotion" );
 
 MObject DeformerNotion::aMasterWeights;
 MObject DeformerNotion::aLocalIterations;
+MObject DeformerNotion::aLocalEnvelope;
 MObject DeformerNotion::aUberDeformer;
+MObject DeformerNotion::aDeformationMode;
+
 
 
 MStatus DeformerNotion::initialize()
@@ -24,23 +27,31 @@ MStatus DeformerNotion::initialize()
     // initialise attributes
 	MFnNumericAttribute nFn;
 	MFnTypedAttribute tFn;
+	MFnEnumAttribute eFn;
 
 	// boolean plug to connect to master deformer
 	aUberDeformer = nFn.create("uberDeformer", "uberDeformer", MFnNumericData::kBoolean, 0);
 
-	aEnvelope = nFn.create("envelope", "envelope", MFnNumericData::kFloat, 1.0);
+	aLocalEnvelope = nFn.create("envelope", "envelope", MFnNumericData::kFloat, 1.0);
 	nFn.setMin(0.0);
-	nFn.setMax(1.0);
+	//nFn.setMax(1.0);
 
 	// weight array attribute
 	aMasterWeights = tFn.create("weights", "weights", MFnData::kDoubleArray);
 
 	// local iterations, how many times to loop this operation on each cycle
 	aLocalIterations = nFn.create("localIterations", "localIteration", MFnNumericData::kInt, 1);
-	nFn.setMin(0);
+	nFn.setMin(1);
+
+	// aDeformationMode = eFn.create("deformationMode", "deformationMode", 0);
+	// eFn.addField("relative");
+	// eFn.addField("absolute");
+	// way too complex to include just yet
 
 	// set affects
-	vector<MObject> drivers = { aMasterWeights, aLocalIterations, aEnvelope };
+	vector<MObject> drivers = { aMasterWeights, aLocalIterations,
+		aLocalEnvelope, //aDeformationMode
+	};
 	vector<MObject> driven = { aUberDeformer };
 
 	addAttributes( drivers );
@@ -54,7 +65,7 @@ MStatus DeformerNotion::initialize()
 virtual int DeformerNotion::extractParametres(
 	MDataBlock &data, DeformerParametres &params
 ){
-	params.envelope = data.inputValue(aEnvelope).asFloat();
+	params.localEnvelope = data.inputValue(aLocalEnvelope).asFloat();
 	params.localIterations = data.inputValue(aLocalIterations).asInt();
 	params.masterWeights = accessDoubleArrayAttr(data.inputValue(aMasterWeights));
 	return 1;
@@ -64,24 +75,21 @@ virtual int DeformerNotion::extractParametres(
 
 MStatus DeformerNotion::compute(
 				const MPlug& plug, MDataBlock& data) {
-
 	extractParametres(data, this->params);
-
 	// "balance wheel" mechanism to mark node dirty to uberDeformer
 	// thanks Matt
 	bool old = data.outputValue(aUberDeformer).asBool();
 	data.outputValue(aUberDeformer).setBool( !old );
-
 
 	data.setClean(plug);
     return MS::kSuccess;
 }
 
 ///// DEFORMATION /////
-virtual int DeformerNotion::deform( DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+virtual int DeformerNotion::deformGeo( DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
 	// if needed, override mesh-wide deformation system here
 	for(int iteration=0; iteration < params.localIterations; iteration++){
-
+		params.localIteration = iteration;
 		// multithread this sick filth
 		for(int i=0; i < hedgeMesh.nPoints; i++){
 			deformPoint(i, params, hedgeMesh);
@@ -93,6 +101,7 @@ virtual int DeformerNotion::deform( DeformerParametres &params, HalfEdgeMesh &he
 }
 
 virtual int DeformerNotion::deformPoint( int index, DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+	// most should only override deformPoint, touching deformGeo should be unnecessary
 	// example for how to interface with HalfEdgeMesh in parallel
 	SmallList<float> oldPositions = hedgeMesh.pointPositions.entry(index);
 	for(int i=0; i < 3; i++){
@@ -103,9 +112,8 @@ virtual int DeformerNotion::deformPoint( int index, DeformerParametres &params, 
 
 
 void* DeformerNotion::creator(){
-
+		// set masterWeights array to all 1.0 here
     return new DeformerNotion;
-
 }
 
 DeformerNotion::DeformerNotion() {};
