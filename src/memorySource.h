@@ -34,8 +34,24 @@ public:
 	static MObject aTime;
 	static MObject aResetFrame;
 	static MObject aData;
-	static MObject aInnerData;
+
+	// time delay to use - this corresponds to length of buffer,
+	// so don't make it crazy long
+	static MObject aTimeOffset;
+
+	// frequency of update
+	static MObject aStepSize;
+
+	// constantly incrementing counter, might be useful for something
 	static MObject aIncrement;
+
+	// outer buffer array - each entry will hold array of all values 
+	// at corresponding frame
+	static MObject aValueBuffer;
+
+	// single value entry, holds all solver data for one frame
+	static MObject aInnerData;
+
 
 	// internal sink objects
 	MObject sinkObj;

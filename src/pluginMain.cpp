@@ -12,11 +12,11 @@ register all plugins
 #include "deformer/deformerNotion.h"
 #include "memorySource.h"
 #include "memorySink.h"
-#include "directDeltaMush.h"
+//#include "directDeltaMush.h"
 
 // END PROCEDURAL CONTROL INCLUDE
 
-#include "refDDM.h"
+//#include "refDDM.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MTypeId.h>
@@ -98,16 +98,8 @@ MStatus initializePlugin( MObject obj ){
 	status = REGISTER_NODE(DeformerNotion);
 	status = REGISTER_NODE(MemorySource);
 	status = REGISTER_NODE(MemorySink);
-	status = REGISTER_NODE_TYPE(DirectDeltaMush, MPxNode::kSkinCluster);
+	//status = REGISTER_NODE_TYPE(DirectDeltaMush, MPxNode::kSkinCluster);
 	//status = REGISTER_NODE_TYPE(RefDDM, MPxNode::kSkinCluster);
-
-	status = fnPlugin.registerNode( // reference implementation, remove once we have a better solution
-		"refDDM",
-		//directDeltaMush::id,
-		RefDDM::kNODE_ID,
-		RefDDM::creator,
-		RefDDM::initialize,
-		MPxNode::kSkinCluster);
 
     // END PROCEDURAL CONTROL REGISTER
 
@@ -128,8 +120,8 @@ MStatus uninitializePlugin( MObject obj ){
 	status = DEREGISTER_NODE(DeformerNotion);
 	status = DEREGISTER_NODE(MemorySource);
 	status = DEREGISTER_NODE(MemorySink);
-	status = DEREGISTER_NODE(DirectDeltaMush);
-	status = fnPlugin.deregisterNode(RefDDM::kNODE_ID);
+	//status = DEREGISTER_NODE(DirectDeltaMush);
+	//status = fnPlugin.deregisterNode(RefDDM::kNODE_ID);
     // END PROCEDURAL CONTROL DEREGISTER
 
     return status;

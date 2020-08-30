@@ -50,7 +50,7 @@ MStatus UberDeformer::initialize()
 
 	vector<MObject> drivers = {aGlobalIterations,
 		aBind, aNotions};
-	setAttributesAffect(drivers, outputGeom);
+	setAttributesAffect<UberDeformer>(drivers, outputGeom);
 
     return MStatus::kSuccess;
 }

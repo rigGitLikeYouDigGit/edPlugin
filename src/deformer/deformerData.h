@@ -2,8 +2,8 @@
 #ifndef DEFORMERDATA_H
 #define DEFORMERDATA_H
 
-#include "lib/api.h"
-#include "lib/topo.h"
+#include "../lib/api.h"
+#include "../lib/topo.h"
 
 #include <vector>
 #include <set>

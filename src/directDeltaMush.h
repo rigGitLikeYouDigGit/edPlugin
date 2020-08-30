@@ -5,6 +5,7 @@
 
 #include "lib/api.h"
 #include "lib/topo.h"
+#include "lib/mayaTopo.h"
 
 /*
 use this opportunity to test a more efficient way of working with per-vertex weights

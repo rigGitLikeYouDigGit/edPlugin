@@ -122,83 +122,6 @@ MStatus DirectDeltaMush::initialize()
 }
 
 
-OffsetBuffer<int> faceBufferFromMfnMesh(MFnMesh& mfn) {
-	// construct face buffer from mfn info
-	int nPolys = mfn.numPolygons();
-	vector<int> facePointConnects;
-	vector<int> facePointOffsets(nPolys, -1);
-
-	// vertex buffer from mfn
-	MIntArray vertexCount; // number of vertices in face - NOT global offsets
-	MIntArray vertexList; // list of vertices in each face
-	mfn.getVertices(vertexCount, vertexList);
-	vector<int> testv = MIntArrayToVector(vertexCount);
-	//DEBUGS("vertexCount");
-	//DEBUGVI(testv);
-
-	int offsetIndex = 0;
-	for (unsigned int i = 0; i < vertexCount.length(); i++) {
-
-		// add offset to current index
-		facePointOffsets[i] = offsetIndex;
-		int nFacePoints = vertexCount[i];
-
-		for (int n = 0; n < nFacePoints; n++) {
-			facePointConnects.push_back(vertexList[offsetIndex]);
-			offsetIndex++;
-		}
-	}
-	return OffsetBuffer<int>(facePointConnects, facePointOffsets);
-}
-
-void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build) {
-	// updates target mesh struct from mesh MObject
-	// if build, will rebuild topology buffers
-	// if not, will only copy point positions
-	//DEBUGS("ddm hedgeMesh from mobject")
-	MStatus s = MS::kSuccess;
-	MFnMesh meshFn(meshObj);
-
-	int nPoints = meshFn.numVertices();
-	int nPolys = meshFn.numPolygons();
-	hedgeMesh.nPoints = nPoints;
-	hedgeMesh.nFaces = nPolys;
-
-	if (build > 0) {
-
-		//DEBUGS("building hedgemesh");
-		OffsetBuffer<int> faceBuffer = faceBufferFromMfnMesh(meshFn);
-		//OffsetBuffer<int> faceBuffer(allFaceVertices, faceVertexOffsets);
-		//DEBUGS("faceBuffer built");
-		//DEBUGVI(faceBuffer.offsets);
-		//DEBUGVI(faceBuffer.values);
-		OffsetBuffer<int> pointBuffer = pointBufferFromFaceBuffer(
-			faceBuffer);
-
-		hedgeMesh.build(
-			pointBuffer.values, pointBuffer.offsets,
-			faceBuffer.values, faceBuffer.offsets
-		);
-	}
-
-	// set mesh point positions
-	//DEBUGS("set positions");
-	const float* rawPositions = meshFn.getRawPoints(&s);
-	//meshFn.getRawPoints(&s);
-	//float test = rawPositions[7];
-	vector<float> posVector(nPoints * 3, 0.0);
-	for (int i = 0; i < nPoints; i++) {
-		posVector[i*3] = rawPositions[i*3];
-		posVector[i*3 + 1] = rawPositions[i*3 + 1];
-		posVector[i*3 + 2] = rawPositions[i*3 + 2];
-
-	}
-
-
-	//DEBUGVI(posVector);
-	hedgeMesh.setPositions(posVector);
-}
-
 /* traverse basic skincluster weight system to build more efficient weight
 buffers, then transfer those into array attributes
 refresher:
@@ -275,20 +198,6 @@ void DirectDeltaMush::runBind(MDataBlock& data, const MObject& meshObj) {
 	//DEBUGVI(skinInfo.influenceIndices)
 }
 
-
-MMatrixArray extractMMatrixArray(MArrayDataHandle& matArray) {
-	//DEBUGS("ddm extract mmatrices");
-		// extract weight matrices from array
-	// simple, right?
-
-		MMatrixArray result(matArray.elementCount());
-		for (unsigned int i = 0; i < matArray.elementCount(); i++) {
-			result[i] = MFnMatrixData(matArray.inputValue().data()).matrix();
-			// guess again
-			matArray.next();
-		}
-		return result;
-	}
 
 void DirectDeltaMush::setOutputGeo(MDataBlock& data, const MObject& meshGeo) {
 	// sets output plug to target mesh object

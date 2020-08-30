@@ -1,10 +1,11 @@
 
 
 #ifndef DEFORMERNOTION_H
-#define DEFORMERNOTION_H
+#define DEFORMERNOTION_H 1
 
 #include "../lib/api.h"
 #include "../lib/topo.h"
+#include "../lib/mayaTopo.h"
 //#include "deformerData.h"
 
 /*
@@ -28,7 +29,7 @@ struct DeformerParametres {
   int localIteration;
   float localEnvelope;
   MDoubleArray masterWeights;
-}
+};
 
 class DeformerNotion : public MPxNode {
     public:
@@ -68,7 +69,7 @@ class DeformerNotion : public MPxNode {
           DeformerParametres &params);
 
         int uploadMesh(
-          HalfEdgeMesh &hedgeMesh );
+          ed::HalfEdgeMesh &hedgeMesh );
 
         static void* creator();
         static MStatus initialize();

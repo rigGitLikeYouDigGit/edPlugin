@@ -21,7 +21,10 @@ MString MemorySource::kNODE_NAME( "memorySource" );
 
 MObject MemorySource::aTime;
 MObject MemorySource::aResetFrame;
+MObject MemorySource::aTimeOffset;
+MObject MemorySource::aStepSize;
 MObject MemorySource::aData;
+MObject MemorySource::aValueBuffer;
 MObject MemorySource::aInnerData;
 MObject MemorySource::aSinkConnection;
 MObject MemorySource::aIncrement;
@@ -40,11 +43,11 @@ MStatus MemorySource::initialize()
 	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
 	tFn.setReadable(true);
 	tFn.setWritable(true);
-	addAttribute(aTime);
+	//addAttribute(aTime);
 
 	// attribute used to update cell - time is most convenient
 	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 1.0);
-	addAttribute(aResetFrame);
+	//addAttribute(aResetFrame);
 
 	// untyped attribute can be used to pass on whatever you want
 	aData = tFn.create("data", "data", MFnData::kAny);
@@ -52,7 +55,7 @@ MStatus MemorySource::initialize()
 	tFn.setWritable(false);
 	tFn.setArray(true);
 	tFn.setUsesArrayDataBuilder(true);
-	addAttribute(aData);
+	//addAttribute(aData);
 
 	// internal cache array mirroring main interface
 	aInnerData = tFn.create("innerData", "innerData", MFnData::kAny);
@@ -60,27 +63,24 @@ MStatus MemorySource::initialize()
 	tFn.setWritable(true);
 	tFn.setArray(true);
 	tFn.setUsesArrayDataBuilder(true);
-	addAttribute(aInnerData);
+	//addAttribute(aInnerData);
 
 	// boolean connection to sink
 	aSinkConnection = nFn.create("sink", "sink", MFnNumericData::kBoolean, 0.0);
 	nFn.setReadable(true);
 	nFn.setWritable(false);
-	addAttribute(aSinkConnection);
+	//addAttribute(aSinkConnection);
 
 	// can be handy for some uses to have an exclusively positive counter
 	aIncrement = nFn.create("increment", "increment", MFnNumericData::kInt, 0.0);
 	nFn.setReadable(true);
 	nFn.setWritable(false);
-	addAttribute(aIncrement);
+	//addAttribute(aIncrement);
 
-	attributeAffects(aTime, aData);
-	attributeAffects(aTime, aInnerData);
-	attributeAffects(aTime, aIncrement);
+	vector<MObject> drivers = { aTime, aResetFrame, aTimeOffset};
+	vector<MObject> driven = { aData, aInnerData, aValueBuffer, aSinkConnection, aIncrement };
 
-	attributeAffects(aResetFrame, aData);
-	attributeAffects(aResetFrame, aInnerData);
-	attributeAffects(aResetFrame, aIncrement);
+	setAttributesAffect<MemorySource>(drivers, driven);
 
 	attributeAffects(aInnerData, aData);
 

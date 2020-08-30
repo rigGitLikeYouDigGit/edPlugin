@@ -5,6 +5,8 @@
 
 #include "lib/api.h"
 #include "lib/topo.h"
+#include "lib/mayaTopo.h"
+
 
 #include "deformer/deformerNotion.h" // satellite nodes to track
 //#include "deformer/deformerData.h"
@@ -62,7 +64,7 @@ public:
   //static MObject aGlobalEnvelope;
 	static MObject aNotions;
 
-  static MObject aOutputGeo
+	static MObject aOutputGeo;
 
 
 };

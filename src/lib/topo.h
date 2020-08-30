@@ -23,8 +23,12 @@
 
 #include "containers.h"
 
+#include "macro.h"
+
+
 // none of this is elegant
 // please forgive
+
 
 
 /* more complex operations done with eigen types,
@@ -62,10 +66,19 @@ namespace ed {
 		std::vector<T> values;
 		std::vector<int> offsets;
 
-		OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets) :
-			values(initValues), offsets(initOffsets),
-			nValues(static_cast<int>(initValues.size())),
-			nEntries(static_cast<int>(initOffsets.size())){}
+		OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets){
+			init(initValues, initOffsets);
+		}
+
+		//template <typename T>
+		OffsetBuffer() { init(std::vector<T>(), std::vector<int>()); }
+
+		void init(std::vector<T> initValues, std::vector<int> initOffsets) {
+			values = initValues;
+			offsets = initOffsets;
+			nValues = static_cast<unsigned int>(initValues.size());
+			nEntries = static_cast<unsigned int>(initOffsets.size());
+		}
 
 		int entryLength(int entryIndex){
 			// get length of specific entry
@@ -329,7 +342,7 @@ namespace ed {
 
 	static OffsetBuffer<int> pointBufferFromFaceVectors(
 		std::vector<int> &faceConnects, std::vector<int> &faceOffsets) {
-		DEBUGS("pointBufferFromFaceVectors")
+		//DEBUGS("pointBufferFromFaceVectors");
 		// create offsetBuffer from input vectors if not supplied
 		OffsetBuffer<int> faceBuffer(faceConnects, faceOffsets);
 		return pointBufferFromFaceBuffer(faceBuffer);
@@ -341,7 +354,7 @@ namespace ed {
 	// 	}
 
 	static void pointEdgeBuffersFromFaceBuffer(
-		OffsetBuffer<int> &pointBuffer, UniformBuffer<int> &edgeBuffer,
+		OffsetBuffer<int> &pointBuffer, UniformBuffer<int> &edgeBuffer
 	){
 		// I am in great pain, please help me
 	}
@@ -461,12 +474,12 @@ namespace ed {
 			return result;
 		}
 
-		HalfEdgeMesh() {}
+		//HalfEdgeMesh() {}
 
 		~HalfEdgeMesh() {
-			delete &pointConnects;
-			delete &facePointConnects;
-			delete &faceVertexConnects;
+			//delete &pointConnects;
+			//delete &facePointConnects;
+			//delete &faceVertexConnects;
 			//delete &pointPositions;
 		}
 
