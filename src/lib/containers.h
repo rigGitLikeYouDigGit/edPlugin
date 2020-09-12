@@ -133,7 +133,6 @@ namespace ed {
 	//// basic iterators by yours truly
 	//template< typename T, typename C, size_t const Size>
 
-	/*
 
 
 	// couldn't find a way to put this in a cpp file
@@ -365,7 +364,6 @@ namespace ed {
 
 
 
-*/
 
 } // /ed
 

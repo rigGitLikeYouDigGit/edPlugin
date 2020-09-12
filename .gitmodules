@@ -1,0 +1,3 @@
+[submodule "modules/loom"]
+	path = modules/loom
+	url = https://github.com/edart76/loom.git
