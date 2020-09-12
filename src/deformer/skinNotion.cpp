@@ -8,6 +8,7 @@ skincluster deformation component
 
 using namespace ed;
 
+
 MTypeId SkinNotion::kNODE_ID(pluginPrefix, 0x00122C13);
 MString SkinNotion::kNODE_NAME( "skinNotion" );
 

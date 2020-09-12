@@ -78,7 +78,7 @@ MStatus UberDeformer::compute(
 		return MStatus::kSuccess;
 	}
 
-	if(bindVal == BindState::off | meshObj.isNull()){
+	if( (bindVal == BindState::off) | meshObj.isNull()){
 		hedgeMesh.hasBuilt = 0;
 		data.setClean(plug);
 		return MStatus::kSuccess;
@@ -95,7 +95,7 @@ MStatus UberDeformer::compute(
 
 	MFnMesh meshFn( meshObj );
 
-	if( bindVal == BindState::bind | bindVal == BindState::live){
+	if( (bindVal == BindState::bind) | (bindVal == BindState::live)){
 		bindDeformerNetwork();
 		if( bindVal == BindState::bind){
 			data.outputValue(aBind).setInt( BindState::bound);

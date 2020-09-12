@@ -21,8 +21,8 @@ struct SkinNotionParametres : DeformerParametres{
 // skincluster deformerNotion
 class SkinNotion : public DeformerNotion {
     public:
-        SkinNotion();
-        virtual ~SkinNotion();
+        //SkinNotion();
+        //virtual ~SkinNotion();
 
         // virtual MStatus compute(
 				// const MPlug& plug, MDataBlock& data);
