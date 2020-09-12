@@ -3,13 +3,10 @@
 #ifndef DEFORMERNOTION_H
 #define DEFORMERNOTION_H
 
+#include "../lib/topo.h"
+#include "../lib/mayaTopo.h"
 #include "../lib/api.h"
 
-struct MeshData {
-	std::vector<float> pointPositions;
-	std::vector<int> faceConnects;
-	std::vector<int> pointConnects;
-};
 
 
 class DeformerNotion : public MPxNode {

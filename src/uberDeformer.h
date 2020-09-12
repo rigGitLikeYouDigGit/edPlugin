@@ -38,7 +38,7 @@ class UberDeformer : public MPxDeformerNode {
 
         void globalDeform(int globalIterations, float globalEnvelope);
 
-        void setOutputGeo(MDataBlock &data, MObject meshObj);
+        void setOutputGeo(MDataBlock &data, MObject &meshObj);
 
         static void* creator();
         static MStatus initialize();

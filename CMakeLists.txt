@@ -8,8 +8,8 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/../output/Maya${MAYA_VERSIO
 
 set(CMAKE_ARCJOVE)
 
-option(LIBIGL_USE_STATIC_LIBRARY     "Use libIGL as static librarie" ON)
-find_package(LIBIGL REQUIRED QUIET)
+#option(LIBIGL_USE_STATIC_LIBRARY     "Use libIGL as static librarie" ON)
+#find_package(LIBIGL REQUIRED QUIET)
 
 
 file(GLOB SOURCE_FILES "src/*.cpp" "src/*.h" "src/lib/*.cpp" "src/lib/*.h" 

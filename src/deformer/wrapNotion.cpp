@@ -5,11 +5,12 @@
 deformer module for wrapping one geometry to another
 
 */
+#if 0
+
+
 
 #include "deformerNotion.h"
 #include "wrapNotion.h"
-#include "containers.h"
-#include "lib/topo.h"
 //
 // MTypeId DeformerNotion::kNODE_ID(0x00122C10);
 // MString DeformerNotion::kNODE_NAME( "deformerNotion" );
@@ -86,3 +87,5 @@ void* DeformerNotion::creator(){
 
 DeformerNotion::DeformerNotion() {};
 DeformerNotion::~DeformerNotion() {};
+
+#endif

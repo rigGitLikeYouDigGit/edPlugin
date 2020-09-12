@@ -282,6 +282,14 @@ inline void setAttributesAffect(std::vector<MObject> &drivers, std::vector<MObje
 }
 
 template <typename T>
+inline void setAttributesAffect(std::vector<MObject> &drivers, MObject &driven) {
+	// sets driver to affect all driven
+	for (auto &i : drivers) {
+		T::attributeAffects(i, driven);
+	}
+}
+
+template <typename T>
 inline void addAttributes(std::vector<MObject> &attrs){
 	// adds all attributes at once
 	for( auto &attrObj : attrs ){

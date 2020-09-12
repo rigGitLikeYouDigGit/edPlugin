@@ -107,19 +107,20 @@ MStatus UberDeformer::compute(
 
 	// set output geometry points
 	meshFnFromHalfEdgeMesh(hedgeMesh, meshFn);
-	setOutputGeo(meshObj);
+	setOutputGeo(data, meshObj);
 	// what up now swedes
 }
 
 
 void UberDeformer::globalDeform(int globalIterations, float globalEnvelope){
 	for( int globalI = 0; globalI < globalIterations; globalI++){
+
 		for( unsigned int deformerI = 0;
 			deformerI < connectedNotions.size(); deformerI++){
-
+				DeformerNotion* deformer = connectedNotions[deformerI];
 				deformer->params.globalIterations = globalIterations;
 				deformer->params.globalIteration = globalI;
-				DeformerNotion* deformer = connectedNotions[i];
+				
 				deformer->deformGeo( deformer->params, hedgeMesh);
 		}
 	}
@@ -127,7 +128,7 @@ void UberDeformer::globalDeform(int globalIterations, float globalEnvelope){
 }
 
 
-void UberDeformer::setOutputGeo(MDataBlock& data, const MObject& meshGeo) {
+void UberDeformer::setOutputGeo(MDataBlock& data, MObject& meshGeo) {
 	// sets output plug to target mesh object
 	// we deform only one piece of geometry
 	MArrayDataHandle outputArray = data.outputArrayValue(outputGeom);
@@ -150,9 +151,11 @@ void UberDeformer::bindUberDeformer(){
 void UberDeformer::bindDeformerNotions(){
 	// runs bind method on all connected components
 	for(unsigned int i = 0; i < connectedNotions.size(); i++){
-		DeformerNotion node = *connectedNotions[i];
-		MFnDependencyNode mfnNode(node);
-		node::bind(mfnNode, node->params, hedgeMesh);
+		MObject nodeObj;
+		DeformerNotion * node = connectedNotions[i];
+		nodeObj = node->thisMObject();
+		MFnDependencyNode mfnNode(nodeObj);
+		node->bind(mfnNode, node->params, hedgeMesh);
 	}
 }
 
@@ -167,7 +170,8 @@ void UberDeformer::getConnectedNotions() {
 	notionsPlug.connectedTo(connectedPlugs, true, false);
 	for (unsigned int i = 0; i < connectedPlugs.length(); i++) {
 		DEBUGS("plug " << connectedPlugs[i].name());
-		connectedNotions.push_back(connectedPlugs[i].node());
+		DeformerNotion * node = (DeformerNotion *)MFnDependencyNode(connectedPlugs[i].node()).userNode();
+		connectedNotions.push_back( node );
 	}
 }
 

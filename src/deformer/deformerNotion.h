@@ -6,7 +6,6 @@
 #include "../lib/api.h"
 #include "../lib/topo.h"
 #include "../lib/mayaTopo.h"
-//#include "deformerData.h"
 
 /*
 base class for individual components of deformer system

@@ -9,7 +9,7 @@
 #include "deformerNotion.h"
 
 using namespace ed;
-using namespace stl;
+using namespace std;
 
 MTypeId DeformerNotion::kNODE_ID(pluginPrefix, 0x00122C11);
 MString DeformerNotion::kNODE_NAME( "deformerNotion" );
@@ -54,15 +54,15 @@ MStatus DeformerNotion::initialize()
 	};
 	vector<MObject> driven = { aUberDeformer };
 
-	addAttributes( drivers );
-	addAttributes( driven );
+	addAttributes<DeformerNotion>( drivers );
+	addAttributes<DeformerNotion>( driven );
 
-	setAttributeAffectsAll(drivers, driven);
+	setAttributesAffect<DeformerNotion>(drivers, driven);
 
     return MStatus::kSuccess;
 }
 
-virtual int DeformerNotion::extractParametres(
+int DeformerNotion::extractParametres(
 	MDataBlock &data, DeformerParametres &params
 ){
 	params.localEnvelope = data.inputValue(aLocalEnvelope).asFloat();
@@ -86,7 +86,7 @@ MStatus DeformerNotion::compute(
 }
 
 ///// DEFORMATION /////
-virtual int DeformerNotion::deformGeo( DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+int DeformerNotion::deformGeo( DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
 	// if needed, override mesh-wide deformation system here
 	for(int iteration=0; iteration < params.localIterations; iteration++){
 		params.localIteration = iteration;
@@ -100,7 +100,7 @@ virtual int DeformerNotion::deformGeo( DeformerParametres &params, HalfEdgeMesh 
 	return 1;
 }
 
-virtual int DeformerNotion::deformPoint( int index, DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
+int DeformerNotion::deformPoint( int index, DeformerParametres &params, HalfEdgeMesh &hedgeMesh ){
 	// most should only override deformPoint, touching deformGeo should be unnecessary
 	// example for how to interface with HalfEdgeMesh in parallel
 	SmallList<float> oldPositions = hedgeMesh.pointPositions.entry(index);
