@@ -45,6 +45,7 @@ as well as common plugin functions
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnUnitAttribute.h>
+#include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnGenericAttribute.h>
 #include <maya/MFnAttribute.h>
 

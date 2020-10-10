@@ -7,6 +7,7 @@ skincluster deformation component
 #include "skinNotion.h"
 
 using namespace ed;
+using namespace std;
 
 
 MTypeId SkinNotion::kNODE_ID(pluginPrefix, 0x00122C13);
@@ -25,7 +26,7 @@ MStatus SkinNotion::initialize()
     // initialise attributes
 	MFnNumericAttribute nFn;
 	MFnTypedAttribute tFn;
-  MFnCompoundAttribute cFn;
+	MFnCompoundAttribute cFn;
 	MFnEnumAttribute eFn;
 
 	// multi attributes mirroring skincluster weights
@@ -43,8 +44,8 @@ MStatus SkinNotion::initialize()
 
 	// should weights be looked up live or only on bind?
 	aWeightMode = eFn.create("weightMode", "weightMode", 0);
-	eFn.addField("live");
-	eFn.addField("static");
+	eFn.addField("live", SkinWeightMode::live);
+	eFn.addField("onBind", SkinWeightMode::onBind);
 	eFn.setHidden(false);
 
   // transform joint matrices
@@ -60,8 +61,8 @@ MStatus SkinNotion::initialize()
 	// set affects
 	std::vector<MObject> drivers = {aWeightList, aWeightMode,
     aTransformMatrices, aBindMatrices };
-  addAttributes( drivers );
-  setAttributesAffect(drivers, aUberDeformer);
+  addAttributes<SkinNotion>( drivers );
+  setAttributesAffect<SkinNotion>(drivers, aUberDeformer);
   return MStatus::kSuccess;
 }
 
@@ -70,15 +71,15 @@ int SkinNotion::deformPoint(int index, SkinNotionParametres &params,
 	ed::HalfEdgeMesh &hedgeMesh){
 
 			//SmallList<float> baseList = mesh.pointPositions.entry(index);
-			float * baseList = mesh.pointPositions.rawEntry(index);
+			float * baseList = hedgeMesh.pointPositions.rawEntry(index);
 			MPoint basePos(
 				baseList[0], baseList[1], baseList[2], 1.0);
 
 			// get skin indices and weights
 			SmallList<int> weightIndices = entryFromBuffer(
-				params.skinData.influenceIndices, params.skinData.vertexOffsets, index);
+				params.weightIndices, params.vertexOffsets, index);
 			SmallList<float> weightValues = entryFromBuffer(
-				params.skinData.influenceWeights, params.skinData.vertexOffsets, index);
+				params.weightValues, params.vertexOffsets, index);
 
 			// output position
 			MPoint result;
@@ -93,13 +94,14 @@ int SkinNotion::deformPoint(int index, SkinNotionParametres &params,
 				if (infIndex == -1) { // no valid transform index
 					continue;
 				}
-				diffMat = params.refMats[i] * params.tfMats[i];
+				diffMat = params.refMats[i] * params.transformMats[i];
 				tfPos += (basePos * diffMat) * weightVal;
 			}
 
 			// blend output by envelope
-			result = basePos * (1 - params.envelope) + tfPos * params.envelope;
-			hedgeMesh.deltaPointPositions.setEntry<MPoint>(i, result);
+			result = basePos * (1 - params.localEnvelope) + tfPos * params.localEnvelope;
+			hedgeMesh.deltaPointPositions.setEntry<MPoint>(index, result);
+			return 1;
 
 	}
 
@@ -175,7 +177,7 @@ void SkinNotion::extractSkinWeights(MPlug& weightRoot,
 		weightIndexPlug = weightRoot.elementByPhysicalIndex(i);
 		// MArrayDataHandle vtxEntry = weightRoot.inputValue().child(
 		// 	aWeights);
-		weightChildArrayPlug = weightIndexPlug.child(aWeights)
+		weightChildArrayPlug = weightIndexPlug.child(aWeights);
 		unsigned int nWeights = weightChildArrayPlug.numElements();
 
 		for (unsigned int n = 0; n < nWeights; n++) {
@@ -203,13 +205,13 @@ void SkinNotion::extractSkinWeights(MPlug& weightRoot,
 	params.weightValues = influenceWeights;
 }
 
-void SkinNotion::extractParametres(
+int SkinNotion::extractParametres(
 	MDataBlock &data, SkinNotionParametres &params){
 	// retrieve skin data and joint matrices
 	DeformerNotion::extractParametres(data, params);
 
 	int weightModeVal = data.inputValue(aWeightMode).asInt();
-	if (weightModeVal == 0){ // live weights
+	if (weightModeVal == SkinWeightMode::live){ // live weights
 		extractSkinWeights(
 			data.inputArrayValue(aWeightList), params);
 	}
@@ -217,11 +219,13 @@ void SkinNotion::extractParametres(
 		data.inputArrayValue(aBindMatrices));
 	params.transformMats = extractMMatrixArray(
 		data.inputArrayValue(aTransformMatrices));
+	return 1;
 }
 
-void SkinNotion::bind(
+int SkinNotion::bind(
 	MFnDependencyNode &mfn, SkinNotionParametres &params,
 	ed::HalfEdgeMesh &hedgeMesh){
 		MPlug plugRoot = mfn.findPlug(aWeightList, false);
 		extractSkinWeights(plugRoot, params);
+		return 1;
 	}

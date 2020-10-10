@@ -17,6 +17,8 @@ struct SkinNotionParametres : DeformerParametres{
 
 };
 
+// enum for live or cached extraction of skin weights
+enum SkinWeightMode {live, onBind};
 
 // skincluster deformerNotion
 class SkinNotion : public DeformerNotion {
@@ -33,7 +35,7 @@ class SkinNotion : public DeformerNotion {
 				// extractParametres is run every evaluation,
 				// transfers datablock values to params struct
 				virtual int extractParametres(
-					MDataBlock &data, SkinNotionParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+					MDataBlock &data, SkinNotionParametres &params );
 
 				// bind is run once on bind
 				virtual int bind( MFnDependencyNode &mfn,
@@ -45,11 +47,13 @@ class SkinNotion : public DeformerNotion {
 				virtual int deformPoint(int index, SkinNotionParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
         // specific functions
-        void extractSkinWeights(MArrayDataHandle& weightRoot,
-          SkinNotionParametres& skinInfo) {
+				void extractSkinWeights(MArrayDataHandle& weightRoot,
+					SkinNotionParametres& skinInfo);
+				void extractSkinWeights(MPlug& weightRoot,
+					SkinNotionParametres& skinInfo);
 
-        static void* creator();
-        static MStatus initialize();
+					static void* creator();
+					static MStatus initialize();
 
 public:
     static MTypeId kNODE_ID;

@@ -7,11 +7,6 @@
 #include "deformerNotion.h"
 
 struct SmoothNotionParametres : DeformerParametres{
-  // skin weights
-  std::vector<int> vertexOffsets; // offsets to each vertex entry
-  std::vector<int> weightIndices; // joint indices per vertex
-  std::vector<float> weightValues; // joint values per vertex
-
 
 };
 
@@ -41,9 +36,6 @@ class SmoothNotion : public DeformerNotion {
 
 				virtual int deformPoint(int index, DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
 
-        // specific functions
-        void extractSkinWeights(MArrayDataHandle& weightRoot,
-          SmoothNotionParametres& skinInfo, int nPoints) {
 
         static void* creator();
         static MStatus initialize();
@@ -53,11 +45,7 @@ public:
     static MString kNODE_NAME;
 
     // attribute MObjects
-  	static MObject aWeightList;
-    static MObject aWeights;
 
-    static MObject aTransformMatrices;
-    static MObject aBindMatrices;
 
 };
 #endif

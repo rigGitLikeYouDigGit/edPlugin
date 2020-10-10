@@ -17,6 +17,9 @@ no hard distinction between precomputed information and keyable -
 everything is placed in deformer params.
 upload() lets node micromanage what gets passed to gpu and when
 
+there is no stable way to avoid collapsing parallel kernels between
+deformer steps, as otherwise it would be possible to have patches of the
+deformation outrun each other between steps - cool, but not what we want
 */
 
 struct DeformerParametres {

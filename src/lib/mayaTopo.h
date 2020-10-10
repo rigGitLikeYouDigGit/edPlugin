@@ -11,76 +11,43 @@
 namespace ed{
 
 //// TOPO TYPE FUNCTIONS
-OffsetBuffer<int> faceBufferFromMfnMesh(MFnMesh& mfn) {
-	// construct face buffer from mfn info
-	int nPolys = mfn.numPolygons();
-	std::vector<int> facePointConnects;
-	std::vector<int> facePointOffsets(nPolys, -1);
-
-	// vertex buffer from mfn
-	MIntArray vertexCount; // number of vertices in face - NOT global offsets
-	MIntArray vertexList; // list of vertices in each face
-	mfn.getVertices(vertexCount, vertexList);
-
-	int offsetIndex = 0;
-	for (unsigned int i = 0; i < vertexCount.length(); i++) {
-		// add offset to current index
-		facePointOffsets[i] = offsetIndex;
-		int nFacePoints = vertexCount[i];
-
-		for (int n = 0; n < nFacePoints; n++) {
-			facePointConnects.push_back(vertexList[offsetIndex]);
-			offsetIndex++;
-		}
-	}
-	return OffsetBuffer<int>(facePointConnects, facePointOffsets);
-}
+	OffsetBuffer<int> faceBufferFromMfnMesh(MFnMesh& mfn);
 
 
-void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build) {
-	// updates target mesh struct from mesh MObject
-	// if build, will rebuild topology buffers
-	// if not, will only copy point positions
-	MStatus s = MS::kSuccess;
-	MFnMesh meshFn(meshObj);
+	void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build);
 
-	int nPoints = meshFn.numVertices();
-	int nPolys = meshFn.numPolygons();
-	hedgeMesh.nPoints = nPoints;
-	hedgeMesh.nFaces = nPolys;
+	void meshFnFromHalfEdgeMesh(HalfEdgeMesh &hedgeMesh, MFnMesh &meshFn);
 
-	if (build > 0) {
-		OffsetBuffer<int> faceBuffer = faceBufferFromMfnMesh(meshFn);
-		OffsetBuffer<int> pointBuffer = pointBufferFromFaceBuffer(faceBuffer);
-		hedgeMesh.build(
-			pointBuffer.values, pointBuffer.offsets,
-			faceBuffer.values, faceBuffer.offsets
-		);
-	}
-	// set mesh point positions
-	const float* rawPositions = meshFn.getRawPoints(&s);
-	//meshFn.getRawPoints(&s);
-	//float test = rawPositions[7];
-	std::vector<float> posVector(nPoints * 3, 0.0);
-	for (int i = 0; i < nPoints; i++) {
-		posVector[i*3] = rawPositions[i*3];
-		posVector[i*3 + 1] = rawPositions[i*3 + 1];
-		posVector[i*3 + 2] = rawPositions[i*3 + 2];
+	// ---- EIGEN STUFF -----
+	typedef Eigen::SparseMatrix<double> Sparse;
+	typedef Eigen::Matrix<double, 4, 4> Mat4;
+	typedef Eigen::Matrix<double, 4, 1> Vec4;
+	typedef Eigen::Matrix<double, 3, 3> Mat3;
+	typedef Eigen::Matrix<double, 3, 1> Vec3;
+	typedef Eigen::Matrix<double, -1, -1> MatX;
+
+
+	static void mmatrix_to_eigen(const MMatrix& M, Mat4& E)
+	{
+		DEBUGS("topo mmatrix_to_eigen");
+		const double *matData = reinterpret_cast<const double*>(&M);
+		//D << matData[0], matData[1], matData[2], matData[3],
+		//	matData[4], matData[5], matData[6], matData[7],
+		//	matData[8], matData[9], matData[10], matData[11],
+		//	matData[12], matData[13], matData[14], matData[15];
+
+		std::copy(matData, matData + 16, E.data());
 
 	}
-	hedgeMesh.setPositions(posVector);
-}
 
-void meshFnFromHalfEdgeMesh(HalfEdgeMesh &hedgeMesh, MFnMesh &meshFn){
-	// convert to point array
-	MPointArray outputPoints(meshFn.numVertices());
-	for (int i = 0; i < meshFn.numVertices(); i++) {
-		outputPoints[i].x = hedgeMesh.pointPositions.values[i * 3];
-		outputPoints[i].y = hedgeMesh.pointPositions.values[i * 3 + 1];
-		outputPoints[i].z = hedgeMesh.pointPositions.values[i * 3 + 2];
+	static MMatrix eigen_to_mmatrix(const Mat4& E)
+	{
+		DEBUGS("topo eigen_to_mmatrix");
+		MMatrix result;
+		double *matData = reinterpret_cast<double*>(&result);
+		std::copy(E.data(), E.data() + 16, matData);
+		return result;
 	}
-	meshFn.setPoints(outputPoints, MSpace::kObject);
-}
 
 } // namespace ed
 #endif

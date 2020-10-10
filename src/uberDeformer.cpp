@@ -100,6 +100,7 @@ MStatus UberDeformer::compute(
 		if( bindVal == BindState::bind){
 			data.outputValue(aBind).setInt( BindState::bound);
 		}
+		
 	}
 
 	int globalIterations = data.inputValue(aGlobalIterations).asInt();
@@ -109,6 +110,7 @@ MStatus UberDeformer::compute(
 	meshFnFromHalfEdgeMesh(hedgeMesh, meshFn);
 	setOutputGeo(data, meshObj);
 	// what up now swedes
+	return MS::kSuccess;
 }
 
 

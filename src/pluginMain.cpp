@@ -28,9 +28,14 @@ const char* kVERSION = "1.0";
 const char* kREQUIRED_API_VERSION = "Any";
 
 // define vector for nodes to register and deregister
-//std::vector<MObject> nodes = {/*
-//	MeshToBuffers::thisMObject,
-//};*/
+//std::vector<MPxNode> nodes = {
+//	MeshToBuffers*,
+//	MemorySource,
+//	MemorySink,
+//	MeshAnalysis,
+//};
+//std::vector<MPxNode> pluginNodes(5);
+
 
 #define REGISTER_NODE(NODE) \
     status = fnPlugin.registerNode( \
@@ -90,7 +95,7 @@ MStatus initializePlugin( MObject obj ){
     // gpu gubs
 
     // normal nodes 
-    status = REGISTER_NODE(MeshAnalysis);
+    //status = REGISTER_NODE(MeshAnalysis);
 
     // BEGIN PROCEDURAL CONTROL REGISTER
     status = REGISTER_NODE(MeshToBuffers);

@@ -1,7 +1,7 @@
 
 
 #ifndef UBERDEFORMER_H
-#define UBERDEFORMER_H
+#define UBERDEFORMER_H 1
 
 #include "lib/api.h"
 #include "lib/topo.h"

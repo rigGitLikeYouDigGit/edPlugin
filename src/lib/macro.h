@@ -1,6 +1,6 @@
 // simple lines
 
-
+#include "maya/MStreamUtils.h"
 #ifndef API_MACROS
 #define API_MACROS 1
 

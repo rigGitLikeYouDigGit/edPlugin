@@ -108,6 +108,7 @@ int DeformerNotion::deformPoint( int index, DeformerParametres &params, HalfEdge
 		// update new point positions from calculation
 		hedgeMesh.deltaPointPositions.values[3*index + i] = oldPositions[i];
 	}
+	return 1;
 }
 
 
