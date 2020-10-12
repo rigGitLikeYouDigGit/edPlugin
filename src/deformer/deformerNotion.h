@@ -41,25 +41,26 @@ class DeformerNotion : public MPxNode {
         virtual MStatus compute(
 				const MPlug& plug, MDataBlock& data);
 
-				DeformerParametres params;
+		DeformerParametres params;
 
-				// EXECUTION FUNCTIONS
-				// extractParametres is run every evaluation,
-				// transfers datablock values to params struct
-				virtual int extractParametres(
-					MDataBlock &data, DeformerParametres &params );
+		// EXECUTION FUNCTIONS
+		// extractParametres is run every evaluation,
+		// transfers datablock values to params struct
+		virtual int extractParametres(
+			MDataBlock &data, DeformerParametres &params );
 
-				// bind is run once on bind
-				// virtual int bind( MDataBlock &data, DeformerParametres &params,
-        //    ed::HalfEdgeMesh &hedgeMesh );
+		//		// bind is run once on bind
+		//virtual int bind( MDataBlock &data, DeformerParametres &params,
+		//	ed::HalfEdgeMesh &hedgeMesh );
 
        // bind actually has to be run asynchronously by uberDeformer,
        // so must be passed an MFnDependencyNode instead of a datablock
        virtual int bind( MFnDependencyNode &mfn, DeformerParametres &params,
           ed::HalfEdgeMesh &hedgeMesh );
 
-				// deform
-				virtual int deformGeo( DeformerParametres &params, ed::HalfEdgeMesh &hedgeMesh );
+		// deform
+		virtual int deformGeo( DeformerParametres &params, 
+			ed::HalfEdgeMesh &hedgeMesh );
 
         // deform individual point
         // this method will be executed from threads, so must be entirely threadsafe

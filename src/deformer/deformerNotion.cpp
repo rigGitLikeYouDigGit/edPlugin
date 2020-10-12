@@ -72,6 +72,12 @@ int DeformerNotion::extractParametres(
 
 }
 
+int DeformerNotion::bind(
+	MFnDependencyNode &mfn, DeformerParametres &params,
+	HalfEdgeMesh &hedgeMesh) {
+	// nothing to bind on base notion node
+	return 1;
+}
 
 MStatus DeformerNotion::compute(
 				const MPlug& plug, MDataBlock& data) {
@@ -110,6 +116,18 @@ int DeformerNotion::deformPoint( int index, DeformerParametres &params, HalfEdge
 	}
 	return 1;
 }
+
+////// GPU STUFF ///////
+int DeformerNotion::uploadParametres(
+	DeformerParametres &params) {
+	return 1;
+}
+
+int DeformerNotion::uploadMesh(
+	HalfEdgeMesh &hedgeMesh) {
+	return 1;
+}
+
 
 
 void* DeformerNotion::creator(){

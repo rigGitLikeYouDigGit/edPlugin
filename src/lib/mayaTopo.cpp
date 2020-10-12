@@ -4,11 +4,11 @@
 
 // conversions between pure topo types and maya types
 // it was just easier to manage this way
-using namespace ed;
+ //using namespace ed;
 
 
 	//// TOPO TYPE FUNCTIONS
-	OffsetBuffer<int> faceBufferFromMfnMesh(MFnMesh& mfn) {
+	ed::OffsetBuffer<int> ed::faceBufferFromMfnMesh(MFnMesh& mfn) {
 		// construct face buffer from mfn info
 		int nPolys = mfn.numPolygons();
 		std::vector<int> facePointConnects;
@@ -34,7 +34,7 @@ using namespace ed;
 	}
 
 
-	void HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build) {
+	void ed::HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build) {
 		// updates target mesh struct from mesh MObject
 		// if build, will rebuild topology buffers
 		// if not, will only copy point positions
@@ -68,7 +68,7 @@ using namespace ed;
 		hedgeMesh.setPositions(posVector);
 	}
 
-	void meshFnFromHalfEdgeMesh(HalfEdgeMesh &hedgeMesh, MFnMesh &meshFn) {
+	void ed::meshFnFromHalfEdgeMesh(HalfEdgeMesh &hedgeMesh, MFnMesh &meshFn) {
 		// convert to point array
 		MPointArray outputPoints(meshFn.numVertices());
 		for (int i = 0; i < meshFn.numVertices(); i++) {

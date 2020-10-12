@@ -8,6 +8,8 @@
 // conversions between pure topo types and maya types
 // it was just easier to manage this way
 
+
+
 namespace ed{
 
 //// TOPO TYPE FUNCTIONS

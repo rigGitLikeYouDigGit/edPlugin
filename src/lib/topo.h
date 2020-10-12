@@ -164,7 +164,7 @@ namespace ed {
 				offsets = interleaveOffsets(initOffsets, nValues);
 			}
 
-		int entryLength(int entryIndex){
+		inline int entryLength(int entryIndex){
 			return offsets[ 2 * entryIndex + 1];
 		}
 
