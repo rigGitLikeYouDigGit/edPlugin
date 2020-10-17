@@ -14,6 +14,7 @@ as well as common plugin functions
 #include <iostream>
 #include <memory>
 #include <list>
+#include <algorithm>
 
 #include <maya/MStreamUtils.h>
 #include <maya/MPxNode.h>

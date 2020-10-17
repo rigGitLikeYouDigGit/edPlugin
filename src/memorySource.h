@@ -4,6 +4,7 @@
 #define MEMORYSOURCE_H
 
 #include "lib/api.h"
+#include "lib/containers.h"
 
 class MemorySource : public MPxNode {
     public:
@@ -25,6 +26,8 @@ class MemorySource : public MPxNode {
 		MStatus getSinkData(MObject &sinkObj, MDataHandle &sinkDH);
 		MStatus setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArrayDataHandle &sinkArrayDH);
 
+		virtual void postConstructor();
+
 public:
     static MTypeId kNODE_ID;
     static MString kNODE_NAME;
@@ -41,16 +44,25 @@ public:
 
 	// frequency of update
 	static MObject aStepSize;
+	// number of frames to cover
+	static MObject aNFrames;
 
 	// constantly incrementing counter, might be useful for something
 	static MObject aIncrement;
 
-	// outer buffer array - each entry will hold array of all values 
-	// at corresponding frame
+	// outer buffer array
+	static MObject aFrameBuffer;
+	// single frame entry
 	static MObject aValueBuffer;
 
 	// single value entry, holds all solver data for one frame
 	static MObject aInnerData;
+
+	// initial data for solver behaviour
+	static MObject aInitData;
+
+	// array of float time deltas, might be useful for live time stuff
+	static MObject aDeltas;
 
 
 	// internal sink objects

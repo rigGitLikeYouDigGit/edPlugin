@@ -33,7 +33,7 @@ MStatus MemorySink::initialize()
 	// untyped attribute can be used to pass on whatever you want
 	//aData = gFn.create("data", "data");
 	aData = tFn.create("data", "data", MFnData::kAny);
-	tFn.setReadable(false);
+	tFn.setReadable(true);
 	tFn.setWritable(true);
 	tFn.setArray(true);
 	tFn.setUsesArrayDataBuilder(true);
@@ -56,9 +56,6 @@ MStatus MemorySink::compute(
 
 	// data.setClean(plug);
 	DEBUGS("memorySink compute ");
-
-	// transfer interface data to internal
-	MArrayDataHandle outerDH = data.outputArrayValue(aData);
 
 	data.setClean(plug);
 

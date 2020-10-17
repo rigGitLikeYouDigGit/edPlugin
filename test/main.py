@@ -3,22 +3,58 @@
 from maya import cmds, mel
 import maya.api.OpenMaya as om
 
-from edPlugin import MLL_PATH, PLUGIN_ID
+from edPlugin import MLL_PATH, MLL_RELEASE_PATH, PLUGIN_ID
 
-from edPlugin.test import meshanalysis
+from edPlugin.test import meshanalysis, memory
+reload(memory)
 
 
 def unloadPlugin(path=None):
-	""" forces new scene and unloads plugin for recompilation """
+	""" forces new scene and unloads plugin for recompilation
+	this is
+	so
+	fucking
+	annoying
+	"""
 	path = path or PLUGIN_ID
 	path = PLUGIN_ID
 	path = MLL_PATH
 	path = "edPlugin"
+	paths = [MLL_PATH, MLL_RELEASE_PATH, "edPlugin", "edPlugin.mll"]
 	cmds.file(new=1, f=1)
-	cmds.unloadPlugin(path, f=True)
+
+	# cmd = """$ignoreUpdateCallback = true;unloadPluginWithCheck( "F:/all_projects_desktop/common/edCode/edPlugin/build/Release/edPlugin.mll", false );"""
+	# mel.eval(cmd)
+	#cmds.loadPlugin( PLUGIN_ID )
+
+	allNames = cmds.pluginInfo(q=1, listPlugins=1)
+	for i in allNames:
+		print i
+
+	for i in paths:
+		print("unloading {}".format(i))
+		try:
+			data = cmds.pluginInfo("edPlugin", q=1, path=1)
+			print data
+			cmds.unloadPlugin(i, f=1)
+			cmds.pluginInfo(data, e=1, remove=1)
+
+
+
+
+			#cmds.pluginInfo(i, remove=1)
+
+		except:
+			try:
+				#mel.eval("unloadPluginWithCheck({})".format(i))
+				cmds.unloadPlugin(data, f=1)
+			except:
+				print("could not unload {}".format(i))
+		continue
 
 def loadPlugin(path=None):
-	cmds.loadPlugin( PLUGIN_ID )
+	# cmds.loadPlugin( PLUGIN_ID, "edPlugin" )
+	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin" )
 
 
 def runTests():
@@ -28,9 +64,10 @@ def runTests():
 	print("running edPlugin tests")
 
 	#createPluginNodes()
-	cube = baseTest()
+	#cube = baseTest()
 	#testDeformers(cube)
-	testDdm()
+	#testDdm()
+	memory.testMemory()
 
 def getMObject(name):
 	sel = om.MSelectionList()

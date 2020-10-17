@@ -60,6 +60,12 @@ namespace ed {
 		/// Pops an element off the back of the list.
 		T pop_back();
 
+		// add element to front of list
+		void push(const T& element);
+
+		// pop element from front of list
+		T pop();
+
 		// Swaps the contents of this list with the other.
 		void swap(SmallList& other);
 
@@ -244,6 +250,7 @@ namespace ed {
 	template <class T>
 	void SmallList<T>::push_back(const T& element)
 	{
+		// expand list if needed
 		if (ld.num >= ld.cap)
 			reserve(ld.cap * 2);
 		ld.data[ld.num++] = element;
@@ -252,6 +259,17 @@ namespace ed {
 	template <class T>
 	T SmallList<T>::pop_back()
 	{
+		return ld.data[--ld.num];
+	}
+
+	template <class T>
+	void SmallList<T>::push(const T& element) {
+		// add element to front of list
+	}
+
+	template <class T>
+	T SmallList<T>::pop()
+	{ // pop element from front of list
 		return ld.data[--ld.num];
 	}
 

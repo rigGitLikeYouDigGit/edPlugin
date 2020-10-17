@@ -103,8 +103,7 @@ MStatus initializePlugin( MObject obj ){
 	status = REGISTER_NODE(DeformerNotion);
 	status = REGISTER_NODE(MemorySource);
 	status = REGISTER_NODE(MemorySink);
-	//status = REGISTER_NODE_TYPE(DirectDeltaMush, MPxNode::kSkinCluster);
-	//status = REGISTER_NODE_TYPE(RefDDM, MPxNode::kSkinCluster);
+
 
     // END PROCEDURAL CONTROL REGISTER
 
