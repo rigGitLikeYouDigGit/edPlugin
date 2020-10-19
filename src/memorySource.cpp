@@ -41,6 +41,12 @@ MObject MemorySource::aInitData;
 MObject MemorySource::aSinkConnection;
 MObject MemorySource::aIncrement;
 MObject MemorySource::aDeltas;
+MObject MemorySource::aPrevTime;
+
+#define EPS 0.0001
+
+#define EQ(a, b) \
+	(abs(a - b) < EPS)\
 
 void MemorySource::postConstructor() {
 	this->setExistWithoutInConnections(true);
@@ -79,6 +85,10 @@ MStatus MemorySource::initialize()
 	tFn.setWritable(true);
 
 	// attribute used to update cell - time is most convenient
+	aPrevTime = uFn.create("prevTime", "prevTime", MFnUnitAttribute::kTime, 0.0);
+	tFn.setReadable(true);
+
+	// attribute used to update cell - time is most convenient
 	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 1.0);
 
 	// number of frames to track
@@ -92,11 +102,13 @@ MStatus MemorySource::initialize()
 	tFn.setWritable(false);
 	tFn.setArray(true);
 	tFn.setUsesArrayDataBuilder(true);
+	addAttribute(aData);
 
 	// outer array of frame data
 	aFrameBuffer = cFn.create("frame", "frame");
 	cFn.setArray(true);
 	cFn.setUsesArrayDataBuilder(true);
+	cFn.setWritable(false);
 
 	cFn.addChild(aData);
 
@@ -112,6 +124,8 @@ MStatus MemorySource::initialize()
 	tFn.setWritable(true);
 	tFn.setArray(true);
 	tFn.setUsesArrayDataBuilder(true);
+
+	
 
 	// array of time deltas
 	aDeltas = nFn.create("deltas", "deltas", MFnNumericData::kFloat);
@@ -131,8 +145,10 @@ MStatus MemorySource::initialize()
 	nFn.setWritable(false);
 
 	vector<MObject> drivers = { aInitData, aTime, aResetFrame, aTimeOffset, aNFrames };
-	vector<MObject> driven = { aFrameBuffer, aData, aInnerData, aValueBuffer, aSinkConnection, aIncrement,
-		aDeltas};
+	vector<MObject> driven = { aFrameBuffer, aInnerData, aSinkConnection, aIncrement,
+		aDeltas, aPrevTime,
+		aData,
+	};
 	
 	addAttributes<MemorySource>(drivers);
 	addAttributes<MemorySource>(driven);
@@ -159,6 +175,8 @@ MStatus MemorySource::compute(
 /*
 	data.setClean(plug);
 	return MS::kSuccess;*/
+	//DEBUGS("prevTime" << previousTime);
+
 
 	// get source data handles
 	MArrayDataHandle sourceFramesDH = data.outputArrayValue(aFrameBuffer);
@@ -176,64 +194,76 @@ MStatus MemorySource::compute(
 	//return MS::kSuccess;
 
 	int nFrames = data.inputValue(aNFrames).asInt();
-	//int nFrames = data.outputValue(aNFrames).asInt();
-	float newTime = data.inputValue(aTime).asFloat();
+	MTime newMTime = data.inputValue(aTime).asTime();
+	MTime prevMTime = data.outputValue(aPrevTime).asTime();
+	float newTime = newMTime.as(MTime::k24FPS);
+	float prevTime = prevMTime.as(MTime::k24FPS);
 
-	data.setClean(plug);
-	return MS::kSuccess;
+
+	//data.setClean(plug);
+	//return MS::kSuccess;
 		
 	// check if time is reset frame - reset to current values if so
-	if (newTime == data.inputValue(aResetFrame).asFloat()) {
+	if EQ(newTime, data.inputValue(aResetFrame).asFloat()) {
 		DEBUGS("memorySource time reset");
 
-		// set up correct number of frames
-		int currentFrames = sourceFramesDH.builder().elementCount();
-		// removing element indices wiggles my jimmies, only add
-		/*for (int i = 0; i < min(nFrames - currentFrames + 1, 0); i++) {
-			sourceFramesDH.builder().addLast();
-			sourceDeltasDH.builder().addLast();
-		}*/
 		for (int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			jumpToElement(sourceFramesDH, i);
 		}
 
+		mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
+
+		// look up data through plug since it was crashing otherwise
+		MPlug aDataPlug(thisMObject(), aData);
+
 		// reset all frame data
-		//mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
 		for (int i = 0; i < sourceFramesDH.elementCount(); i++) {
-		//	//sourceArrayDH.jumpToElement(i);
-		//	jumpToElement(sourceArrayDH, i);
-		//	MArrayDataHandle nFrameDH = sourceArrayDH.inputArrayValue();
-		//	mirrorArrayDataHandle(sinkArrayDH, nFrameDH);
+			s = aDataPlug.selectAncestorLogicalIndex(i, aFrameBuffer);
+			MDataHandle aDataDH = aDataPlug.constructHandle(data);
+			MArrayDataHandle aDataArrayDH(aDataDH, &s);
+			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data arrayHandle construction failed");
+			MArrayDataBuilder aDataArrayBuilder = aDataArrayDH.builder(&s);
+			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data arrayHandle builder extraction failed");
+
+			for (int n = 0; n < sourceInnerArrayDH.builder().elementCount(); n++) {
+				MDataHandle aResetDataDH = aDataArrayBuilder.addElement(n, &s);
+				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data add data entry failed");
+				s = jumpToElement(sourceInnerArrayDH, n);
+				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data inner data jte failed");
+				s = aResetDataDH.copy(sourceInnerArrayDH.outputValue());
+				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data inner data entry " << n << "copy failed");
+			}
+			s = aDataArrayDH.set(aDataArrayBuilder);
+			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data set array builder failed");
+			aDataPlug.setValue(aDataDH);
+			aDataPlug.destructHandle(aDataDH);
 
 			// reset deltas
 			jumpToElement(sourceDeltasDH, i);
 			MDataHandle deltaDH = sourceDeltasDH.outputValue();
-			deltaDH.setFloat(1.0);
+			deltaDH.setFloat(0.0);
 		}
 		
 
 		// reset counter
 		data.outputValue(aIncrement).setInt(0);
 
-		data.setClean(plug);
-		return MS::kSuccess;
+		//data.setClean(plug);
+		//return MS::kSuccess;
 	}
 
-	data.setClean(plug);
-	return MS::kSuccess;
+	//data.setClean(plug);
+	//return MS::kSuccess;
 
-
-	// only if time has changed, update current values from cached
-	//MPlug timePlug = MPlug(thisMObject(), MemorySource::aTime);
-	//if (!data.isClean(aTime)) {
-	//if (!data.isClean(timePlug)) {
+	DEBUGS("newTime " << newTime);
+	DEBUGS("prevTime" << prevTime);
 
 	// for some reason input time plug was never reading as dirty
-	if( previousTime != newTime){
+	if(!EQ( prevTime, newTime)){
 		DEBUGS("memorySource time dirty");
 
-		float delta = newTime - previousTime;
+		float delta = newTime - prevTime;
 		float deltaA = delta, deltaB = delta;
 		float deltas[2] = { delta, delta };
 
@@ -241,8 +271,9 @@ MStatus MemorySource::compute(
 		for (int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			deltas[i % 2] = sourceDeltasDH.outputValue().asFloat();
-			sourceDeltasDH.outputValue().setFloat(deltas[i % 2 + 1]);
+			sourceDeltasDH.outputValue().setFloat(deltas[!(i % 2)]);
 		}
+
 
 		// update frame array
 		// MArrayDataHandle frameHandles[2] = { MArrayDataHandle handleA = sinkArrayDH, &sinkArrayDH };
@@ -260,14 +291,14 @@ MStatus MemorySource::compute(
 //			mirrorArrayDataHandle(sourceInnerArrayDH, sourceArrayDH);
 //			mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);*/
 //		}
-		
 
-		previousTime = newTime;
 
 		// add to increment
 		data.outputValue(aIncrement).setInt(data.outputValue(aIncrement).asInt() + 1);
-	}
 
+	}
+	previousTime = newTime;
+	data.outputValue(aPrevTime).setMTime(newMTime);
 
 	// dirty sink plug
 	bool switchStatus = !data.outputValue(aSinkConnection).asBool();

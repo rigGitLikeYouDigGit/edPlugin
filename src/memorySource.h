@@ -37,6 +37,7 @@ public:
 	static MObject aTime;
 	static MObject aResetFrame;
 	static MObject aData;
+	static MObject aPrevTime;
 
 	// time delay to use - this corresponds to length of buffer,
 	// so don't make it crazy long

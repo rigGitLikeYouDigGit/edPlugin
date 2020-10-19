@@ -70,6 +70,7 @@ as well as common plugin functions
 #include <maya/MItGeometry.h>
 
 #include <maya/MTimer.h>
+#include <maya/MTime.h>
 
 // including topo lib to build topo types from api types
 #include "macro.h"
@@ -179,8 +180,9 @@ inline MStatus mirrorArrayDataHandle(MArrayDataHandle &masterArrayDH, MArrayData
 		jumpToElement(slaveArrayDH, index);
 
 		slaveArrayDH.outputValue().copy(
-			masterArrayDH.outputValue()
-		);
+			masterArrayDH.outputValue());
+		/*slaveArrayDH.outputValue().set(
+			MObject(masterArrayDH.outputValue().data()));*/
 	}
 	return MStatus::kSuccess;
 }
