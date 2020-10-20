@@ -23,6 +23,7 @@ as well as common plugin functions
 #include <maya/MTypeId.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
+#include <maya/MObjectArray.h>
 //#include <maya/MSpace.h>
 #include <maya/MString.h>
 #include <maya/MPoint.h>
@@ -80,6 +81,13 @@ namespace ed{
 
 // registering IDs of plugin nodes
 const unsigned int pluginPrefix = 101997;
+
+#define MCHECK(stat,msg)             \
+        if ( MS::kSuccess != stat ) {   \
+                cerr << msg;            \
+                return MS::kFailure;    \
+        }
+
 
 // common functions
 static MObject makeBindAttr( char* name ){
@@ -171,9 +179,9 @@ inline MStatus jumpToElement(MArrayDataHandle &hArray, int index) {
 
 inline MStatus mirrorArrayDataHandle(MArrayDataHandle &masterArrayDH, MArrayDataHandle &slaveArrayDH) {
 	// transfer exact structure of array handle from master to slave
-	int index = 0;
-	int n = masterArrayDH.elementCount();
-	//DEBUGS("n " << n);
+	unsigned int index = 0;
+	unsigned int n = masterArrayDH.elementCount();
+	DEBUGS(" master array handle length n " << n);
 	for (index; index < n; index++) {
 		//DEBUGS("index " << index);
 		jumpToElement(masterArrayDH, index);
@@ -184,7 +192,29 @@ inline MStatus mirrorArrayDataHandle(MArrayDataHandle &masterArrayDH, MArrayData
 		/*slaveArrayDH.outputValue().set(
 			MObject(masterArrayDH.outputValue().data()));*/
 	}
+	DEBUGS("slave array handle length " << slaveArrayDH.elementCount());
 	return MStatus::kSuccess;
+}
+
+inline MStatus childDataHandles(MArrayDataHandle &parentArrayDH, std::vector<MDataHandle> &result) {
+	// return all data handles that are children of parent
+	MStatus s;
+	for (unsigned int i = 0; i < parentArrayDH.builder().elementCount(); i++) {
+		s = parentArrayDH.jumpToArrayElement(i);
+		MCHECK(s, "failed to gather child data handles");
+		result.push_back(parentArrayDH.outputValue());
+	}
+	return s;
+}
+
+inline std::vector<MObject> arrayHandleData(MArrayDataHandle &parentArrayDH, MStatus &stat) {
+	// copy all data MObjects in array - only valid for flat arrays
+	std::vector<MObject> result;
+	for (unsigned int i = 0; i < parentArrayDH.builder().elementCount(); i++) {
+		stat = jumpToElement(parentArrayDH, i);
+		result.push_back(MObject(parentArrayDH.outputValue().data()));
+	}
+	return result;
 }
 
 // converting between maya types and vectors

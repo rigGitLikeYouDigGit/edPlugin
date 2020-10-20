@@ -204,10 +204,10 @@ MStatus MemorySource::compute(
 	//return MS::kSuccess;
 		
 	// check if time is reset frame - reset to current values if so
-	if EQ(newTime, data.inputValue(aResetFrame).asFloat()) {
+	if EQ(newTime, data.inputValue(aResetFrame).asTime().as(MTime::k24FPS)) {
 		DEBUGS("memorySource time reset");
 
-		for (int i = 0; i < nFrames; i++) {
+		for (unsigned int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			jumpToElement(sourceFramesDH, i);
 		}
@@ -218,7 +218,8 @@ MStatus MemorySource::compute(
 		MPlug aDataPlug(thisMObject(), aData);
 
 		// reset all frame data
-		for (int i = 0; i < sourceFramesDH.elementCount(); i++) {
+		// for (int i = 0; i < sourceFramesDH.elementCount(); i++) {
+		for (unsigned int i = 0; i < nFrames; i++) {
 			s = aDataPlug.selectAncestorLogicalIndex(i, aFrameBuffer);
 			MDataHandle aDataDH = aDataPlug.constructHandle(data);
 			MArrayDataHandle aDataArrayDH(aDataDH, &s);
@@ -226,7 +227,7 @@ MStatus MemorySource::compute(
 			MArrayDataBuilder aDataArrayBuilder = aDataArrayDH.builder(&s);
 			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data arrayHandle builder extraction failed");
 
-			for (int n = 0; n < sourceInnerArrayDH.builder().elementCount(); n++) {
+			for (unsigned int n = 0; n < sourceInnerArrayDH.builder().elementCount(); n++) {
 				MDataHandle aResetDataDH = aDataArrayBuilder.addElement(n, &s);
 				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data add data entry failed");
 				s = jumpToElement(sourceInnerArrayDH, n);
@@ -253,11 +254,13 @@ MStatus MemorySource::compute(
 		//return MS::kSuccess;
 	}
 
+	unsigned int nDataElements = sourceInnerArrayDH.elementCount();
+
 	//data.setClean(plug);
 	//return MS::kSuccess;
 
-	DEBUGS("newTime " << newTime);
-	DEBUGS("prevTime" << prevTime);
+	/*DEBUGS("newTime " << newTime);
+	DEBUGS("prevTime" << prevTime);*/
 
 	// for some reason input time plug was never reading as dirty
 	if(!EQ( prevTime, newTime)){
@@ -268,30 +271,94 @@ MStatus MemorySource::compute(
 		float deltas[2] = { delta, delta };
 
 		// update delta array
-		for (int i = 0; i < nFrames; i++) {
+		for (unsigned int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			deltas[i % 2] = sourceDeltasDH.outputValue().asFloat();
 			sourceDeltasDH.outputValue().setFloat(deltas[!(i % 2)]);
 		}
 
+		mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
 
-		// update frame array
-		// MArrayDataHandle frameHandles[2] = { MArrayDataHandle handleA = sinkArrayDH, &sinkArrayDH };
-		/*SmallList<MArrayDataHandle> frameHandles;
-		frameHandles.push_back(sinkArrayDH);
-		frameHandles.push_back(sinkArrayDH);*/
-		MArrayDataHandle frameHandles[2] = { sinkArrayDH, sinkArrayDH };
 
-//		for (int i = 0; i < nFrames; i++) {
-//			jumpToElement(sourceFramesDH, i);
-//			frameHandles[i % 2] = sourceFramesDH.outputArrayValue();
-//			mirrorArrayDataHandle(frameHandles[i % 2 + 1], 
-//				sourceFramesDH.outputArrayValue());
-///*
-//			mirrorArrayDataHandle(sourceInnerArrayDH, sourceArrayDH);
-//			mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);*/
-//		}
+		std::vector<MArrayDataHandle> frameArrayHandles;
+		frameArrayHandles.push_back(sourceInnerArrayDH);
+		for (unsigned int i = 0; i < nFrames; i++) {
+			jumpToElement(sourceFramesDH, i);
+			frameArrayHandles.push_back(sourceFramesDH.outputArrayValue());
+		}
 
+		for (unsigned int i = 0; i < nFrames; i++) {
+			unsigned int frameIndex = nFrames - i - 1;
+			MPlug sourcePlug;
+			// check if we pull from prev entries or freshly copied innerData
+			if (frameIndex > 0) {
+				sourcePlug = MPlug(thisMObject(), aData);
+				sourcePlug.selectAncestorLogicalIndex(frameIndex - 1, aFrameBuffer);
+			}
+			else {
+				sourcePlug = MPlug(thisMObject(), aInnerData);
+			}
+
+			MPlug targetPlug(thisMObject(), aData);
+			targetPlug.selectAncestorLogicalIndex(frameIndex, aFrameBuffer);
+
+			for (unsigned int n = 0; n < nDataElements; n++) {
+				MPlug sourceLeafPlug = sourcePlug.elementByPhysicalIndex(n);
+				MPlug targetLeafPlug = targetPlug.elementByPhysicalIndex(n);
+
+				DEBUGS("\n sourcePlug " << sourceLeafPlug.info());
+				DEBUGS("targetPlug " << targetLeafPlug.info());
+
+				if (sourceLeafPlug.isNull()) {
+					DEBUGS("sourceLeafPlug is not valid, continuing");
+					continue;				}
+				if (targetLeafPlug.isNull()) {
+					DEBUGS("targetLeafPlug is not valid, continuing");
+					continue;
+				}
+				data.setClean(targetLeafPlug);
+				data.setClean(sourceLeafPlug);
+
+				/*MDataHandle sourceLeafDH = sourceLeafPlug.constructHandle(data);
+				MDataHandle targetLeafDH = targetLeafPlug.constructHandle(data);*/
+
+				/*MDataHandle sourceLeafDH = sourceLeafPlug.asMDataHandle(&s);
+				MCHECK(s, "could not retrieve sourceLeafDH from sourceLeafPlug");
+				MDataHandle targetLeafDH = targetLeafPlug.asMDataHandle(&s);
+				MCHECK(s, "could not retrieve targetLeafDH from targetLeafPlug");
+
+				s = targetLeafDH.copy(sourceLeafDH);
+				MCHECK(s, "failed to copy sourceLeafDH to targetLeafDH")
+				s = targetPlug.setMDataHandle(targetLeafDH);
+				MCHECK(s, "failed to set targetPlug to targetLeafDH")
+
+				targetPlug.destructHandle(targetLeafDH);
+				sourcePlug.destructHandle(sourceLeafDH);*/
+
+				/*targetLeafPlug.setMDataHandle(sourceLeafPlug.asMDataHandle());
+				data.setClean(targetLeafPlug);*/
+
+				//targetLeafPlug.setMDataHandle(sourceLeafPlug.asMDataHandle());
+				
+				/*data.outputValue(targetLeafPlug).copy(sourceLeafPlug.asMDataHandle());
+				data.setClean(targetLeafPlug);*/
+
+				data.outputValue(targetLeafPlug).setMObject(sourceLeafPlug.asMDataHandle().data());
+				
+
+				/*targetLeafPlug.setMObject(MObject(sourceLeafPlug.asMObject()));
+				data.setClean(targetLeafPlug);*/
+				//MDataHandle targetDH = targetLeafPlug.constructHandle();
+				//targetDH.setClean()
+
+				
+
+			}
+		}
+
+		data.setClean(aInnerData);
+		data.setClean(aFrameBuffer);
+		data.setClean(aData);
 
 		// add to increment
 		data.outputValue(aIncrement).setInt(data.outputValue(aIncrement).asInt() + 1);
