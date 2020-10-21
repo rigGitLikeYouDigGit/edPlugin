@@ -185,6 +185,10 @@ MStatus MemorySource::compute(
 	MArrayDataHandle sourceDeltasDH = data.outputArrayValue(aDeltas);
 
 
+	// retrieve vector from sink
+	std::vector<MObject> sinkData = sinkPtr->dataObjs;
+
+
 	// extract sink data
 	MDataHandle sinkDH;
 	s = getSinkData(sinkObj, sinkDH);
@@ -256,13 +260,10 @@ MStatus MemorySource::compute(
 
 	unsigned int nDataElements = sourceInnerArrayDH.elementCount();
 
-	//data.setClean(plug);
-	//return MS::kSuccess;
-
-	/*DEBUGS("newTime " << newTime);
-	DEBUGS("prevTime" << prevTime);*/
 
 	// for some reason input time plug was never reading as dirty
+	DEBUGS("prevTime " << prevTime << " newTime " << newTime);
+	//if(!EQ( prevTime, newTime)){
 	if(!EQ( prevTime, newTime)){
 		DEBUGS("memorySource time dirty");
 
@@ -289,20 +290,35 @@ MStatus MemorySource::compute(
 
 		for (unsigned int i = 0; i < nFrames; i++) {
 			unsigned int frameIndex = nFrames - i - 1;
-			MPlug sourcePlug;
-			// check if we pull from prev entries or freshly copied innerData
-			if (frameIndex > 0) {
-				sourcePlug = MPlug(thisMObject(), aData);
-				sourcePlug.selectAncestorLogicalIndex(frameIndex - 1, aFrameBuffer);
-			}
-			else {
-				sourcePlug = MPlug(thisMObject(), aInnerData);
-			}
+			//MPlug sourcePlug;
+			//// check if we pull from prev entries or freshly copied innerData
+			//if (frameIndex > 0) {
+			//	sourcePlug = MPlug(thisMObject(), aData);
+			//	sourcePlug.selectAncestorLogicalIndex(frameIndex - 1, aFrameBuffer);
+			//}
+			//else {
+			//	sourcePlug = MPlug(thisMObject(), aInnerData);
+			//}
 
-			MPlug targetPlug(thisMObject(), aData);
-			targetPlug.selectAncestorLogicalIndex(frameIndex, aFrameBuffer);
+			//MPlug targetPlug(thisMObject(), aData);
+			//targetPlug.selectAncestorLogicalIndex(frameIndex, aFrameBuffer);
 
 			for (unsigned int n = 0; n < nDataElements; n++) {
+
+				MPlug sourcePlug;
+				// check if we pull from prev entries or freshly copied innerData
+				if (frameIndex > 0) {
+					sourcePlug = MPlug(thisMObject(), aData);
+					sourcePlug.selectAncestorLogicalIndex(frameIndex - 1, aFrameBuffer);
+				}
+				else {
+					sourcePlug = MPlug(thisMObject(), aInnerData);
+				}
+
+				MPlug targetPlug(thisMObject(), aData);
+				targetPlug.selectAncestorLogicalIndex(frameIndex, aFrameBuffer);
+
+
 				MPlug sourceLeafPlug = sourcePlug.elementByPhysicalIndex(n);
 				MPlug targetLeafPlug = targetPlug.elementByPhysicalIndex(n);
 
@@ -316,7 +332,7 @@ MStatus MemorySource::compute(
 					DEBUGS("targetLeafPlug is not valid, continuing");
 					continue;
 				}
-				data.setClean(targetLeafPlug);
+				//data.setClean(targetLeafPlug);
 				data.setClean(sourceLeafPlug);
 
 				/*MDataHandle sourceLeafDH = sourceLeafPlug.constructHandle(data);
@@ -343,7 +359,18 @@ MStatus MemorySource::compute(
 				/*data.outputValue(targetLeafPlug).copy(sourceLeafPlug.asMDataHandle());
 				data.setClean(targetLeafPlug);*/
 
-				data.outputValue(targetLeafPlug).setMObject(sourceLeafPlug.asMDataHandle().data());
+				/*MPlug sourceTempPlug;
+				sourceTempPlug.setMObject(MObject(sourceLeafPlug.asMObject()));
+				data.outputValue(targetLeafPlug).setMObject(MObject(sourceTempPlug.asMObject()));*/
+
+
+				/*data.outputValue(targetLeafPlug).setMObject(MObject(sourceLeafPlug.asMDataHandle().data()));*/
+
+
+				data.outputValue(targetLeafPlug).setMObject(data.inputValue(sourceLeafPlug).data());
+				
+				
+				
 				
 
 				/*targetLeafPlug.setMObject(MObject(sourceLeafPlug.asMObject()));
@@ -363,13 +390,19 @@ MStatus MemorySource::compute(
 		// add to increment
 		data.outputValue(aIncrement).setInt(data.outputValue(aIncrement).asInt() + 1);
 
-	}
-	previousTime = newTime;
-	data.outputValue(aPrevTime).setMTime(newMTime);
+		previousTime = newTime;
+		data.outputValue(aPrevTime).setMTime(newMTime);
+		data.setClean(aTime);
+		data.setClean(aPrevTime);
 
-	// dirty sink plug
-	bool switchStatus = !data.outputValue(aSinkConnection).asBool();
-	data.outputValue(aSinkConnection).setBool(switchStatus);
+		// dirty sink plug
+		bool switchStatus = !data.outputValue(aSinkConnection).asBool();
+		data.outputValue(aSinkConnection).setBool(switchStatus);
+
+	}
+	
+
+	
 
 	data.setClean(plug);
 
@@ -384,6 +417,26 @@ MStatus MemorySource::getSinkData(MObject &sinkObj, MDataHandle &sinkDH) {
 	sinkDH = MDataHandle(sinkPlug.asMDataHandle());
 
 	return MStatus::kSuccess;
+}
+
+MemorySink * MemorySource::getSinkInstance(MObject &sinkObj, MStatus &s) {
+	// retrieve and cast full user-defined node for given MObject
+	// thanks Matt
+	MFnDependencyNode nodeFn(sinkObj);
+	
+	// retrieve MPxNode pointer
+	MPxNode *mpxPtr = nodeFn.userNode(&s);
+	//MCHECK(s, "failed to extract mpxNode pointer, object is invalid");
+
+	// black science
+	MemorySink * sinkPtr = dynamic_cast<MemorySink *>(mpxPtr);
+	if (sinkPtr == NULL) {
+		cerr << "failed dynamic cast to sink instance " << endl;
+		s = MS::kFailure;
+	}
+	s = MS::kSuccess;
+	return sinkPtr;
+
 }
 
 MStatus MemorySource::setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArrayDataHandle &sinkArrayDH) {
@@ -437,12 +490,15 @@ MStatus MemorySource::connectionBroken(
 void MemorySource::setSinkObj(MObject &obj) {
 	// sets internal sink reference
 	sinkObj = obj;
+	MStatus s;
+	sinkPtr = getSinkInstance(obj, s);
 	sinkConnected = true;
 }
 
 void MemorySource::clearSinkObj(MObject &obj) {
 	// is this enough to clear reference to connected node?
 	sinkObj = MObject::kNullObj;
+	sinkPtr = NULL;
 	sinkConnected = false;
 }
 
@@ -451,6 +507,7 @@ void* MemorySource::creator(){
 	MemorySource *newObj = new MemorySource;
 	newObj->sinkConnected = false;
 	newObj->sinkObj = MObject::kNullObj;
+	newObj->sinkPtr = NULL;
 	newObj->previousTime = 0.0;
     return newObj;
 

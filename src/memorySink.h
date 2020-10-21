@@ -25,6 +25,8 @@ public:
 	static MObject aData;
 	//static MObject aTime; // time not used on sink right now
 
+	// internal storage for data MObjects
+	std::vector<MObject> dataObjs;
 
 };
 #endif

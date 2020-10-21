@@ -8,6 +8,9 @@
 
 #include "memorySink.h"
 #include "memorySource.h"
+#include "lib/api.h"
+
+
 
 MTypeId MemorySink::kNODE_ID(0x00122C1A);
 MString MemorySink::kNODE_NAME( "memorySink" );
@@ -16,6 +19,7 @@ MString MemorySink::kNODE_NAME( "memorySink" );
 MObject MemorySink::aData;
 MObject MemorySink::aSourceConnection;
 
+using namespace ed;
 
 MStatus MemorySink::initialize()
 {
@@ -54,11 +58,28 @@ MStatus MemorySink::initialize()
 MStatus MemorySink::compute(
 				const MPlug& plug, MDataBlock& data) {
 
-	// data.setClean(plug);
+	MStatus s = MS::kSuccess;
+	if (data.isClean(aSourceConnection)) {
+		// source has not updated
+		// this break may not be correct
+		data.setClean(plug);
+		return MS::kSuccess;
+	}
+
 	DEBUGS("memorySink compute ");
 
-	data.setClean(plug);
+	dataObjs.clear();
 
+	// retrieve MObjects from array attribute, store in vector
+	MArrayDataHandle aDataArrayDH = data.inputArrayValue(aData);
+	for (int i = 0; i < aDataArrayDH.elementCount(); i++) {
+		s = jumpToElement(aDataArrayDH, i);
+		MCHECK(s, "failed jte in memory sink");
+		MObject obj = aDataArrayDH.inputValue().data();
+		dataObjs.push_back(obj);
+	}
+
+	data.setClean(plug);
     return MS::kSuccess;
 }
 

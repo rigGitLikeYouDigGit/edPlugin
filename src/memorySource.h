@@ -5,6 +5,7 @@
 
 #include "lib/api.h"
 #include "lib/containers.h"
+#include "memorySink.h"
 
 class MemorySource : public MPxNode {
     public:
@@ -24,6 +25,7 @@ class MemorySource : public MPxNode {
 		void setSinkObj(MObject &obj);
 		void clearSinkObj(MObject &obj);
 		MStatus getSinkData(MObject &sinkObj, MDataHandle &sinkDH);
+		MemorySink * getSinkInstance(MObject &sinkObj, MStatus &s);
 		MStatus setOutputSourceData(MArrayDataHandle &sourceArrayDH, MArrayDataHandle &sinkArrayDH);
 
 		virtual void postConstructor();
@@ -68,6 +70,10 @@ public:
 
 	// internal sink objects
 	MObject sinkObj;
+
+	// pointer to sink instance
+	MemorySink * sinkPtr;
+
 	// ToDo: refactor to use observing pointers
 	std::set<MObject> sinkObjs;
 	// check for disconnection
@@ -76,6 +82,8 @@ public:
 	// compare previous value
 	float previousTime;
     
+	// data arrays
+	std::vector<std::vector<MObject>> dataArrays;
 
 };
 
