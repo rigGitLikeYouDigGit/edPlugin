@@ -51,7 +51,73 @@ def testMemory():
 
 	# before reset frame, take starting positions from outside solve
 	# after, solve values take over
+
+	""" velocity verlet integration :
+	x2 = v * dt + 0.5 * a * dt * dt
+	v = a * dt
+	
+	position verlet
+	x1 = x2
+	x2 = x2 * 2 - x0 + a * dt * dt
+	x0 = x1
+	
+	"""
+	ctl = cmds.createNode("transform", n="CTL_GRP")
+	cmds.addAttr(ctl, ln="exponent", dv=2)
+	# how many data elements will each item pass through the simulation?
+	nDataElements = 2
 	for i in range(3):
+
+		posPlug = "data[{}]".format(nDataElements * i)
+		inPosPlug = source + ".frame[0]." + posPlug
+
+		vPlug = "data[{}]".format(nDataElements * i + 1)
+
+		# get distances to other bodies
+		nSum = 0
+		forceSum = cmds.createNode("plusMinusAverage")
+		cmds.setAttr(forceSum + ".operation", 3) # average
+		for n in range(3):
+			if i == n:
+				continue
+
+			# vector to body
+			vector = cmds.createNode("plusMinusAverage")
+			cmds.setAttr(vector + ".operation", 2) # subtract
+			con(source + ".frame[0].data[{}]".format(nDataElements * n),
+			    vector + ".input3D[0]")
+			con(inPosPlug, vector + ".input3D[1]")
+
+			# distance
+			distance = cmds.createNode("distanceBetween")
+			con(vector + ".output3D", distance + ".point1")
+
+			# squared
+			dSquared = cmds.createNode("multiplyDivide")
+			cmds.setAttr(dSquared + ".operation", 3) # power
+			con(ctl + ".exponent", dSquared + ".input2X")
+			con( distance + ".distance", dSquared + ".input1X")
+
+			# normalise vector
+			norm = cmds.createNode("vectorProduct")
+			cmds.setAttr(norm + ".operation", 0)
+			cmds.setAttr(norm + ".normalizeOutput", 1)
+			con(dSquared + ".output", norm + ".input1")
+
+			# divide force
+			div = cmds.createNode("multiplyDivide")
+			cmds.setAttr(div + ".operation", 2) # divide
+			con(norm + ".output", div + ".input1")
+			for ax in "XYZ":
+				con(dSquared + ".outputX", div + ".input2" + ax)
+
+			# connect to sum
+			con(div + ".output", forceSum + ".input3D[{}]".format(nSum))
+			nSum += 1
+
+
+		# integrate
+
 
 		# random start for now
 		cmds.setAttr(startTfs[i] + ".translateX", random.random() * 5)
@@ -61,11 +127,14 @@ def testMemory():
 		posSwitch = cmds.createNode("choice")
 		con(cond + ".outColorR", posSwitch + ".selector")
 		con(startTfs[i] + ".translate", posSwitch + ".input[0]")
-		con(posSwitch + ".output", sink + ".data[{}]".format(i))
-
+		con(posSwitch + ".output",
+		    sink + ".data[{}]".format(i * nDataElements))
+		# random start velocity too?
+		# con(posSwitch + ".output",
+		#     sink + ".data[{}]".format(i * nDataElements + 1))
 		# output
 
-		con(posSwitch + ".output", orbs[i] + ".translate")
+		con(sink + ".data[{}]".format(i), orbs[i] + ".translate")
 
 		# test
 		sourcePlugs = [source + ".frame[{}].data[{}]".format(

@@ -59,25 +59,30 @@ MStatus MemorySink::compute(
 				const MPlug& plug, MDataBlock& data) {
 
 	MStatus s = MS::kSuccess;
-	if (data.isClean(aSourceConnection)) {
-		// source has not updated
-		// this break may not be correct
-		data.setClean(plug);
-		return MS::kSuccess;
-	}
+	//if (data.isClean(aSourceConnection)) {
+	//	// source has not updated
+	//	// this break may not be correct
+	//	data.setClean(plug);
+	//	return MS::kSuccess;
+	//}
 
 	DEBUGS("memorySink compute ");
 
 	dataObjs.clear();
 
+	
+
 	// retrieve MObjects from array attribute, store in vector
-	MArrayDataHandle aDataArrayDH = data.inputArrayValue(aData);
+	// MArrayDataHandle aDataArrayDH = data.inputArrayValue(aData);
+	MArrayDataHandle aDataArrayDH = data.outputArrayValue(aData);
+	DEBUGS(" len aDataArrayDH " << aDataArrayDH.elementCount());
 	for (int i = 0; i < aDataArrayDH.elementCount(); i++) {
 		s = jumpToElement(aDataArrayDH, i);
 		MCHECK(s, "failed jte in memory sink");
-		MObject obj = aDataArrayDH.inputValue().data();
+		MObject obj = MObject(aDataArrayDH.inputValue().data());
 		dataObjs.push_back(obj);
 	}
+	DEBUGS("dataObjs length" << int(dataObjs.size()));
 
 	data.setClean(plug);
     return MS::kSuccess;

@@ -187,7 +187,9 @@ MStatus MemorySource::compute(
 
 	// retrieve vector from sink
 	std::vector<MObject> sinkData = sinkPtr->dataObjs;
+	unsigned int nDataElements = static_cast<int>(sinkData.size());
 
+	DEBUGS("nDataElements " << nDataElements);
 
 	// extract sink data
 	MDataHandle sinkDH;
@@ -210,16 +212,27 @@ MStatus MemorySource::compute(
 	// check if time is reset frame - reset to current values if so
 	if EQ(newTime, data.inputValue(aResetFrame).asTime().as(MTime::k24FPS)) {
 		DEBUGS("memorySource time reset");
+		/*
+		data.setClean(aFrameBuffer);
+		data.setClean(aData);
+		data.setClean(aDeltas);
+		data.setClean(aIncrement);
+		data.setClean(plug);
+		*/
+
+		// reset vectors
+		dataArrays.clear();
 
 		for (unsigned int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			jumpToElement(sourceFramesDH, i);
-		}
 
-		mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
+			dataArrays.push_back(std::vector<MObject>(sinkData));
+		}
 
 		// look up data through plug since it was crashing otherwise
 		MPlug aDataPlug(thisMObject(), aData);
+
 
 		// reset all frame data
 		// for (int i = 0; i < sourceFramesDH.elementCount(); i++) {
@@ -231,12 +244,10 @@ MStatus MemorySource::compute(
 			MArrayDataBuilder aDataArrayBuilder = aDataArrayDH.builder(&s);
 			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data arrayHandle builder extraction failed");
 
-			for (unsigned int n = 0; n < sourceInnerArrayDH.builder().elementCount(); n++) {
+			for (unsigned int n = 0; n < nDataElements; n++) {
 				MDataHandle aResetDataDH = aDataArrayBuilder.addElement(n, &s);
 				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data add data entry failed");
-				s = jumpToElement(sourceInnerArrayDH, n);
-				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data inner data jte failed");
-				s = aResetDataDH.copy(sourceInnerArrayDH.outputValue());
+				s = aResetDataDH.setMObject( MObject(dataArrays[i][n]));
 				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data inner data entry " << n << "copy failed");
 			}
 			s = aDataArrayDH.set(aDataArrayBuilder);
@@ -250,15 +261,23 @@ MStatus MemorySource::compute(
 			deltaDH.setFloat(0.0);
 		}
 		
-
 		// reset counter
 		data.outputValue(aIncrement).setInt(0);
 
-		//data.setClean(plug);
-		//return MS::kSuccess;
+		// set plugs clean and return
+		vector<MObject> driven = { aFrameBuffer, aInnerData, aSinkConnection, aIncrement,
+	aDeltas, aPrevTime,
+	aData,
+		};
+		data.setClean(aFrameBuffer);
+		data.setClean(aData);
+		data.setClean(aDeltas);
+		data.setClean(aIncrement);
+		data.setClean(plug);
+		return MS::kSuccess;
 	}
 
-	unsigned int nDataElements = sourceInnerArrayDH.elementCount();
+	
 
 
 	// for some reason input time plug was never reading as dirty
@@ -278,112 +297,36 @@ MStatus MemorySource::compute(
 			sourceDeltasDH.outputValue().setFloat(deltas[!(i % 2)]);
 		}
 
-		mirrorArrayDataHandle(sinkArrayDH, sourceInnerArrayDH);
+		// update data arrays
+		dataArrays.insert(dataArrays.begin(), sinkData);
+		dataArrays.pop_back();
 
 
-		std::vector<MArrayDataHandle> frameArrayHandles;
-		frameArrayHandles.push_back(sourceInnerArrayDH);
 		for (unsigned int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceFramesDH, i);
-			frameArrayHandles.push_back(sourceFramesDH.outputArrayValue());
-		}
+			MDataHandle frameDH = sourceFramesDH.outputValue();
+			MArrayDataHandle frameArrayDH(frameDH);
 
-		for (unsigned int i = 0; i < nFrames; i++) {
-			unsigned int frameIndex = nFrames - i - 1;
-			//MPlug sourcePlug;
-			//// check if we pull from prev entries or freshly copied innerData
-			//if (frameIndex > 0) {
-			//	sourcePlug = MPlug(thisMObject(), aData);
-			//	sourcePlug.selectAncestorLogicalIndex(frameIndex - 1, aFrameBuffer);
-			//}
-			//else {
-			//	sourcePlug = MPlug(thisMObject(), aInnerData);
-			//}
+			
+			MPlug targetPlug(thisMObject(), aData);
+			s = targetPlug.selectAncestorLogicalIndex(i, aFrameBuffer);
+			MCHECK(s, "failed to set parent index for data plug")
 
-			//MPlug targetPlug(thisMObject(), aData);
-			//targetPlug.selectAncestorLogicalIndex(frameIndex, aFrameBuffer);
 
 			for (unsigned int n = 0; n < nDataElements; n++) {
-
-				MPlug sourcePlug;
-				// check if we pull from prev entries or freshly copied innerData
-				if (frameIndex > 0) {
-					sourcePlug = MPlug(thisMObject(), aData);
-					sourcePlug.selectAncestorLogicalIndex(frameIndex - 1, aFrameBuffer);
-				}
-				else {
-					sourcePlug = MPlug(thisMObject(), aInnerData);
-				}
-
-				MPlug targetPlug(thisMObject(), aData);
-				targetPlug.selectAncestorLogicalIndex(frameIndex, aFrameBuffer);
-
-
-				MPlug sourceLeafPlug = sourcePlug.elementByPhysicalIndex(n);
 				MPlug targetLeafPlug = targetPlug.elementByPhysicalIndex(n);
 
-				DEBUGS("\n sourcePlug " << sourceLeafPlug.info());
 				DEBUGS("targetPlug " << targetLeafPlug.info());
 
-				if (sourceLeafPlug.isNull()) {
-					DEBUGS("sourceLeafPlug is not valid, continuing");
-					continue;				}
 				if (targetLeafPlug.isNull()) {
 					DEBUGS("targetLeafPlug is not valid, continuing");
 					continue;
 				}
-				//data.setClean(targetLeafPlug);
-				data.setClean(sourceLeafPlug);
 
-				/*MDataHandle sourceLeafDH = sourceLeafPlug.constructHandle(data);
-				MDataHandle targetLeafDH = targetLeafPlug.constructHandle(data);*/
-
-				/*MDataHandle sourceLeafDH = sourceLeafPlug.asMDataHandle(&s);
-				MCHECK(s, "could not retrieve sourceLeafDH from sourceLeafPlug");
-				MDataHandle targetLeafDH = targetLeafPlug.asMDataHandle(&s);
-				MCHECK(s, "could not retrieve targetLeafDH from targetLeafPlug");
-
-				s = targetLeafDH.copy(sourceLeafDH);
-				MCHECK(s, "failed to copy sourceLeafDH to targetLeafDH")
-				s = targetPlug.setMDataHandle(targetLeafDH);
-				MCHECK(s, "failed to set targetPlug to targetLeafDH")
-
-				targetPlug.destructHandle(targetLeafDH);
-				sourcePlug.destructHandle(sourceLeafDH);*/
-
-				/*targetLeafPlug.setMDataHandle(sourceLeafPlug.asMDataHandle());
-				data.setClean(targetLeafPlug);*/
-
-				//targetLeafPlug.setMDataHandle(sourceLeafPlug.asMDataHandle());
-				
-				/*data.outputValue(targetLeafPlug).copy(sourceLeafPlug.asMDataHandle());
-				data.setClean(targetLeafPlug);*/
-
-				/*MPlug sourceTempPlug;
-				sourceTempPlug.setMObject(MObject(sourceLeafPlug.asMObject()));
-				data.outputValue(targetLeafPlug).setMObject(MObject(sourceTempPlug.asMObject()));*/
-
-
-				/*data.outputValue(targetLeafPlug).setMObject(MObject(sourceLeafPlug.asMDataHandle().data()));*/
-
-
-				data.outputValue(targetLeafPlug).setMObject(data.inputValue(sourceLeafPlug).data());
-				
-				
-				
-				
-
-				/*targetLeafPlug.setMObject(MObject(sourceLeafPlug.asMObject()));
-				data.setClean(targetLeafPlug);*/
-				//MDataHandle targetDH = targetLeafPlug.constructHandle();
-				//targetDH.setClean()
-
-				
-
+				targetLeafPlug.setMObject(dataArrays[i][n]);
 			}
 		}
 
-		data.setClean(aInnerData);
 		data.setClean(aFrameBuffer);
 		data.setClean(aData);
 
