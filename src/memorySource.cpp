@@ -128,7 +128,7 @@ MStatus MemorySource::initialize()
 	
 
 	// array of time deltas
-	aDeltas = nFn.create("deltas", "deltas", MFnNumericData::kFloat);
+	aDeltas = nFn.create("delta", "delta", MFnNumericData::kFloat);
 	nFn.setWritable(false);
 	nFn.setReadable(true);
 	nFn.setArray(true);
@@ -320,6 +320,10 @@ MStatus MemorySource::compute(
 
 				if (targetLeafPlug.isNull()) {
 					DEBUGS("targetLeafPlug is not valid, continuing");
+					continue;
+				}
+				if (dataArrays[i][n].isNull()) {
+					DEBUGS("Mobject is null, continuing");
 					continue;
 				}
 

@@ -52,18 +52,10 @@ def testMemory():
 	# before reset frame, take starting positions from outside solve
 	# after, solve values take over
 
-	""" velocity verlet integration :
-	x2 = v * dt + 0.5 * a * dt * dt
-	v = a * dt
-	
-	position verlet
-	x1 = x2
-	x2 = x2 * 2 - x0 + a * dt * dt
-	x0 = x1
-	
-	"""
+
 	ctl = cmds.createNode("transform", n="CTL_GRP")
 	cmds.addAttr(ctl, ln="exponent", dv=2)
+	cmds.addAttr(ctl, ln="timeScale", dv=0.2)
 	# how many data elements will each item pass through the simulation?
 	nDataElements = 2
 	for i in range(3):
@@ -75,21 +67,29 @@ def testMemory():
 
 		# get distances to other bodies
 		nSum = 0
-		forceSum = cmds.createNode("plusMinusAverage")
-		cmds.setAttr(forceSum + ".operation", 3) # average
+		forceSum = cmds.createNode("plusMinusAverage", n="forceSum")
+		#cmds.setAttr(forceSum + ".operation", 3) # average
+
+		forceNegate = cmds.createNode("multiplyDivide", n="forceNegate")
+		for ax in "XYZ":
+			cmds.setAttr(forceNegate + ".input1" + ax, 3)
+		cmds.connectAttr(forceSum + ".output3D", forceNegate + ".input2")
+		forceOutPlug = forceNegate + ".output"
+
 		for n in range(3):
 			if i == n:
 				continue
 
 			# vector to body
-			vector = cmds.createNode("plusMinusAverage")
+			vector = cmds.createNode("plusMinusAverage",
+			                         n="vec{}to{}".format(i, n))
 			cmds.setAttr(vector + ".operation", 2) # subtract
 			con(source + ".frame[0].data[{}]".format(nDataElements * n),
 			    vector + ".input3D[0]")
 			con(inPosPlug, vector + ".input3D[1]")
 
 			# distance
-			distance = cmds.createNode("distanceBetween")
+			distance = cmds.createNode("distanceBetween", n="vecLength")
 			con(vector + ".output3D", distance + ".point1")
 
 			# squared
@@ -102,7 +102,7 @@ def testMemory():
 			norm = cmds.createNode("vectorProduct")
 			cmds.setAttr(norm + ".operation", 0)
 			cmds.setAttr(norm + ".normalizeOutput", 1)
-			con(dSquared + ".output", norm + ".input1")
+			con(vector + ".output3D", norm + ".input1")
 
 			# divide force
 			div = cmds.createNode("multiplyDivide")
@@ -117,6 +117,66 @@ def testMemory():
 
 
 		# integrate
+		""" velocity verlet integration :
+		x2 += v * dt + 0.5 * a * dt * dt
+		v += a * dt
+
+		position verlet
+		x1 = x2
+		x2 = x2 * 2 - x0 + a * dt * dt
+		x0 = x1
+		"""
+
+		dt = cmds.createNode("multDoubleLinear", n="dtMdl")
+		cmds.connectAttr(ctl + ".timeScale", dt + ".input1")
+		cmds.connectAttr(source + ".delta[0]", dt + ".input2")
+		dtPlug = dt + ".output"
+
+		vTMult = cmds.createNode("multiplyDivide", n="vTMult")
+		con(source + ".frame[0].data[{}]".format(nDataElements * i + 1),
+		    vTMult + ".input1")
+		for ax in "XYZ":
+			con(dtPlug, vTMult + ".input2" + ax)
+
+		tSquared = cmds.createNode("multDoubleLinear", n="tSquared")
+		con(dtPlug, tSquared + ".input1")
+		con(dtPlug, tSquared + ".input2")
+
+		halfMult = cmds.createNode("multDoubleLinear")
+		con(tSquared + ".output", halfMult + ".input1")
+		cmds.setAttr(halfMult + ".input2", 0.5)
+
+		aPosMult = cmds.createNode("multiplyDivide", n="aPosMult")
+		con( forceOutPlug, aPosMult + ".input1")
+		for ax in "XYZ":
+			con(halfMult + ".output", aPosMult + ".input2" + ax)
+
+		aPosAdd = cmds.createNode("plusMinusAverage", n="aPosAdd")
+		con(vTMult + ".output", aPosAdd + ".input3D[0]")
+		con(aPosMult + ".output", aPosAdd + ".input3D[1]")
+
+		prevPosAdd = cmds.createNode("plusMinusAverage", n="prevPosAdd")
+		con(source + ".frame[0].data[{}]".format(i * nDataElements),
+		    prevPosAdd + ".input3D[0]")
+		con(aPosAdd + ".output3D", prevPosAdd + ".input3D[1]")
+
+		#posOutPlug = aPosAdd + ".output3D"
+		posOutPlug = prevPosAdd + ".output3D"
+
+		# velocity
+		sourceVPlug = source + ".frame[0].data[{}]".format(i * nDataElements + 1)
+		aVMult = cmds.createNode("multiplyDivide", n="aVMult")
+		con(sourceVPlug, aVMult + ".input1")
+		for ax in "XYZ":
+			con(dtPlug, aVMult + ".input2" + ax)
+
+		prevVAdd = cmds.createNode("plusMinusAverage", n="prevVAdd")
+		con(sourceVPlug, prevVAdd + ".input3D[0]")
+		#con(aVMult + ".output", prevVAdd + ".input3D[1]")
+
+		#vOutPlug = aVMult + ".output"
+		vOutPlug = prevVAdd + ".output3D"
+
 
 
 		# random start for now
@@ -124,28 +184,28 @@ def testMemory():
 		cmds.setAttr(startTfs[i] + ".translateY", random.random() * 5)
 
 		# position switch
-		posSwitch = cmds.createNode("choice")
+		posSwitch = cmds.createNode("choice", n="pos{}_switch".format(i))
 		con(cond + ".outColorR", posSwitch + ".selector")
 		con(startTfs[i] + ".translate", posSwitch + ".input[0]")
 		con(posSwitch + ".output",
 		    sink + ".data[{}]".format(i * nDataElements))
+		con( posOutPlug, posSwitch + ".input[1]")
+
+		# velocity switch
+		vSwitch = cmds.createNode("choice", n="v{}_switch".format(i))
+		con(cond + ".outColorR", vSwitch + ".selector")
+		#con(startTfs[i] + ".translate", vSwitch + ".input[0]")
+		vSource = cmds.createNode("transform", n="vSource")
+		con(vSource + ".translate", vSwitch + ".input[0]")
+		con( vOutPlug, vSwitch + ".input[1]")
+		con(vSwitch + ".output",
+		    sink + ".data[{}]".format(i * nDataElements + 1))
+
+		con(sink + ".data[{}]".format(i * nDataElements), orbs[i] + ".translate")
+
+
+
 		# random start velocity too?
-		# con(posSwitch + ".output",
-		#     sink + ".data[{}]".format(i * nDataElements + 1))
-		# output
-
-		con(sink + ".data[{}]".format(i), orbs[i] + ".translate")
-
-		# test
-		sourcePlugs = [source + ".frame[{}].data[{}]".format(
-			n, i) for n in range(3)]
-		add = cmds.createNode("plusMinusAverage")
-		con(sourcePlugs[0], add + ".input3D[0]")
-		con(sourcePlugs[1], add + ".input3D[1]")
-		con(add + ".output3D", posSwitch + ".input[1]")
-
-
-
 
 
 	# stable solution first
