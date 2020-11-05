@@ -155,8 +155,6 @@ MStatus MemorySource::initialize()
 
 	setAttributesAffect<MemorySource>(drivers, driven);
 
-	attributeAffects(aInnerData, aData);
-
     return MStatus::kSuccess;
 }
 
@@ -172,11 +170,6 @@ MStatus MemorySource::compute(
 		data.setClean(plug);
 		return MS::kSuccess;
 	}
-/*
-	data.setClean(plug);
-	return MS::kSuccess;*/
-	//DEBUGS("prevTime" << previousTime);
-
 
 	// get source data handles
 	MArrayDataHandle sourceFramesDH = data.outputArrayValue(aFrameBuffer);
@@ -406,8 +399,6 @@ MStatus MemorySource::connectionMade(
 	if (plug.attribute() != aSinkConnection) {
 		return MPxNode::connectionMade(plug, otherPlug, asSrc);
 	}
-
-	//DEBUGS("connection to sink plug");
 
 	if (otherPlug.attribute() == MemorySink::aSourceConnection) {
 		if (sinkConnected) {

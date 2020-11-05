@@ -168,7 +168,7 @@ namespace ed {
 			return offsets[ 2 * entryIndex + 1];
 		}
 
-		SmallList<T> entry(int entryIndex) {
+		inline SmallList<T> entry(int entryIndex) {
 			int startIndex = offsets[entryIndex];
 			int length = entryLength(entryIndex);
 			SmallList<T> result;
@@ -177,6 +177,10 @@ namespace ed {
 				result.push_back(values[startIndex + i]);
 			}
 			return result;
+		}
+
+		SmallList<T>& operator[](int index) {
+			return entry(index);
 		}
 	};
 
