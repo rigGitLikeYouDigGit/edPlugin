@@ -62,6 +62,7 @@ public:
 	static MObject aInPoints;
 		static MObject aInParam;
 		static MObject aInPosition;
+		static MObject aPointMode;
 	
 
 	static MObject aFrameResolution;

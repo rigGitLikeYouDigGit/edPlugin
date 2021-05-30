@@ -84,7 +84,7 @@ MStatus MemorySource::initialize()
 	tFn.setReadable(true);
 	tFn.setWritable(true);
 
-	// attribute used to update cell - time is most convenient
+	// previous time value, stored to figure out timestep
 	aPrevTime = uFn.create("prevTime", "prevTime", MFnUnitAttribute::kTime, 0.0);
 	tFn.setReadable(true);
 

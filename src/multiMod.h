@@ -8,13 +8,29 @@
 
 #include "lib/api.h"
 #include "lib/containers.h"
+#include "lib/topo.h"
+#include "lib/mayaTopo.h"
+#include "lib/edMaths.h"
 
-#define EPS 0.0001
+struct MultiModParametres {
+	MMatrixArray deltaMats;
+	MMatrixArray captureMats;
+	/*std::vector<float> captureRadii;
+	std::vector<float> weightValues;*/
+	MFloatArray captureRadii;
+	MFloatArray weightValues;
+	ed::SmallList<MRampAttribute>captureRamps;
+	ed::SmallList<MFloatArray>handlePaintedWeights;
+	
+	// global parametres
+	MFloatArray globalWeights;
+	float envelope;
 
-#define EQ(a, b) \
-	(abs(a - b) < EPS)\
+	// function pointer to execute on positions
+	float *fnPtr = nullptr;
+};
 
-class MultiMod : public MPxNode {
+class MultiMod : public MPxDeformerNode {
 	public:
 		MultiMod();
 		virtual ~MultiMod();
@@ -22,12 +38,23 @@ class MultiMod : public MPxNode {
 		virtual MStatus compute(
 			const MPlug& plug, MDataBlock& data);
 
+		virtual int gatherParams( MDataBlock& data);
+
+		// deform functions
+		virtual int deformGeo(MultiModParametres &params,
+			ed::HalfEdgeMesh &hedgeMesh, int meshIndex);
+
+		virtual int deformPoint(MultiModParametres &params,
+			ed::HalfEdgeMesh &hedgeMesh,
+			//const float *deltaPositions, 
+			/*float * deltaPositions,
+			int nPoints,*/
+			std::vector<float> &deltaPositions,
+			int index);
+
 		static void* creator();
 		static MStatus initialize();
 		virtual void postConstructor();
-
-		/*MTypeId kNODE_ID(0x00122C1C);
-		MString kNODE_NAME("curveFrame");*/
 
 
 public:
@@ -36,27 +63,35 @@ public:
 		volume, surface
 	};
 	enum CombinationModes {
-		mean, sum, max, smoothMax, min, smoothMin
+		mean, sum, max, smoothMax, 
 	};
+
+
+
+	ed::SmallList<ed::HalfEdgeMesh> hedgeMeshes;
+	MultiModParametres params;
 
 public:
 	static MTypeId kNODE_ID;
 	static MString kNODE_NAME;
 
 	// attribute MObjects
-	static MObject aInputMesh;
+	// static MObject aInMesh;
 
 	static MObject aHandles;
-		static MObject aMatrix;
-		static MObject aRefMatrix;
-		static MObject aFalloff;
+		static MObject aMat;
+		static MObject aCaptureMat;
+		static MObject aFalloffRamp;
 		static MObject aFalloffMode;
 		static MObject aFalloffRadius;
-		static MObject aWeights;
+		static MObject aWeightArray;
+		static MObject aWeight;
 	static MObject aCombinationMode;
-	static MObject aMasterWeights;
+	static MObject aCombinationSmoothness;
 
-	static MObject aOutputMesh;
+	static MObject aWeights;
+
+	//static MObject aOutMesh;
 
 		
 

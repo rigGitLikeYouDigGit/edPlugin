@@ -14,6 +14,7 @@ register all plugins
 #include "memorySink.h"
 //#include "directDeltaMush.h"
 #include "curveFrame.h"
+#include "multiMod.h"
 
 // END PROCEDURAL CONTROL INCLUDE
 
@@ -101,6 +102,7 @@ MStatus initializePlugin( MObject obj ){
     // BEGIN PROCEDURAL CONTROL REGISTER
     status = REGISTER_NODE(MeshToBuffers);
 	status = REGISTER_DEFORMER(UberDeformer);
+	status = REGISTER_DEFORMER(MultiMod);
 	status = REGISTER_NODE(DeformerNotion);
 	status = REGISTER_NODE(MemorySource);
 	status = REGISTER_NODE(MemorySink);
@@ -126,6 +128,7 @@ MStatus uninitializePlugin( MObject obj ){
 	status = DEREGISTER_NODE(MemorySource);
 	status = DEREGISTER_NODE(MemorySink);
 	status = DEREGISTER_NODE(CurveFrame);
+	status = DEREGISTER_NODE(MultiMod);
 	//status = DEREGISTER_NODE(DirectDeltaMush);
 	//status = fnPlugin.deregisterNode(RefDDM::kNODE_ID);
     // END PROCEDURAL CONTROL DEREGISTER

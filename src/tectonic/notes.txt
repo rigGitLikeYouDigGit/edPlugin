@@ -1,0 +1,84 @@
+
+
+notes on any maths stuff I learn from doing this
+
+
+Matrix Trace - sum of diagonal entries in matrix
+ - in identity mat, trace is sum of the matrix dimension (obviously)
+ - trace of matrix product is the same as
+	sum of piecewise products of trace entries
+ - trace is equal to sum of eigenvalues
+ - mean of trace entries equal to mean of evalues (3b1b)
+
+Determinant is basically cheat code
+ - equal to product of eigen values
+
+Kronecker product - product of MatA(x, y) and MatB(n, m), yields gigantic matrix M(x * n, y * m) - entry M(1, 1) = MatA[1, 1] * MatB.
+ - Each entry is equivalent to entire matrix B multiplied by A entry.
+
+Idempotent matrix - a matrix which when multiplied by itself, yields itself.
+ - Eigenvalues are always 0 or 1
+
+Nilpotent matrix - matrix * matrix = 0
+
+eigenvalues
+
+for square matrix, determinant = ad - bc
+Eigen values are lambda values added to diagonal to force determinant
+to 0,
+[3, 4,                       [3 - L, 4,   ]      
+ 2, 1], det = 3 - 8 = -5      2,    1 - L ],
+
+
+ det = (3 - L)(1 - L) - 5
+ = 3 + L^2 - 4L - 5
+ = L^2 - 4L - 2 // characteristic polynomial
+
+ roots of this are eigen values - solve using quad formula
+
+ OR
+ L1L2 = -5 // determinant
+ L1 + L2 = 4 // trace sum
+ L1 = -1, L2 = 5 // or other way round
+
+ 3b1b shows easier method from mean
+
+ trace / 2 = 2
+ (L1 + L2) / 2 = 2
+ L1 = (2 - d) // equal displacement for each
+ L2 = (2 + d)
+
+ -5 = 4 - d^2 // product and determinant
+ -9 = -d^2
+ 3 = d
+ L1 = 2 - 3 = -1
+ L2 = 2 + 5 = 5
+
+ for product p, mean m, distance d:
+ d^2 = m^2 - p
+ so where 2 values are linked by mean and product,
+ v1, v2 = m +- root( m^2 - p)
+
+ m being the mean of the trace, and p being determinant
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+

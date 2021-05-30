@@ -10,11 +10,11 @@
 
 
 using namespace ed;
+using namespace std;
 
 MTypeId MeshToBuffers::kNODE_ID(0x00122C08);
 MString MeshToBuffers::kNODE_NAME( "meshToBuffers" );
 
-MObject MeshToBuffers::aTest;
 MObject MeshToBuffers::aInMesh;
 MObject MeshToBuffers::aPointPositions;
 MObject MeshToBuffers::aFaceOffsets;
@@ -27,76 +27,77 @@ MObject MeshToBuffers::aUvCoords;
 // connects actually pointless with constant vertices per face
 MObject MeshToBuffers::aBind;
 
+MObject MeshToBuffers::aPointVectors;
+MObject MeshToBuffers::aFaceVectors;
+MObject MeshToBuffers::aPointNormalVectors;
+MObject MeshToBuffers::aFaceNormalVectors;
+
+MObject MeshToBuffers::aHedgeMesh;
+
 MStatus MeshToBuffers::initialize()
 {
     // initialise attributes
-    MFnTypedAttribute tAttr;
-    MFnNumericAttribute nAttr;
+    MFnTypedAttribute tFn;
+    MFnNumericAttribute nFn;
+	//MFnEnumAttribute fn;
+
 
     // main inputs
-    aInMesh = tAttr.create("inMesh", "inMesh", MFnData::kMesh);
-    tAttr.setReadable(true);
-    tAttr.setWritable(true);
-    addAttribute(aInMesh);
+    aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh);
+    tFn.setReadable(true);
+    tFn.setWritable(true);
+    //addAttribute(aInMesh);
 
     // outputs
-	aFaceConnects = tAttr.create("faceConnects", "faceConnects", MFnData::kIntArray);
-	addAttribute(aFaceConnects);
+	aFaceConnects = tFn.create("faceConnects", "faceConnects", MFnData::kIntArray);
+	//addAttribute(aFaceConnects);
 
-    aFaceOffsets = tAttr.create("faceOffsets", "faceOffsets", MFnData::kIntArray);
-    addAttribute( aFaceOffsets );
-
-	//aFaceCentres = tAttr.create("faceCentres", "faceCentres", MFnData::kFloatArray);
-	//addAttribute(aFaceCentres ); // more efficient to find online
+    aFaceOffsets = tFn.create("faceOffsets", "faceOffsets", MFnData::kIntArray);
+    //addAttribute( aFaceOffsets );
 
 
-    aPointPositions = tAttr.create("pointPositions", "pointPositions", MFnData::kFloatArray);
-    addAttribute( aPointPositions );
+    aPointPositions = tFn.create("pointPositions", "pointPositions", MFnData::kFloatArray);
+    //addAttribute( aPointPositions );
 
-	aPointConnects = tAttr.create("pointConnects", "pointConnects", MFnData::kIntArray);
-	addAttribute(aPointConnects);
+	aPointConnects = tFn.create("pointConnects", "pointConnects", MFnData::kIntArray);
+	//addAttribute(aPointConnects);
 
-	aPointOffsets = tAttr.create("pointOffsets", "pointOffsets", MFnData::kIntArray);
-	addAttribute(aPointOffsets);
+	aPointOffsets = tFn.create("pointOffsets", "pointOffsets", MFnData::kIntArray);
+	//addAttribute(aPointOffsets);
 
-	aNormals = tAttr.create("normals", "normals", MFnData::kFloatArray);
-	addAttribute(aNormals);
+	aNormals = tFn.create("normals", "normals", MFnData::kFloatArray);
+	//addAttribute(aNormals);
 
 	// uv buffers are arrays, one for each uv set of mesh
-	aUvCoords = tAttr.create("uvCoords", "uvCoords", MFnData::kFloatArray);
-	tAttr.setArray(true);
-	tAttr.setUsesArrayDataBuilder(true);
-	addAttribute(aUvCoords);
+	aUvCoords = tFn.create("uvCoords", "uvCoords", MFnData::kFloatArray);
+	tFn.setArray(true);
+	tFn.setUsesArrayDataBuilder(true);
+	//addAttribute(aUvCoords);
 
 
     // bind
-    // aBind = makeBindAttr(); // gives random errors
-	MFnEnumAttribute fn;
-	aBind = fn.create("bind", "bind", 1);
-	fn.addField("off", 0);
-	fn.addField("bind", 1);
-	fn.addField("bound", 2);
-	fn.addField("live", 3);
-	fn.setKeyable(true);
-	fn.setHidden(false);
-    addAttribute( aBind );
+	/*aBind = makeBindAttr("bind");*/
+	aBind = makeEnumAttr<BindState>("bind");
 
-    MStatus status;
-	attributeAffects(aBind, aPointPositions);
-	attributeAffects(aBind, aPointConnects);
-	attributeAffects(aBind, aFaceOffsets);
+	// vector values
+	aPointVectors = nFn.create("pointVectors", "pointVectors",
+		MFnNumericData::k3Double);
+	aFaceVectors = nFn.create("pointVectors", "pointVectors",
+		MFnNumericData::k3Double);
 
-	attributeAffects(aInMesh, aPointPositions);
-	attributeAffects(aInMesh, aPointConnects);
-	attributeAffects(aInMesh, aFaceOffsets);
+	vector<MObject> drivers = {
+		aInMesh, aBind
+	};
+	vector<MObject> driven = {
+		aFaceConnects, aFaceOffsets, aPointPositions, aPointConnects,
+		aPointOffsets, aFaceCentres, aNormals, aUvCoords,
+	};
 
-/*
-	std::vector<MObject> topoAttrs = { aFaceOffsets, aPointConnects };
-	std::vector<MObject> liveAttrs = { aPointPositions };
-	setAttributeAffectsAll(aBind, topoAttrs);
-	setAttributeAffectsAll(aBind, liveAttrs);
-	setAttributeAffectsAll(aInMesh, topoAttrs);
-	setAttributeAffectsAll(aInMesh, liveAttrs);*/
+	addAttributes<MeshToBuffers>(drivers);
+	addAttributes<MeshToBuffers>(driven);
+	setAttributesAffect<MeshToBuffers>(drivers, driven);
+	
+
 
     return MStatus::kSuccess;
 }

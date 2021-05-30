@@ -2,6 +2,16 @@
 /*
 base lib containing all maya imports,
 as well as common plugin functions
+
+maya notes
+
+many nodes need a bind() method to precompute geometry, 
+build objects etc.
+For ease of use, follow one of 2 signatures - if bind() may be called asynchronously, by a DIFFERENT NODE, use
+MStatus bind(MFnDependencyNode& mfn, *params, MStatus&s);
+else, use
+	MStatus bind(MDatablock& data, *params, MStatus&s);
+
 */
 
 #pragma once
@@ -15,6 +25,7 @@ as well as common plugin functions
 #include <memory>
 #include <list>
 #include <algorithm>
+#include <numeric>
 
 #include <maya/MStreamUtils.h>
 #include <maya/MPxNode.h>
@@ -50,6 +61,8 @@ as well as common plugin functions
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnGenericAttribute.h>
 #include <maya/MFnAttribute.h>
+#include <maya/MFnMessageAttribute.h>
+#include <maya/MRampAttribute.h>
 
 #include <maya/MFnMesh.h>
 #include <maya/MFnNurbsCurve.h>
@@ -64,7 +77,10 @@ as well as common plugin functions
 #include <maya/MFnFloatArrayData.h>
 #include <maya/MFnMeshData.h>
 #include <maya/MFnNurbsCurveData.h>
+#include <maya/MFnNurbsSurfaceData.h>
 #include <maya/MFnData.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnStringArrayData.h>
 
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -73,8 +89,11 @@ as well as common plugin functions
 #include <maya/MTimer.h>
 #include <maya/MTime.h>
 
-// including topo lib to build topo types from api types
+
 #include "macro.h"
+#include "enum.h"
+
+
 
 
 namespace ed{
@@ -84,26 +103,48 @@ const unsigned int pluginPrefix = 101997;
 
 #define MCHECK(stat,msg)             \
         if ( MS::kSuccess != stat ) {   \
-                cerr << msg;            \
+                cerr << __LINE__ << msg;            \
                 return MS::kFailure;    \
         }
 
 
 // common functions
+//enum BindState { off, bind, bound, live };
+BETTER_ENUM(BindState, int, off, bind, bound, live);
+BETTER_ENUM(LiveState, int, stop, playback, realtime);
+
+template<typename T>
+static MObject makeEnumAttr(char* name) {
+	MObject newBind;
+	MFnEnumAttribute fn;
+	newBind = fn.create(name, name, 0);
+	for (size_t index = 0; index < T::_size(); ++index) {
+		fn.addField(T::_names()[index],
+			T::_values()[index]);
+	}
+	fn.setKeyable(true);
+	fn.setHidden(false);
+	return newBind;
+}
+
+
+
 static MObject makeBindAttr( char* name ){
     MObject newBind;
     MFnEnumAttribute fn;
 	newBind = fn.create( name, name, 0 );
-    fn.addField("off", 0);
-    fn.addField("bind", 1);
-    fn.addField("bound", 2);
-    fn.addField("live", 3);
+	for (size_t index = 0; index < BindState::_size(); ++index) {
+		fn.addField(BindState::_names()[index],
+			BindState::_values()[index]);
+	}
     fn.setKeyable(true);
     fn.setHidden(false);
     return newBind;
 }
-enum BindState {off, bind, bound, live};
 
+
+//enum SpaceMethod { naive, partitioning };
+BETTER_ENUM(SpaceMethod, int, naive, partitioning)
 static MObject makeSpaceAttr( char* name ){
     MObject newSpace;
     MFnEnumAttribute fn;
@@ -114,7 +155,92 @@ static MObject makeSpaceAttr( char* name ){
     fn.setHidden(false);
     return newSpace;
 }
-enum SpaceMethod {naive, partitioning};
+
+//enum LiveState {stop, playback, realtime};
+// off, playing back when time input changes,
+// or when ANY input changes
+static MObject makeLiveAttr(char* name) {
+	// signifying 
+	MObject newLive;
+	MFnEnumAttribute fn;
+	newLive = fn.create(name, name, 1);
+	for (size_t index = 0; index < LiveState::_size(); ++index) {
+		fn.addField(LiveState::_names()[index],
+			LiveState::_values()[index]);
+	}
+	fn.addField("off", 0);
+	fn.addField("playback", 1);
+	fn.addField("realtime", 2);
+	fn.setKeyable(false);
+	fn.setHidden(false);
+	return newLive;
+}
+
+// ramp attribute interface
+// order ramp points by position
+// array of structs - maximum of ~10 points
+
+struct RampPoint {
+	float position;
+	float value;
+	int interp;
+	bool operator< (const RampPoint &other) const {
+		return position < other.position;
+	}
+};
+
+struct RampInterface {
+	RampPoint *pointArray;
+	unsigned int nPoints = 0;
+	MIntArray indices, interps;
+	MFloatArray positions, values;
+	RampInterface(MRampAttribute &ramp) {
+		if (nPoints < ramp.getNumEntries()) {
+			nPoints = ramp.getNumEntries();
+			if (pointArray) delete[] pointArray;
+			pointArray = new RampPoint[nPoints];
+		}
+		ramp.getEntries(indices, positions, values, interps);
+
+		for (unsigned int i = 0; i < nPoints; i++)
+		{
+			pointArray[i].position = positions[i];
+			pointArray[i].value = values[i];
+			pointArray[i].interp = interps[i];
+		}
+		std::sort(pointArray, pointArray + nPoints);
+	}
+
+	inline void getValueAtPosition(float position, float &value) {
+		// stub for now, can be redone for better spline interpolation
+	}
+
+	~RampInterface() { // deallocate point array
+		if (pointArray) delete[] pointArray;
+		pointArray = nullptr;
+	}
+};
+
+template <typename T>
+static T* castToUserNode(MObject& nodeObj, MStatus& s) {
+	// retrieve and cast full user-defined node for given MObject
+	// thanks Matt
+	MFnDependencyNode nodeFn(nodeObj);
+
+	// retrieve MPxNode pointer
+	MPxNode* mpxPtr = nodeFn.userNode(&s);
+	MCHECK(s, "failed to extract mpxNode pointer, object is invalid");
+
+	// black science
+	TectonicConstraintNode* sinkPtr = dynamic_cast<TectonicConstraintNode*>(mpxPtr);
+	if (sinkPtr == NULL) {
+		cerr << "failed dynamic cast to sink instance " << endl;
+		s = MS::kFailure;
+	}
+	s = MS::kSuccess;
+	return sinkPtr;
+}
+
 
 //static MObject makeDoubleArrayAttr( std::string &name ){
 static MObject makeDoubleArrayAttr( char * name ){

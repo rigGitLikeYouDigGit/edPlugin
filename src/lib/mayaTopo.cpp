@@ -33,13 +33,21 @@
 		return OffsetBuffer<int>(facePointConnects, facePointOffsets);
 	}
 
-
 	void ed::HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MObject meshObj, int build) {
 		// updates target mesh struct from mesh MObject
 		// if build, will rebuild topology buffers
 		// if not, will only copy point positions
 		MStatus s = MS::kSuccess;
 		MFnMesh meshFn(meshObj);
+
+		HalfEdgeMeshFromMObject(hedgeMesh, meshFn, build);
+	}
+
+	void ed::HalfEdgeMeshFromMObject(HalfEdgeMesh& hedgeMesh, MFnMesh &meshFn, int build) {
+		// updates target mesh struct from mesh MObject
+		// if build, will rebuild topology buffers
+		// if not, will only copy point positions
+		MStatus s = MS::kSuccess;
 
 		int nPoints = meshFn.numVertices();
 		int nPolys = meshFn.numPolygons();
@@ -68,13 +76,21 @@
 		hedgeMesh.setPositions(posVector);
 	}
 
+
 	void ed::meshFnFromHalfEdgeMesh(HalfEdgeMesh &hedgeMesh, MFnMesh &meshFn) {
 		// convert to point array
 		MPointArray outputPoints(meshFn.numVertices());
 		for (int i = 0; i < meshFn.numVertices(); i++) {
-			outputPoints[i].x = hedgeMesh.pointPositions.values[i * 3];
+			outputPoints[i] = MPoint(
+				hedgeMesh.pointPositions.values[i * 3],
+				hedgeMesh.pointPositions.values[i * 3 + 1],
+				hedgeMesh.pointPositions.values[i * 3 + 1]
+			);
+			/*outputPoints[i].x = hedgeMesh.pointPositions.values[i * 3];
 			outputPoints[i].y = hedgeMesh.pointPositions.values[i * 3 + 1];
-			outputPoints[i].z = hedgeMesh.pointPositions.values[i * 3 + 2];
+			outputPoints[i].z = hedgeMesh.pointPositions.values[i * 3 + 2];*/
 		}
 		meshFn.setPoints(outputPoints, MSpace::kObject);
 	}
+
+

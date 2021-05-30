@@ -26,10 +26,6 @@ class UberDeformer : public MPxDeformerNode {
               MDataBlock& data, const MPlug& plug
         );
 
-        // virtual MStatus deform(
-	      //       MDataBlock& data, MItGeometry& iter, const MMatrix& mat,
-	      //       unsigned int MIndex);
-
 
         // binding system
         void bindDeformerNetwork();

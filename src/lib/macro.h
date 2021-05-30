@@ -10,7 +10,7 @@
 
  // as in "debugString"
 #define DEBUGS(info) \
-COUT << info << std::endl;
+COUT << __LINE__ << info << std::endl;
 
 // as in "debugVectorInt"
 #define DEBUGVI(vec) \
@@ -26,6 +26,13 @@ COUT << vec[0] << ", " << vec[1] << ", " << vec[2] << std::endl;
 copy( vec.begin(), vec.end(), ostream_iterator<float>(MStreamUtils::stdOutStream, " "));
 
 
+// maths macros
+#define EPS 0.0001
 
+#define EQ(a, b) \
+	(abs(a - b) < EPS)\
+
+// to tune of twinkle twinkle little star
+#define PI 3.141592653589
 
 #endif

@@ -70,38 +70,38 @@ MStatus SkinNotion::initialize()
 int SkinNotion::deformPoint(int index, SkinNotionParametres &params,
 	ed::HalfEdgeMesh &hedgeMesh){
 
-			//SmallList<float> baseList = mesh.pointPositions.entry(index);
-			float * baseList = hedgeMesh.pointPositions.rawEntry(index);
-			MPoint basePos(
-				baseList[0], baseList[1], baseList[2], 1.0);
+		//SmallList<float> baseList = mesh.pointPositions.entry(index);
+		const float * baseList = hedgeMesh.pointPositions.rawEntry(index);
+		MPoint basePos(
+			baseList[0], baseList[1], baseList[2], 1.0);
 
-			// get skin indices and weights
-			SmallList<int> weightIndices = entryFromBuffer(
-				params.weightIndices, params.vertexOffsets, index);
-			SmallList<float> weightValues = entryFromBuffer(
-				params.weightValues, params.vertexOffsets, index);
+		// get skin indices and weights
+		SmallList<int> weightIndices = entryFromBuffer(
+			params.weightIndices, params.vertexOffsets, index);
+		SmallList<float> weightValues = entryFromBuffer(
+			params.weightValues, params.vertexOffsets, index);
 
-			// output position
-			MPoint result;
-			MPoint tfPos(0, 0, 0, 1.0);
-			MMatrix diffMat;
-			int infIndex;
-			float weightVal;
+		// output position
+		MPoint result;
+		MPoint tfPos(0, 0, 0, 1.0);
+		MMatrix diffMat;
+		int infIndex;
+		float weightVal;
 
-			for (int i = 0; i < weightValues.size(); i++) {
-				infIndex = weightIndices[i];
-				weightVal = weightValues[i];
-				if (infIndex == -1) { // no valid transform index
-					continue;
-				}
-				diffMat = params.refMats[i] * params.transformMats[i];
-				tfPos += (basePos * diffMat) * weightVal;
+		for (int i = 0; i < weightValues.size(); i++) {
+			infIndex = weightIndices[i];
+			weightVal = weightValues[i];
+			if (infIndex == -1) { // no valid transform index
+				continue;
 			}
+			diffMat = params.refMats[i] * params.transformMats[i];
+			tfPos += (basePos * diffMat) * weightVal;
+		}
 
-			// blend output by envelope
-			result = basePos * (1 - params.localEnvelope) + tfPos * params.localEnvelope;
-			hedgeMesh.deltaPointPositions.setEntry<MPoint>(index, result);
-			return 1;
+		// blend output by envelope
+		result = basePos * (1 - params.localEnvelope) + tfPos * params.localEnvelope;
+		hedgeMesh.deltaPointPositions.setEntry<MPoint>(index, result);
+		return 1;
 
 	}
 

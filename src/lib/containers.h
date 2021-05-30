@@ -9,12 +9,27 @@
 #include <cassert>
 #include <vector>
 
+
 // ************************************************************************************
 // SmallList.hpp
 // ************************************************************************************
 
 
 namespace ed {
+	typedef unsigned int uint;
+
+	// the simplest possible array representation
+	template <class T>
+	struct Span {
+		T* arr; 
+		uint length;
+
+		// iterator functions
+		T* begin(Span& obj) { return obj.arr; }
+		T* end(Span& obj) { return obj.arr + obj.length; }
+		T& operator[](int index) { return arr[max(length - 1, index)]; }
+	};
+	
 
 	// Stores a random-access sequence of elements similar to vector, but avoids
 	// heap allocations for small lists. T must be trivially constructible and
@@ -28,6 +43,9 @@ namespace ed {
 
 		// Creates a copy of the specified list.
 		SmallList(const SmallList& other);
+
+		// Creates SmallList and reserves given number of entries.
+		SmallList(const int &size);
 
 		// Copies the specified list.
 		SmallList& operator=(const SmallList& other);
@@ -171,6 +189,12 @@ namespace ed {
 			ld.num = other.ld.num;
 			ld.cap = other.ld.cap;
 		}
+	}
+
+	template <class T>
+	SmallList<T>::SmallList(const int& size)
+	{
+		reserve(size);
 	}
 
 	template <class T>

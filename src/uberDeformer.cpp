@@ -177,6 +177,8 @@ void UberDeformer::getConnectedNotions() {
 	}
 }
 
+//template<T>
+//SmallList<T> getConnectedNodes
 
 MStatus UberDeformer::connectionMade(
 	const MPlug &plug, const MPlug &otherPlug, bool asSrc) {

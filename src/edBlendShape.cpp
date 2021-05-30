@@ -9,23 +9,23 @@
 using namespace ed;
 using namespace std;
 
-MTypeId MultiMod::kNODE_ID(0x00122C1D);
-MString MultiMod::kNODE_NAME("multiMod");
+MTypeId EdBlendShape::kNODE_ID(0x00122C1D);
+MString EdBlendShape::kNODE_NAME("multiMod");
 
-//MObject MultiMod::aInMesh;
+//MObject EdBlendShape::aInMesh;
 
-MObject MultiMod::aHandles;
-	MObject MultiMod::aMat;
-	MObject MultiMod::aCaptureMat;
-	MObject MultiMod::aWeight;
-	MObject MultiMod::aFalloffRamp;
-	MObject MultiMod::aFalloffRadius;
+MObject EdBlendShape::aHandles;
+MObject EdBlendShape::aMat;
+MObject EdBlendShape::aCaptureMat;
+MObject EdBlendShape::aWeight;
+MObject EdBlendShape::aFalloffRamp;
+MObject EdBlendShape::aFalloffRadius;
 
-MObject MultiMod::aCombinationMode;
-MObject MultiMod::aCombinationSmoothness;
-MObject MultiMod::aWeights;
+MObject EdBlendShape::aCombinationMode;
+MObject EdBlendShape::aCombinationSmoothness;
+MObject EdBlendShape::aWeights;
 
-//MObject MultiMod::aOutMesh;
+//MObject EdBlendShape::aOutMesh;
 
 
 
@@ -34,12 +34,12 @@ MObject MultiMod::aWeights;
 #define EQ(a, b) \
 	(abs(a - b) < EPS)\
 
-void MultiMod::postConstructor() {
+void EdBlendShape::postConstructor() {
 	this->setExistWithoutInConnections(true);
 	this->setExistWithoutOutConnections(true);
 }
 
-MStatus MultiMod::initialize()
+MStatus EdBlendShape::initialize()
 {
 	// initialise attributes
 	MFnNumericAttribute nFn;
@@ -59,26 +59,26 @@ MStatus MultiMod::initialize()
 	//cFn.setReadable(false);
 
 		// delta matrix for deformation
-		aMat = tFn.create("matrix", "matrix", MFnMatrixData::kMatrix);
-		cFn.addChild(aMat);
+	aMat = tFn.create("matrix", "matrix", MFnMatrixData::kMatrix);
+	cFn.addChild(aMat);
 
-		// object-space matrix to capture points in spherical falloff
-		aCaptureMat = tFn.create("captureMatrix", "captureMatrix", MFnMatrixData::kMatrix);
-		cFn.addChild(aCaptureMat);
+	// object-space matrix to capture points in spherical falloff
+	aCaptureMat = tFn.create("captureMatrix", "captureMatrix", MFnMatrixData::kMatrix);
+	cFn.addChild(aCaptureMat);
 
-		// linear scaling of captureregion
-		aFalloffRadius = tFn.create("falloffRadius", "falloffRadius", MFnMatrixData::kMatrix);
-		cFn.addChild(aFalloffRadius);
+	// linear scaling of captureregion
+	aFalloffRadius = tFn.create("falloffRadius", "falloffRadius", MFnMatrixData::kMatrix);
+	cFn.addChild(aFalloffRadius);
 
-		// falloff ramp
-		aFalloffRamp = MRampAttribute::createCurveRamp("falloffRamp", "falloffRamp");
-		cFn.addChild(aFalloffRamp);
+	// falloff ramp
+	aFalloffRamp = MRampAttribute::createCurveRamp("falloffRamp", "falloffRamp");
+	cFn.addChild(aFalloffRamp);
 
-		// contribution of this handle
-		aWeight = nFn.create("weight", "weight", MFnNumericData::kFloat, 1.0);
-		nFn.setMin(0.0);
-		nFn.setSoftMax(1.0);
-		cFn.addChild(aWeight);
+	// contribution of this handle
+	aWeight = nFn.create("weight", "weight", MFnNumericData::kFloat, 1.0);
+	nFn.setMin(0.0);
+	nFn.setSoftMax(1.0);
+	cFn.addChild(aWeight);
 
 	// combination modes
 	aCombinationMode = eFn.create("operation", "operation", 0);
@@ -106,23 +106,23 @@ MStatus MultiMod::initialize()
 		outputGeom
 	};
 
-	addAttributes<MultiMod>(drivers);
-	addAttributes<MultiMod>(driven);
+	addAttributes<EdBlendShape>(drivers);
+	addAttributes<EdBlendShape>(driven);
 
-	setAttributesAffect<MultiMod>(drivers, driven);
+	setAttributesAffect<EdBlendShape>(drivers, driven);
 
 	return MStatus::kSuccess;
 }
 
 
-MStatus MultiMod::compute(
+MStatus EdBlendShape::compute(
 	const MPlug& plug, MDataBlock& data) {
 
 	MStatus s;
 	float envelopeValue = data.inputValue(envelope).asFloat();
-	if ((plug != outputGeom) | (envelopeValue  < EPS)) {
+	if ((plug != outputGeom) | (envelopeValue < EPS)) {
 		data.setClean(plug);
-		return MS::kSuccess;
+		return;
 	}
 
 	gatherParams(data);
@@ -140,13 +140,14 @@ MStatus MultiMod::compute(
 		s = jumpToElement(outputArray, i);
 		MCHECK(s, "compute output jte failed")
 
-		// get input mesh data
-		MObject meshObj = inputArray.inputValue().asMesh();
+			// get input mesh data
+			MObject meshObj = inputArray.inputValue().asMesh();
 		MFnMesh meshFn(meshObj);
 
 		// set length of mesh array
 		if (hedgeMeshes.size() < (i - 1)) {
-			hedgeMeshes.push_back(HalfEdgeMesh());}
+			hedgeMeshes.push_back(HalfEdgeMesh());
+		}
 
 		// refresh hedgemesh object
 		HalfEdgeMesh hedgeMesh = hedgeMeshes[i];
@@ -155,7 +156,7 @@ MStatus MultiMod::compute(
 
 		// deform mesh
 		deformGeo(params, hedgeMesh, i);
-		
+
 		// set output geo
 		meshFnFromHalfEdgeMesh(hedgeMesh, meshFn);
 		MDataHandle outputGeoHandle = outputArray.outputValue();
@@ -169,27 +170,27 @@ MStatus MultiMod::compute(
 	return MS::kSuccess;
 }
 
-int MultiMod::deformGeo(MultiModParametres &params, HalfEdgeMesh &hedgeMesh, int meshIndex) {
+int EdBlendShape::deformGeo(EdBlendShapeParametres &params, HalfEdgeMesh &hedgeMesh, int meshIndex) {
 	// deform whole mesh
 	// multithread this sick filth
 
 	/* copy mesh position buffer for each handle
-	then combine them according to the selected method 
-	
+	then combine them according to the selected method
+
 	iteration structure is thus:
 	for every mesh:
 		for every point
 			check every handle
 		combine
-	
+
 	points are totally independent, we don't need a collapse stage
-	
+
 	*/
 
 	//SmallList<std::vector<float>> deltaBuffers;
 	for (int i = 0; i < params.deltaMats.length(); i++) {
 		//std::vector<float> deltaPositions(hedgeMesh.pointPositions.values);
-		
+
 		for (int n = 0; n < hedgeMesh.nPoints; i++) {
 			deformPoint(params, hedgeMesh,
 				/*deltaPositions.data(), hedgeMesh.nPoints,*/
@@ -204,8 +205,8 @@ int MultiMod::deformGeo(MultiModParametres &params, HalfEdgeMesh &hedgeMesh, int
 	return 0;
 }
 
-int MultiMod::deformPoint(MultiModParametres &params, HalfEdgeMesh &hedgeMesh,
-	/*float *deltaPositions, 
+int EdBlendShape::deformPoint(EdBlendShapeParametres &params, HalfEdgeMesh &hedgeMesh,
+	/*float *deltaPositions,
 	int nPoints,*/
 	std::vector<float> &deltaPositions,
 	int index) {
@@ -223,10 +224,10 @@ int MultiMod::deformPoint(MultiModParametres &params, HalfEdgeMesh &hedgeMesh,
 	MVectorArray resultPositions(nHandles);
 	MVector pos(hedgeMesh.pointPositions.rawEntry(index));
 
-	
+
 	MVector result;
 
-	
+
 	// brute force search across all handle captures, don't know if there is a better way
 	for (int i = 0; i < nHandles; i++) {
 		MVector capturePos = params.captureMats[i].inverse() * pos / params.captureRadii[i];
@@ -244,18 +245,18 @@ int MultiMod::deformPoint(MultiModParametres &params, HalfEdgeMesh &hedgeMesh,
 		weights[i] = weight;
 		resultPositions[i] = params.deltaMats[i] * pos - pos;
 
-		/*MVector deltaPos = pos + params.deltaMats[i] * pos * 
+		/*MVector deltaPos = pos + params.deltaMats[i] * pos *
 			weight * params.envelope * params.globalWeights[i];*/
 	}
 
 	// weighted mean of all positions
 	float weightSum = 0;
 	//weightSum = std::accumulate(weights, weights + nHandles, weightSum);
-	for (int i = 0; i < nHandles; i++)	{
+	for (int i = 0; i < nHandles; i++) {
 		weightSum += weights[i];
 	}
 
-	for (int i = 0; i < nHandles; i++)	{
+	for (int i = 0; i < nHandles; i++) {
 		weights[i] = weights[i] / weightSum;
 		/*resultPositions[i] = resultPositions[i] * weights[i];
 		result += resultPositions[i];*/
@@ -266,14 +267,14 @@ int MultiMod::deformPoint(MultiModParametres &params, HalfEdgeMesh &hedgeMesh,
 	result = pos + result * params.envelope * params.globalWeights[index];
 
 	// set output delta positions
-	for (int i = 0; i < 3; i++)	{
+	for (int i = 0; i < 3; i++) {
 		deltaPositions[index * 3 + i] = result[i];
 	}
 
 	return 1;
 }
 
-int MultiMod::gatherParams( MDataBlock &data) {
+int EdBlendShape::gatherParams(MDataBlock &data) {
 	// iterate over handle plugs, and gather handle data in parametre struct
 	MStatus s;
 	MArrayDataHandle hdlArray = data.outputArrayValue(aHandles);
@@ -290,7 +291,7 @@ int MultiMod::gatherParams( MDataBlock &data) {
 
 	// apparently needed for ramps
 	MObject nodeObj = thisMObject();
-	
+
 	for (int i = 0; i < hdlArray.elementCount(); i++) {
 		s = jumpToElement(hdlArray, i);
 		MCHECK(s, "gatherHandles jte failed");
@@ -305,7 +306,7 @@ int MultiMod::gatherParams( MDataBlock &data) {
 
 	// gather global parametres
 	params.envelope = data.inputValue(envelope).asFloat();
-	
+
 	MFnFloatArrayData fn(data.inputValue(aWeights).data());
 	params.globalWeights = fn.array();
 
@@ -314,13 +315,13 @@ int MultiMod::gatherParams( MDataBlock &data) {
 
 
 
-void* MultiMod::creator() {
+void* EdBlendShape::creator() {
 	// sink is not connected on creation
-	MultiMod *newObj = new MultiMod;
+	EdBlendShape *newObj = new EdBlendShape;
 	return newObj;
 
 }
 
-MultiMod::MultiMod() {};
-MultiMod::~MultiMod() {};
+EdBlendShape::EdBlendShape() {};
+EdBlendShape::~EdBlendShape() {};
 

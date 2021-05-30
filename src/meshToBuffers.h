@@ -5,6 +5,8 @@
 
 #include "lib/api.h"
 #include "lib/topo.h"
+#include "lib/mayaTopo.h"
+
 
 class MeshToBuffers : public MPxNode {
     public:
@@ -22,7 +24,6 @@ public:
     static MString kNODE_NAME;
     
     // attribute MObjects
-    static MObject aTest;
     static MObject aInMesh;
 
 	static MObject aFaceConnects;
@@ -37,6 +38,14 @@ public:
 	static MObject aNormals;
     static MObject aBind;
     
+    // vector values for the above
+    static MObject aPointVectors;
+    static MObject aFaceVectors;
+    static MObject aPointNormalVectors;
+    static MObject aFaceNormalVectors;
+
+    // custom mesh data struct ooh it's very spooky
+    static MObject aHedgeMesh;
 
 
 };
