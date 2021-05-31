@@ -195,8 +195,8 @@ MStatus MemorySource::compute(
 	int nFrames = data.inputValue(aNFrames).asInt();
 	MTime newMTime = data.inputValue(aTime).asTime();
 	MTime prevMTime = data.outputValue(aPrevTime).asTime();
-	float newTime = newMTime.as(MTime::k24FPS);
-	float prevTime = prevMTime.as(MTime::k24FPS);
+	double newTime = newMTime.as(MTime::k24FPS);
+	double prevTime = prevMTime.as(MTime::k24FPS);
 
 
 	//data.setClean(plug);
@@ -216,7 +216,7 @@ MStatus MemorySource::compute(
 		// reset vectors
 		dataArrays.clear();
 
-		for (unsigned int i = 0; i < nFrames; i++) {
+		for (int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			jumpToElement(sourceFramesDH, i);
 
@@ -229,22 +229,27 @@ MStatus MemorySource::compute(
 
 		// reset all frame data
 		// for (int i = 0; i < sourceFramesDH.elementCount(); i++) {
-		for (unsigned int i = 0; i < nFrames; i++) {
+		for (int i = 0; i < nFrames; i++) {
 			s = aDataPlug.selectAncestorLogicalIndex(i, aFrameBuffer);
 			MDataHandle aDataDH = aDataPlug.constructHandle(data);
 			MArrayDataHandle aDataArrayDH(aDataDH, &s);
-			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data arrayHandle construction failed");
+			MCHECK(s, "reset data arrayHandle construction failed");
+			CHECK_MSTATUS_AND_RETURN_IT(s );
 			MArrayDataBuilder aDataArrayBuilder = aDataArrayDH.builder(&s);
-			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data arrayHandle builder extraction failed");
+			MCHECK(s, "reset data arrayHandle builder extraction failed")
+			CHECK_MSTATUS_AND_RETURN_IT(s);
 
 			for (unsigned int n = 0; n < nDataElements; n++) {
 				MDataHandle aResetDataDH = aDataArrayBuilder.addElement(n, &s);
-				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data add data entry failed");
+				MCHECK(s, "reset data add data entry failed");
+				CHECK_MSTATUS_AND_RETURN_IT(s);
 				s = aResetDataDH.setMObject( MObject(dataArrays[i][n]));
-				CHECK_MSTATUS_AND_RETURN_IT(s, "reset data inner data entry " << n << "copy failed");
+				MCHECK(s, "reset data inner data entry " << n << "copy failed");
+				CHECK_MSTATUS_AND_RETURN_IT(s);
 			}
 			s = aDataArrayDH.set(aDataArrayBuilder);
-			CHECK_MSTATUS_AND_RETURN_IT(s, "reset data set array builder failed");
+			MCHECK(s, "reset data set array builder failed");
+			CHECK_MSTATUS_AND_RETURN_IT(s);
 			aDataPlug.setValue(aDataDH);
 			aDataPlug.destructHandle(aDataDH);
 
@@ -284,7 +289,7 @@ MStatus MemorySource::compute(
 		float deltas[2] = { delta, delta };
 
 		// update delta array
-		for (unsigned int i = 0; i < nFrames; i++) {
+		for (int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceDeltasDH, i);
 			deltas[i % 2] = sourceDeltasDH.outputValue().asFloat();
 			sourceDeltasDH.outputValue().setFloat(deltas[!(i % 2)]);
@@ -295,7 +300,7 @@ MStatus MemorySource::compute(
 		dataArrays.pop_back();
 
 
-		for (unsigned int i = 0; i < nFrames; i++) {
+		for ( int i = 0; i < nFrames; i++) {
 			jumpToElement(sourceFramesDH, i);
 			MDataHandle frameDH = sourceFramesDH.outputValue();
 			MArrayDataHandle frameArrayDH(frameDH);

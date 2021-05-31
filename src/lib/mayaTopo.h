@@ -36,7 +36,7 @@ namespace ed {
 		for (int f = 0; f < meshFn.numPolygons(); f++) {
 			MIntArray facePoints;
 			meshFn.getPolygonVertices(f, facePoints);
-			for (int v = 0; v < facePoints.length(); v++)
+			for (unsigned int v = 0; v < facePoints.length(); v++)
 			{
 				pfvMap.insert({ {facePoints[v], f}, n });
 				n++;
@@ -45,7 +45,7 @@ namespace ed {
 		return pfvMap;
 	}
 
-	static std::vector<int> faceVertexUvIds(MFnMesh& meshFn, const char* name) {
+	static std::vector<int> faceVertexUVIds(MFnMesh& meshFn, const char* name) {
 		// return vector of [faceVertexId : uvId]
 		// maps each unique face vertex to its uv
 		std::vector<int> faceVertexUVs(meshFn.numFaceVertices(), -1);
@@ -54,7 +54,7 @@ namespace ed {
 		for (int face = 0; face < meshFn.numPolygons(); face++) {
 			MIntArray faceVertices;
 			meshFn.getPolygonVertices(face, faceVertices);
-			for (int vertex = 0; vertex < faceVertices.length(); vertex++) {
+			for (unsigned int vertex = 0; vertex < faceVertices.length(); vertex++) {
 				int uvid;
 				/*meshFn.getPolygonUVid(
 					face, vertex, uvid, newName);*/
@@ -92,7 +92,7 @@ namespace ed {
 		triFaceVertexMap.resize(triVertIndices.length());
 
 		int n = 0;
-		for (int face=0; face < triCounts.length(); face++) {
+		for (unsigned int face=0; face < triCounts.length(); face++) {
 			for (int triIndex = 0; triIndex < triCounts[face]; triIndex++) {
 				triFaceMap[n] = face;
 
@@ -107,10 +107,7 @@ namespace ed {
 
 	}
 
-	static std::vector<int> triFaceVertexToOrigFaceVertex;
-
-
-	// igl mesh generation
+	//// igl mesh generation
 
 	inline static Eigen::MatrixXd coordMatFromMFnMesh(MFnMesh& meshFn, MStatus &s) 
 	{
@@ -127,8 +124,28 @@ namespace ed {
 		return mat;
 	}
 
-	inline static Eigen::MatrixXi faceVertexMatFromMFnMesh(
-		MFnMesh& meshFn, MStatus& s) 
+	//inline static Eigen::MatrixXi triVertexMatFromMFnMesh(
+	//	MFnMesh& meshFn, MStatus& s) 
+	//{
+	//	/* return matrix tri mesh, with rows being vertices on each triangle
+	//	*/
+	//	int nPoints = meshFn.numVertices();
+	//	MIntArray triCounts; // number of triangles per polygon
+	//	MIntArray triVertIndices; // vertex indices per triangle
+	//	meshFn.getTriangles(triCounts, triVertIndices);
+
+	//	int nTris = triVertIndices.length() / 3;
+	//	Eigen::MatrixXi mat(nTris, 3);
+	//	for (int n = 0; n < nTris; n++) {
+	//		mat(n, 0) = triVertIndices[n * 3];
+	//		mat(n, 1) = triVertIndices[n * 3 + 1];
+	//		mat(n, 2) = triVertIndices[n * 3 + 2];
+	//	}
+	//	return mat;
+	//}
+
+	inline static Eigen::Map<Eigen::MatrixXi> triVertexMatFromMFnMesh(
+		MFnMesh& meshFn, MStatus& s)
 	{
 		/* return matrix tri mesh, with rows being vertices on each triangle
 		*/
@@ -138,14 +155,28 @@ namespace ed {
 		meshFn.getTriangles(triCounts, triVertIndices);
 
 		int nTris = triVertIndices.length() / 3;
-		Eigen::MatrixXi mat(nTris / 3, 3);
+		/*Eigen::MatrixXi mat(nTris, 3);
 		for (int n = 0; n < nTris; n++) {
 			mat(n, 0) = triVertIndices[n * 3];
 			mat(n, 1) = triVertIndices[n * 3 + 1];
 			mat(n, 2) = triVertIndices[n * 3 + 2];
-		}
+		}*/
+		Eigen::Map<Eigen::MatrixXi> mat(&triVertIndices[0], nTris, 3);
 		return mat;
 	}
+
+	//inline static Eigen::MatrixXi triVertexMatFromVector(
+	//	// vector of triangle vertices : [triA1, triA2, triA3, triB1, triB2...]
+	//	std::vector<int> vertices
+	//)  
+	//{
+	//	int nTris = INT(vertices.size()) / 3;
+	//	
+	//	// couldn't get Map working properly with the dynamic shape
+	//	Eigen::MatrixXi mat(vertices.data());
+	//	mat.resize(nTris, 3);
+	//	return mat;
+	//}
 
 
 

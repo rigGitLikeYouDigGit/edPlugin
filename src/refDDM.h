@@ -7,6 +7,7 @@
 
 #include "lib/api.h"
 #include "lib/topo.h"
+#include "lib/mayaTopo.h"
 
 //#include <maya/MFnPlugin.h>
 #include <maya/MTypeId.h>

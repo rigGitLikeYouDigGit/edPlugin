@@ -1,10 +1,7 @@
 {
   "ExpandedNodes": [
-    "",
-    "\\src",
-    "\\src\\deformer",
-    "\\src\\lib"
+    ""
   ],
-  "SelectedNode": "\\build.py",
+  "SelectedNode": "\\edPlugin.sln",
   "PreviewInSolutionExplorer": false
 }

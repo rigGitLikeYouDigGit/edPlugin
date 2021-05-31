@@ -23,6 +23,7 @@
 // the igl include block
 #include <igl/adjacency_list.h>
 #include <igl/adjacency_matrix.h>
+#include <igl/connected_components.h>
 #include <igl/cotmatrix.h>
 #include <igl/facet_adjacency_matrix.h>
 #include <igl/polygon_mesh_to_triangle_mesh.h>

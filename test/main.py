@@ -3,7 +3,12 @@
 from maya import cmds, mel
 import maya.api.OpenMaya as om
 
-from edPlugin import MLL_PATH, MLL_RELEASE_PATH, PLUGIN_ID
+import sys, os
+
+from importlib import reload
+import edPlugin
+reload(edPlugin)
+from edPlugin import MLL_PATH, MLL_RELEASE_PATH, PLUGIN_ID, MLL_DIR
 
 from edPlugin.test import meshanalysis, memory
 reload(memory)
@@ -23,38 +28,42 @@ def unloadPlugin(path=None):
 	paths = [MLL_PATH, MLL_RELEASE_PATH, "edPlugin", "edPlugin.mll"]
 	cmds.file(new=1, f=1)
 
-	# cmd = """$ignoreUpdateCallback = true;unloadPluginWithCheck( "F:/all_projects_desktop/common/edCode/edPlugin/build/Release/edPlugin.mll", false );"""
-	# mel.eval(cmd)
-	#cmds.loadPlugin( PLUGIN_ID )
+	pluginPath = os.environ["MAYA_PLUG_IN_PATH"]
+	print("pluginPath", pluginPath)
+	# cmds.unloadPlugin(MLL_RELEASE_PATH, f=1)
+	cmds.unloadPlugin("edPlugin.mll", f=1)
 
 	allNames = cmds.pluginInfo(q=1, listPlugins=1)
-	for i in allNames:
-		print i
-
-	for i in paths:
-		print("unloading {}".format(i))
-		try:
-			data = cmds.pluginInfo("edPlugin", q=1, path=1)
-			print data
-			cmds.unloadPlugin(i, f=1)
-			cmds.pluginInfo(data, e=1, remove=1)
-
-
-
-
-			#cmds.pluginInfo(i, remove=1)
-
-		except:
-			try:
-				#mel.eval("unloadPluginWithCheck({})".format(i))
-				cmds.unloadPlugin(data, f=1)
-			except:
-				print("could not unload {}".format(i))
-		continue
+	# for i in allNames:
+	# 	print(i)
+	#
+	# for i in paths:
+	# 	print("unloading {}".format(i))
+	# 	try:
+	# 		data = cmds.pluginInfo("edPlugin", q=1, path=1)
+	# 		print(data)
+	# 		cmds.unloadPlugin(i, f=1)
+	# 		cmds.pluginInfo(data, e=1, remove=1)
+	#
+	#
+	#
+	#
+	# 		#cmds.pluginInfo(i, remove=1)
+	#
+	# 	except:
+	# 		try:
+	# 			#mel.eval("unloadPluginWithCheck({})".format(i))
+	# 			cmds.unloadPlugin(data, f=1)
+	# 		except:
+	# 			print("could not unload {}".format(i))
+	# 	continue
 
 def loadPlugin(path=None):
-	# cmds.loadPlugin( PLUGIN_ID, "edPlugin" )
-	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin" )
+	pluginDir = ";" + MLL_DIR + ";"
+	if not pluginDir in os.environ["MAYA_PLUG_IN_PATH"]:
+		os.environ["MAYA_PLUG_IN_PATH"] += pluginDir
+	print(os.environ["MAYA_PLUG_IN_PATH"])
+	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin.mll" )
 
 
 def runTests():

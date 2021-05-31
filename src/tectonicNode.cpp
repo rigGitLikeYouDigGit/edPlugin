@@ -26,8 +26,10 @@ to tectonic types - didn't seem too necessary to add another one
 using namespace ed;
 //using namespace std;
 
-MTypeId TectonicNode::kNODE_ID(0x00122C08);
-MString TectonicNode::kNODE_NAME( "tectonic" );
+//MTypeId TectonicNode::kNODE_ID(0x00122C08);
+MTypeId TectonicNode::kNODE_ID(0x00000000);
+//MString TectonicNode::kNODE_NAME( "tectonic" );
+MString TectonicNode::kNODE_NAME("baseNode");
 
 
 // mesh to process as tectonics
@@ -101,7 +103,9 @@ std::vector<TecPlate> tecMeshFromMFnMeshTopo(
 
 // uv split mode
 std::vector<TecPlate> tecMeshFromMFnMeshUV(
-	HalfEdgeMesh& hedgeMesh, MFnMesh& meshFn, MStatus& s) {
+	HalfEdgeMesh& hedgeMesh, MFnMesh& meshFn,
+	const char* uvSetName,
+	MStatus& s) {
 	std::vector<TecPlate> plates;
 	/*pseudocode
 	assume conversion to triangle mesh for easier adjacency
@@ -110,13 +114,19 @@ std::vector<TecPlate> tecMeshFromMFnMeshUV(
 
 	auto pfvMap = pointFaceVertexMap(meshFn);
 
-	// mesh data for spatial mesh
-	Eigen::MatrixXi coordMat = coordMatFromMFnMesh(meshFn, s);
-	Eigen::MatrixXi triIndexMat = faceVertexMatFromMFnMesh(meshFn, s);
+	// get uv index map for main mesh
+	std::vector<int> faceVertexUVs = faceVertexUVIds(
+		meshFn, uvSetName
+	);
+
+
+	//// mesh data for spatial mesh
+	Eigen::MatrixXd coordMat = coordMatFromMFnMesh(meshFn, s);
+	Eigen::MatrixXi triIndexMat = triVertexMatFromMFnMesh(meshFn, s);
 	Eigen::SparseMatrix<int> triMeshAdjMat;
 	igl::adjacency_matrix(triIndexMat, triMeshAdjMat);
 
-	// get tri data
+	//// get tri data
 	MIntArray triPerFaceCounts;
 	MIntArray triPoints;
 	std::vector<int> triFaceMap;
@@ -129,40 +139,51 @@ std::vector<TecPlate> tecMeshFromMFnMeshUV(
 		triFaceMap,
 		triFaceVertexMap);
 
+	//// update tri face vertex map to tri uv index map
+	std::vector<int> triUVMap(triFaceVertexMap.size(), -1);
+	// may not need a whole separate vector for this
+
+	for (int i = 0; i < INT(triFaceVertexMap.size()); i++)
+	{ // find uv id for each tri face vertex on original mesh
+		triUVMap[i] = faceVertexUVs[triFaceVertexMap[i]];
+	}
+
+	int nTris = INT(triUVMap.size()) / 3;
 
 	// mesh data for uv mesh
-
-
-	// from end
-
-	// map of [tri index : face index]
-
-	// map of [tri index : orig face vertex indices]
-
-	// need triangle UV map of {tri index : [uvIndices]}
-
-
-	Eigen::MatrixXi triUVIndexMat = faceVertexMatFrom
+	//Eigen::MatrixXi triUVIndexMat = triVertexMatFromVector(triUVMap);
+	Eigen::Map<Eigen::MatrixXi> triUVIndexMat(&triUVMap[0], nTris, 3);
 	Eigen::SparseMatrix<int> triUVAdjMat;
 	igl::adjacency_matrix(triUVIndexMat, triUVAdjMat);
 
+	//// islands
+	Eigen::VectorXi islandComponents; 
+	Eigen::VectorXi islandSizes;
+	igl::connected_components(triUVAdjMat, islandComponents, islandSizes);
+
+	DEBUGS("tecMeshFromUV islands");
+		DEBUGS("components:");
+	EIGEN_DEBUG_VAR(islandComponents);
+	DEBUGS("sizes:");
+	EIGEN_DEBUG_VAR(islandSizes);
+
 	
 
+	//DEBUGVI(islandComponents.array());
 
-	// islands
-	std::vector<int> visited(hedgeMesh.nFaces, 0);
-	//std::set<int> toVisit(visited.begin(), visited.end());
-	std::set<int> toVisit;
-	for (int i = 0; i < hedgeMesh.nFaces; i++) {
-		toVisit.insert(i);
-	}
-	int islandIndex = 0;
-	while (toVisit.size()) {
-		int seedFace = *toVisit.begin();
-		toVisit.erase(toVisit.begin());
+	//std::vector<int> visited(hedgeMesh.nFaces, 0);
+	////std::set<int> toVisit(visited.begin(), visited.end());
+	//std::set<int> toVisit;
+	//for (int i = 0; i < hedgeMesh.nFaces; i++) {
+	//	toVisit.insert(i);
+	//}
+	//int islandIndex = 0;
+	//while (toVisit.size()) {
+	//	int seedFace = *toVisit.begin();
+	//	toVisit.erase(toVisit.begin());
 
-		
-	}
+	//	
+	//}
 
 	
 
@@ -277,6 +298,7 @@ MStatus TectonicNode::bind(MDataBlock& data, MStatus& s) {
 	int splitModeVal = data.inputValue(aSplitMode).asInt();
 	MObject meshObj = data.inputValue(aInMesh).asMesh();
 	MFnMesh meshFn(meshObj);
+	MString uvSetName = data.inputValue(aUVSet).asString();
 
 	//HalfEdgeMesh hedgeMesh;
 	HalfEdgeMeshFromMObject(hedgeMesh, meshFn, 1);
@@ -289,7 +311,7 @@ MStatus TectonicNode::bind(MDataBlock& data, MStatus& s) {
 		plates = tecMeshFromMFnMeshTopo(hedgeMesh, meshFn, s);
 		break;
 	case SplitMode::uvShell:
-		plates = tecMeshFromMFnMeshUV(hedgeMesh, meshFn, s);
+		plates = tecMeshFromMFnMeshUV(hedgeMesh, meshFn, uvSetName.asChar(), s);
 		break;
 	}
 	MCHECK(s, "error in building tecMeshFromMFnMesh")

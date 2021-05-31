@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
+#set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules)
+set(CMAKE_MODULE_PATH "C:/Program Files/CMake/share/cmake-3.11/Modules")
 
 project(edPlugin)
 find_package(Maya REQUIRED)
@@ -13,7 +14,8 @@ set(CMAKE_ARCJOVE)
 
 
 file(GLOB SOURCE_FILES "src/*.cpp" "src/*.h" "src/lib/*.cpp" "src/lib/*.h" 
-	"src/deformer/*.h" "src/deformer/*.cpp")
+	"src/deformer/*.h" "src/deformer/*.cpp" "src/*/*.cpp" "src/*/*.h")
+#file(GLOB SOURCE_FILES "src/plugin.cpp")
 
 
 
