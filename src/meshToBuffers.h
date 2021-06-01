@@ -16,8 +16,19 @@ class MeshToBuffers : public MPxNode {
         virtual MStatus compute(
 				const MPlug& plug, MDataBlock& data);
 
+        MStatus bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s);
+
+        virtual void postConstructor();
+        MStatus connectionMade(
+            const MPlug& plug, const MPlug& otherPlug, bool asSrc);
+        MStatus connectionBroken(
+            const MPlug& plug, const MPlug& otherPlug, bool asSrc);
+
         static void* creator();
         static MStatus initialize();
+
+        // track state of input mesh connection
+        bool isConnected = false;
 
 public:
     static MTypeId kNODE_ID;

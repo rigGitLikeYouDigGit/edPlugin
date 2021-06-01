@@ -46,8 +46,7 @@ const char* kREQUIRED_API_VERSION = "Any";
         NODE::kNODE_NAME, \
         NODE::kNODE_ID, \
         NODE::creator, \
-        NODE::initialize, \
-        MPxNode.kDependNode \
+        NODE::initialize \
     ); \
     CHECK_MSTATUS_AND_RETURN_IT(status); \
 
@@ -94,9 +93,10 @@ MStatus initializePlugin( MObject obj ){
 
     MFnPlugin fnPlugin( obj, kAUTHOR, kVERSION, kREQUIRED_API_VERSION);
     MStatus status = MStatus::kSuccess;
-
+    int s = MPxNode::kDependNode;
+    /*s = MPxNode::schedulingType(;*/
     // deformers
-    //status = REGISTER_DEFORMER(EdPush);
+    status = REGISTER_DEFORMER(EdPush);
 
  //   // gpu gubs
 
@@ -110,7 +110,7 @@ MStatus initializePlugin( MObject obj ){
  //   // BEGIN PROCEDURAL CONTROL REGISTER
     status = REGISTER_NODE(MeshToBuffers);
 	//status = REGISTER_DEFORMER(UberDeformer);
-	//status = REGISTER_DEFORMER(MultiMod);
+	status = REGISTER_DEFORMER(MultiMod);
 	//status = REGISTER_NODE(DeformerNotion);
 	//status = REGISTER_NODE(MemorySource);
 	//status = REGISTER_NODE(MemorySink);
@@ -132,7 +132,7 @@ MStatus uninitializePlugin( MObject obj ){
     MStatus status;
     MFnPlugin fnPlugin(obj);
 
-    //status = DEREGISTER_NODE( EdPush );
+    status = DEREGISTER_NODE( EdPush );
  //   status = DEREGISTER_NODE( MeshAnalysis );
  //   // BEGIN PROCEDURAL CONTROL DEREGISTER
     status = DEREGISTER_NODE( MeshToBuffers );
@@ -141,7 +141,7 @@ MStatus uninitializePlugin( MObject obj ){
 	//status = DEREGISTER_NODE(MemorySource);
 	//status = DEREGISTER_NODE(MemorySink);
 	//status = DEREGISTER_NODE(CurveFrame);
-	//status = DEREGISTER_NODE(MultiMod);
+	status = DEREGISTER_NODE(MultiMod);
 
  //   status = DEREGISTER_NODE(TectonicNode);
 	////status = DEREGISTER_NODE(DirectDeltaMush);

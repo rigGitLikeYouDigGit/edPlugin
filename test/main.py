@@ -13,6 +13,12 @@ from edPlugin import MLL_PATH, MLL_RELEASE_PATH, PLUGIN_ID, MLL_DIR
 from edPlugin.test import meshanalysis, memory
 reload(memory)
 
+from edPlugin.test import test_meshToBuffers
+reload(test_meshToBuffers)
+
+testMap = {
+	"meshToBuffers" : test_meshToBuffers,
+}
 
 def unloadPlugin(path=None):
 	""" forces new scene and unloads plugin for recompilation
@@ -29,41 +35,17 @@ def unloadPlugin(path=None):
 	cmds.file(new=1, f=1)
 
 	pluginPath = os.environ["MAYA_PLUG_IN_PATH"]
-	print("pluginPath", pluginPath)
+	#print("pluginPath", pluginPath)
 	# cmds.unloadPlugin(MLL_RELEASE_PATH, f=1)
 	cmds.unloadPlugin("edPlugin.mll", f=1)
 
-	allNames = cmds.pluginInfo(q=1, listPlugins=1)
-	# for i in allNames:
-	# 	print(i)
-	#
-	# for i in paths:
-	# 	print("unloading {}".format(i))
-	# 	try:
-	# 		data = cmds.pluginInfo("edPlugin", q=1, path=1)
-	# 		print(data)
-	# 		cmds.unloadPlugin(i, f=1)
-	# 		cmds.pluginInfo(data, e=1, remove=1)
-	#
-	#
-	#
-	#
-	# 		#cmds.pluginInfo(i, remove=1)
-	#
-	# 	except:
-	# 		try:
-	# 			#mel.eval("unloadPluginWithCheck({})".format(i))
-	# 			cmds.unloadPlugin(data, f=1)
-	# 		except:
-	# 			print("could not unload {}".format(i))
-	# 	continue
 
 def loadPlugin(path=None):
 	pluginDir = ";" + MLL_DIR + ";"
 	if not pluginDir in os.environ["MAYA_PLUG_IN_PATH"]:
 		os.environ["MAYA_PLUG_IN_PATH"] += pluginDir
-	print(os.environ["MAYA_PLUG_IN_PATH"])
-	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin.mll" )
+	#print(os.environ["MAYA_PLUG_IN_PATH"])
+	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin.mll", quiet=True )
 
 
 def runTests():
@@ -72,11 +54,20 @@ def runTests():
 	loadPlugin()
 	print("running edPlugin tests")
 
+	nodes = cmds.pluginInfo(PLUGIN_ID, q=1, dependNode=1)
+	print(nodes)
+
+	for node in nodes:
+		if testMap.get(node):
+			cmds.file(new=1, f=1)
+			testMap[node].test()
+
+
 	#createPluginNodes()
 	#cube = baseTest()
 	#testDeformers(cube)
 	#testDdm()
-	memory.testMemory()
+	#memory.testMemory()
 
 def getMObject(name):
 	sel = om.MSelectionList()

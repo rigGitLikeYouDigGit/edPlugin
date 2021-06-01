@@ -103,17 +103,98 @@ MStatus MeshToBuffers::initialize()
 }
 
 
+MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
+	// bind topology information
+			// do binding with topology buffers
+	//MStatus s = MStatus::kSuccess;
+		// face buffers
+	int nPolys = meshFn.numPolygons();
+	MIntArray allFaceVertices;
+	MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
+	int offsetIndex = 0;
+	//DEBUGS("nPolys " << nPolys);
+	for (int i = 0; i < nPolys; i++) {
+
+		//DEBUGS("offsetIndex " << offsetIndex);
+
+			// add offset to current index
+		faceVertexOffsets[i] = offsetIndex;
+
+		// get face vertices
+		MIntArray faceVertices;
+		meshFn.getPolygonVertices(i, faceVertices);
+
+		for (unsigned int n = 0; n < faceVertices.length(); n++) {
+			allFaceVertices.append(faceVertices[n]);
+			offsetIndex += 1;
+		}
+	}
+
+	/* currently gives an offset buffer with 0 as first value - this is redundant,
+	but allows direct indexing into main values, and I think it's convention
+	*/
+	DEBUGS("meshToBuffers face buffer done")
+
+		MFnIntArrayData faceData;
+	MObject faceObj = faceData.create(allFaceVertices);
+	MDataHandle faceDH = data.outputValue(aFaceConnects);
+	faceDH.setMObject(faceObj);
+
+	MObject faceOffsetObj = faceData.create(faceVertexOffsets);
+	MDataHandle faceOffsetDH = data.outputValue(aFaceOffsets);
+	faceOffsetDH.setMObject(faceOffsetObj);
+
+	// find point connections
+	std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
+	std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
+	DEBUGS("faceVector");
+	DEBUGVI(faceVector);
+	DEBUGS("faceOffsets");
+	DEBUGVI(faceOffsetVector);
+
+
+	//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
+	OffsetBuffer<int> result = ed::pointBufferFromFaceVectors(faceVector, faceOffsetVector);
+
+	std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
+
+	DEBUGS("point buffer");
+	DEBUGVI(pointConnects);
+	DEBUGVI(pointOffsets);
+
+	MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
+	MObject pointObj = faceData.create(pointConnectsArray);
+	MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
+	pointConnectsDH.setMObject(pointObj);
+
+	MIntArray pointOffsetArray = vectorToMIntArray(pointOffsets);
+	MObject pointOffsetObj = faceData.create(pointOffsetArray);
+	MDataHandle pointOffsetDH = data.outputValue(aPointOffsets);
+	pointOffsetDH.setMObject(pointOffsetObj);
+	return s;
+}
+
+
 MStatus MeshToBuffers::compute(
 				const MPlug& plug, MDataBlock& data) {
     // going with floats for now, can easily switch to doubles if needed
 	// initialise MFnMesh
-	//DEBUGS("MeshToBuffers compute")
 	MStatus s = MS::kSuccess;
+
+	// if no mesh is connected, return immediately
+	if (!isConnected) {
+		data.setClean(plug);
+		return MS::kSuccess;
+	}
+
 	MObject meshObj = data.inputValue( aInMesh ).asMesh() ;
-	MFnMesh meshFn;
-	meshFn.setObject(meshObj);
+	MFnMesh meshFn(meshObj);
+	//meshFn.setObject(meshObj);
 	int nPoints = meshFn.numVertices();
 	int nPolys = meshFn.numPolygons();
+
+	// check if input mesh connection is empty
+
 
 	// positions first
 	const float * rawPoints = meshFn.getRawPoints(&s);
@@ -121,89 +202,31 @@ MStatus MeshToBuffers::compute(
 	//MFloatArray positions = MFloatArray( nPoints * 3, 0.0);
 	MFloatArray positions = MFloatArray( rawPoints, nPoints * 3);
 	// don't know how to do rawPoints yet
-	// MFloatPointArray points;
-	// meshFn.getPoints( points );
-	// for( int i=0; i < nPoints; i++){
-	//     positions.set( points[ i ].x, i*3 );
-	//     positions.set( points[ i ].y, i*3+1 );
-	//     positions.set( points[ i ].z, i*3+2 );
-	// }
+
 	MFnFloatArrayData floatData;
 	MObject positionsData = floatData.create( positions );
 
 	// check bind
-	int bind = data.inputValue( aBind ).asInt() ;
-	if( bind == 1 || bind == 3 ){ // bind or live
-	    // do binding with topology buffers
+	int bindVal = data.inputValue(aBind).asInt();
 
-		// face buffers
-	    MIntArray allFaceVertices;
-		MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
-		int offsetIndex = 0;
-		//DEBUGS("nPolys " << nPolys);
-	    for( int i = 0; i < nPolys; i++){
-
-			//DEBUGS("offsetIndex " << offsetIndex);
-
-				// add offset to current index
-				faceVertexOffsets[i] = offsetIndex;
-
-			// get face vertices
-			MIntArray faceVertices;
-	        meshFn.getPolygonVertices( i, faceVertices );
-
-	        for( unsigned int n = 0; n < faceVertices.length(); n++ ){
-				allFaceVertices.append(faceVertices[n]);
-				offsetIndex += 1;
-	        }
-	    }
-
-		/* currently gives an offset buffer with 0 as first value - this is redundant,
-		but allows direct indexing into main values, and I think it's convention
-		*/
-		DEBUGS("meshToBuffers face buffer done")
-
-	    MFnIntArrayData faceData;
-	    MObject faceObj = faceData.create( allFaceVertices );
-        MDataHandle faceDH = data.outputValue( aFaceConnects );
-        faceDH.setMObject( faceObj );
-
-		MObject faceOffsetObj = faceData.create(faceVertexOffsets);
-		MDataHandle faceOffsetDH = data.outputValue(aFaceOffsets);
-		faceOffsetDH.setMObject(faceOffsetObj);
-
-		// find point connections
-		std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
-		std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
-		DEBUGS("faceVector" );
-		DEBUGVI(faceVector);
-		DEBUGS("faceOffsets");
-		DEBUGVI(faceOffsetVector);
-
-
-		//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
-		OffsetBuffer<int> result = ed::pointBufferFromFaceVectors(faceVector, faceOffsetVector);
-		std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
-
-		DEBUGS("point buffer");
-		DEBUGVI(pointConnects);
-		DEBUGVI(pointOffsets);
-
-		MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
-		MObject pointObj = faceData.create(pointConnectsArray);
-		MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
-		pointConnectsDH.setMObject(pointObj);
-
-		MIntArray pointOffsetArray = vectorToMIntArray(pointOffsets);
-		MObject pointOffsetObj = faceData.create(pointOffsetArray);
-		MDataHandle pointOffsetDH = data.outputValue(aPointOffsets);
-		pointOffsetDH.setMObject(pointOffsetObj);
-
-	    if( bind == 1){
-	        data.inputValue( aBind ).setInt( 2 );
-	    }
-
+	// check bind status
+	switch (bindVal)
+	{
+	case BindState::off: // do literally nothing
+		data.setClean(plug);
+		return MS::kSuccess;
+		break;
+	case BindState::bind: // bind and set to bound, then continue
+		bind(data, meshFn, s);
+		data.outputValue(aBind).setInt(BindState::bound);
+		break;
+	case BindState::bound: // continue
+		break;
+	case BindState::live: // bind and continue, leave on live
+		bind(data, meshFn, s);
+		break;
 	}
+
 
 	// set outputs
 	MDataHandle positionsDH = data.outputValue( aPointPositions );
@@ -213,6 +236,35 @@ MStatus MeshToBuffers::compute(
 
 
     return MS::kSuccess;
+}
+
+/// boiler plate
+
+void MeshToBuffers::postConstructor() {
+	this->setExistWithoutInConnections(true);
+	this->setExistWithoutOutConnections(true);
+}
+MStatus MeshToBuffers::connectionMade(
+	const MPlug& plug, const MPlug& otherPlug, bool asSrc) {
+
+	if (plug.attribute() != aInMesh) {
+		return MPxNode::connectionMade(plug, otherPlug, asSrc);
+	}
+	isConnected = true;
+
+	return MPxNode::connectionMade(plug, otherPlug, asSrc);
+}
+
+MStatus MeshToBuffers::connectionBroken(
+	const MPlug& plug, const MPlug& otherPlug, bool asSrc) {
+
+
+	if (plug.attribute() != aInMesh) {
+		return MPxNode::connectionBroken(plug, otherPlug, asSrc);
+	}
+	isConnected = false;
+
+	return MPxNode::connectionBroken(plug, otherPlug, asSrc);
 }
 
 

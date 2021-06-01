@@ -362,6 +362,7 @@ namespace ed {
 				pointSets[pointIndex].insert(facePoints[right]);
 			}
 		}
+		DEBUGS("point neighbour sets built");
 
 		// flatten pointSets to vector
 		std::set<int>::iterator it;
@@ -377,6 +378,8 @@ namespace ed {
 				n++;
 			}
 		}
+		DEBUGVI(pointConnects);
+		DEBUGVI(pointOffsets);
 
 		OffsetBuffer<int> result(pointConnects, pointOffsets);
 		return result;
@@ -384,9 +387,11 @@ namespace ed {
 
 	static OffsetBuffer<int> pointBufferFromFaceVectors(
 		std::vector<int> &faceConnects, std::vector<int> &faceOffsets) {
-		//DEBUGS("pointBufferFromFaceVectors");
+		DEBUGS("pointBufferFromFaceVectors");
 		// create offsetBuffer from input vectors if not supplied
 		OffsetBuffer<int> faceBuffer(faceConnects, faceOffsets);
+		DEBUGVI(faceConnects);
+		DEBUGVI(faceOffsets);
 		return pointBufferFromFaceBuffer(faceBuffer);
 	}
 
