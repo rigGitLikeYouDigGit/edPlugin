@@ -71,79 +71,6 @@ namespace ed {
 	}
 
 
-	// struct to make buffers and offsets easier to interact with
-	//template <typename T>
-	//struct OffsetBuffer {
-	//	int nValues;
-	//	int nEntries;
-
-	//	std::vector<T> values;
-	//	std::vector<int> offsets;
-
-	//	OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets){
-	//		init(initValues, initOffsets);
-	//	}
-
-	//	//template <typename T>
-	//	OffsetBuffer() { init(std::vector<T>(), std::vector<int>()); }
-
-	//	void init(std::vector<T> initValues, std::vector<int> initOffsets) {
-	//		values = initValues;
-	//		offsets = initOffsets;
-	//		nValues = static_cast<unsigned int>(initValues.size());
-	//		nEntries = static_cast<unsigned int>(initOffsets.size());
-	//	}
-
-	//	int entryLength(int entryIndex){
-	//		// get length of specific entry
-	//		int startIndex = offsets[entryIndex]; // oor
-	//		int endIndex;
-	//		// check if entry is last
-	//		if (entryIndex == nEntries - 1) {
-	//			endIndex = nValues;
-	//		}
-	//		else {
-	//			endIndex = offsets[entryIndex + 1];
-	//		}
-	//		return endIndex - startIndex;
-	//	}
-
-	//	// would be more efficient to just return next start index
-	//	// not bothered right now
-
-	//	SmallList<T> entry(int entryIndex) { // building whole vectors in critical loops is slow
-	//		//DEBUGS("entryIndex " << entryIndex << "offsetsSize" << static_cast<int>(offsets.size()));
-	//		int startIndex = offsets[entryIndex];
-	//		int length = entryLength(entryIndex);
-	//		//DEBUGS("startIndex " << startIndex << " length " << length);
-
-	//		SmallList<T> result;
-	//		result.reserve(length); // reserve doesn't work :(
-	//		//DEBUGS("list length " << result.size());
-	//		for (int i = 0; i < length; i++) {
-	//			//DEBUGS("entry i " << i);
-	//			//result[i] = values[startIndex + i];
-	//			result.push_back(values[startIndex + i]);
-	//		}
-	//		return result;
-	//	}
-
-	//	T* rawEntry(int entryIndex){ // returns basic dynamic arrays, to replace base version
-	//		// FIRST ENTRY of array is array's own size
-	//		int startIndex = offsets[entryIndex];
-	//		int length = entryLength(entryIndex);
-
-	//		T* result = new T[length + 1];
-	//		result[0] = static_cast<T>(length);
-
-	//		for (int i = 0; i < length; i++) {
-	//			result[i + 1] = values[startIndex + i];
-	//		}
-	//		return result;
-	//	}
-
-	//};
-
 	static std::vector<int> interleaveOffsets(
 			std::vector<int> baseOffsets, int maxIndex ){
 		// interleave difference between each item, between items themselves
@@ -161,7 +88,14 @@ namespace ed {
 
 	}
 
-	// improving buffer by interleaving entry length into entry offsets
+	/* interleaving entries was trash, took up double offset memory space
+	* vector of offsets has (nEntries + 1) items, so that entry length can
+	be found with ( offset[i+1] - offset[i] )
+	on init, final entry is appended to offsets - 
+	thus length of offset vector and buffer-> nEntries are no longer in sync
+	oh well
+	*/
+
 	template <typename T>
 	struct OffsetBuffer {
 		int nValues;
@@ -173,12 +107,20 @@ namespace ed {
 		OffsetBuffer( std::vector<T> initValues, std::vector<int> initOffsets) :
 			values(initValues), offsets(initOffsets),
 			nValues(static_cast<int>(initValues.size())),
-			nEntries(static_cast<int>(initOffsets.size())){
-				offsets = interleaveOffsets(initOffsets, nValues);
-			}
+			nEntries(static_cast<int>(initOffsets.size()))
+		{
+				//offsets = interleaveOffsets(initOffsets, nValues);
+			//offsets.push_back(nValues - offsets[nEntries - 1]);
+			offsets.push_back(nValues);
+		}
 
 		inline int entryLength(int entryIndex){
-			return offsets[ 2 * entryIndex + 1];
+			/*return offsets[ 2 * entryIndex + 1];*/
+			//return offsets[ entryIndex ];
+			//if (entryIndex == (nEntries - 1)) {
+			//	return nValues - offsets[entryIndex];
+			//}
+			return offsets[entryIndex + 1] - offsets[entryIndex];
 		}
 
 		inline SmallList<T> entry(int entryIndex) {
@@ -201,10 +143,17 @@ namespace ed {
 		}
 
 		inline Span<T> span(int entryIndex) {
-			return Span<T>{
+			//DEBUGS("buffer span")
+			//DEBUGS(entryIndex);
+			//DEBUGVI(offsets);
+			//DEBUGVI(values);
+			//DEBUGS(entryLength(entryIndex));
+			Span<T> result{
 				values.data() + offsets[entryIndex],
 				entryLength(entryIndex)
 			};
+			/*DEBUGVI(result);*/
+			return result;
 		}
 
 
@@ -272,7 +221,7 @@ namespace ed {
 		 template< typename V>
 		 void setEntry(int index, V obj){
 			 for(int i = 0; i < strideLength; i++){
-				 values[index * strideLength + i] = obj[i];
+				 values[index * strideLength + i] = static_cast<T>(obj[i]);
 			 }
 		 }
 	};
@@ -338,6 +287,8 @@ namespace ed {
 		std::vector<int> pointConnects;
 		std::vector<int> pointOffsets(nPoints, -1);
 
+		//DEBUGVI(pointOffsets);
+
 		// build set representing each point
 		std::vector< std::set<int> > pointSets(nPoints);
 
@@ -345,10 +296,15 @@ namespace ed {
 		for (int i = 0; i < nFaces; i++) {
 			// iterate over points in face entry
 
-			SmallList<int> facePoints = faceBuffer.entry(i);
+			Span<int> facePoints = faceBuffer.span(i);
+			//DEBUGS("found span");
+			//DEBUGS(facePoints.length)
+			//DEBUGVI(facePoints);
+
 
 			// if triangle, add all other points
-			int entryLength = facePoints.size();
+			int entryLength = facePoints.length;
+			//DEBUGS("entryLength" << entryLength);
 
 			// gather connected points
 			for (int n = 0; n < entryLength; n++) {
@@ -362,7 +318,7 @@ namespace ed {
 				pointSets[pointIndex].insert(facePoints[right]);
 			}
 		}
-		DEBUGS("point neighbour sets built");
+		/*DEBUGS("point neighbour sets built");*/
 
 		// flatten pointSets to vector
 		std::set<int>::iterator it;
@@ -378,8 +334,8 @@ namespace ed {
 				n++;
 			}
 		}
-		DEBUGVI(pointConnects);
-		DEBUGVI(pointOffsets);
+		//DEBUGVI(pointConnects);
+		//DEBUGVI(pointOffsets);
 
 		OffsetBuffer<int> result(pointConnects, pointOffsets);
 		return result;
@@ -390,8 +346,8 @@ namespace ed {
 		DEBUGS("pointBufferFromFaceVectors");
 		// create offsetBuffer from input vectors if not supplied
 		OffsetBuffer<int> faceBuffer(faceConnects, faceOffsets);
-		DEBUGVI(faceConnects);
-		DEBUGVI(faceOffsets);
+		//DEBUGVI(faceConnects);
+		//DEBUGVI(faceOffsets);
 		return pointBufferFromFaceBuffer(faceBuffer);
 	}
 

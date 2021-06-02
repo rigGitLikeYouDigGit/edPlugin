@@ -108,6 +108,7 @@ MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
 			// do binding with topology buffers
 	//MStatus s = MStatus::kSuccess;
 		// face buffers
+	//DEBUGS("MTB bind")
 	int nPolys = meshFn.numPolygons();
 	MIntArray allFaceVertices;
 	MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
@@ -133,7 +134,7 @@ MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
 	/* currently gives an offset buffer with 0 as first value - this is redundant,
 	but allows direct indexing into main values, and I think it's convention
 	*/
-	DEBUGS("meshToBuffers face buffer done")
+	//DEBUGS("meshToBuffers face buffer done")
 
 		MFnIntArrayData faceData;
 	MObject faceObj = faceData.create(allFaceVertices);
@@ -145,12 +146,14 @@ MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
 	faceOffsetDH.setMObject(faceOffsetObj);
 
 	// find point connections
-	std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
-	std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
-	DEBUGS("faceVector");
-	DEBUGVI(faceVector);
-	DEBUGS("faceOffsets");
-	DEBUGVI(faceOffsetVector);
+	//std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
+	std::vector<int> faceVector = MayaContainerToVector<int, MIntArray>(allFaceVertices);
+	
+;	std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
+	//DEBUGS("faceVector");
+	//DEBUGVI(faceVector);
+	//DEBUGS("faceOffsets");
+	//DEBUGVI(faceOffsetVector);
 
 
 	//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
@@ -158,16 +161,18 @@ MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
 
 	std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
 
-	DEBUGS("point buffer");
-	DEBUGVI(pointConnects);
-	DEBUGVI(pointOffsets);
+	//DEBUGS("point buffer");
+	//DEBUGVI(pointConnects);
+	//DEBUGVI(pointOffsets);
 
-	MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);
+	/*MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);*/
+	MIntArray pointConnectsArray(pointConnects.data(), pointConnects.size());
 	MObject pointObj = faceData.create(pointConnectsArray);
 	MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
 	pointConnectsDH.setMObject(pointObj);
 
-	MIntArray pointOffsetArray = vectorToMIntArray(pointOffsets);
+	//MIntArray pointOffsetArray = vectorToMIntArray(pointOffsets);
+	MIntArray pointOffsetArray(pointOffsets.data(), pointOffsets.size());
 	MObject pointOffsetObj = faceData.create(pointOffsetArray);
 	MDataHandle pointOffsetDH = data.outputValue(aPointOffsets);
 	pointOffsetDH.setMObject(pointOffsetObj);
@@ -181,8 +186,11 @@ MStatus MeshToBuffers::compute(
 	// initialise MFnMesh
 	MStatus s = MS::kSuccess;
 
+	//DEBUGS("MTB compute");
+
 	// if no mesh is connected, return immediately
 	if (!isConnected) {
+		DEBUGS("MTB mesh not connected, passing")
 		data.setClean(plug);
 		return MS::kSuccess;
 	}

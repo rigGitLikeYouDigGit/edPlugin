@@ -3,6 +3,8 @@
 from maya import cmds, mel
 import maya.api.OpenMaya as om
 
+import unittest
+
 import sys, os
 
 from importlib import reload

@@ -123,15 +123,15 @@ void SkinNotion::extractSkinWeights(MArrayDataHandle& weightRoot,
 
 	int offsetIndex = 0;
 	int entryCreated = 0;
-	for (unsigned int i = 0; i < nPoints; i++) {
+	for (int i = 0; i < nPoints; i++) {
 		entryCreated = 0;
 		vertexOffsets[i] = offsetIndex;
 		jumpToElement(weightRoot, i);
 		MArrayDataHandle vtxEntry = weightRoot.inputValue().child(
 			aWeights);
-		unsigned int nWeights = vtxEntry.elementCount();
+		int nWeights = vtxEntry.elementCount();
 
-		for (unsigned int n = 0; n < nWeights; n++) {
+		for (int n = 0; n < nWeights; n++) {
 			float weightVal = vtxEntry.inputValue().asDouble();
 			if (weightVal > e) {
 				influenceIndices.push_back(vtxEntry.elementIndex());
@@ -171,7 +171,7 @@ void SkinNotion::extractSkinWeights(MPlug& weightRoot,
 
 	int offsetIndex = 0;
 	int entryCreated = 0;
-	for (unsigned int i = 0; i < nPoints; i++) {
+	for (int i = 0; i < nPoints; i++) {
 		entryCreated = 0;
 		vertexOffsets[i] = offsetIndex;
 		weightIndexPlug = weightRoot.elementByPhysicalIndex(i);

@@ -344,58 +344,78 @@ inline std::vector<MObject> arrayHandleData(MArrayDataHandle &parentArrayDH, MSt
 }
 
 // converting between maya types and vectors
-inline std::vector<int> MIntArrayToVector(MIntArray &arr) {
-	// constructs stl vector from int array
-	DEBUGS("api.h MIntArrayToVector");
-	std::vector<int> output(arr.length(), 1);
-	for (unsigned int i = 0; i < arr.length(); i++) {
-		output[i] = arr[i];
-	}
-	return output;
+
+template < typename ValueT, typename ContainerT>
+inline std::vector<ValueT> MayaContainerToVector(ContainerT& arr) {
+	// Maya containers use contiguous memory, 
+	// so vectors are directly assigned from their first element
+	std::vector<ValueT> result;
+	result.assign(&(arr[0]),
+		&(arr[0]) + arr.length());
+	return result;
 }
 
-inline std::vector<float> MFloatArrayToVector(MFloatArray &arr) {
-	// constructs stl vector from float array
-	// sorry if there's a more elegant way to template these
-	DEBUGS("api.h MFloatArrayToVector")
-	std::vector<float> output( static_cast<int>( arr.length() ), 1);
-	for (unsigned int i = 0; i < arr.length(); i++) {
-		output[i] = arr[i];
-	}
-	return output;
+// can't find good way to generate these but this is fine
+inline std::vector<int> MIntArrayToVector(MIntArray& arr) {
+	return MayaContainerToVector<int, MIntArray>(arr);
+}
+inline std::vector<float> MFloatArrayToVector(MFloatArray& arr) {
+	return MayaContainerToVector<float, MFloatArray>(arr);
+}
+// this one might be dicey
+inline std::vector<double> MVectorArrayToVector(MVectorArray& arr) {
+	std::vector<double> result;
+	result.assign(
+		&(arr[0][0]),
+		&(arr[0][0]) + arr.length() * 3);
+	return result;
 }
 
-inline std::vector<float> MVectorArrayToVector(MVectorArray &arr) {
-	// constructs stl vector from MVectorArray
-	DEBUGS("api.h MVectorArrayToVector");
-	std::vector<float> output(static_cast<int>(arr.length()) * 3, 1);
-	for (unsigned int i = 0; i < arr.length(); i++) {
-		output[i*3] = static_cast<float>(arr[i].x);
-		output[i*3 + 1] = static_cast<float>(arr[i].y);
-		output[i*3 + 2] = static_cast<float>(arr[i].z);
-	}
-	return output;
-}
+
+//inline std::vector<int> MIntArrayToVector(MIntArray &arr) {
+//	// constructs stl vector from int array
+//	//DEBUGS("api.h MIntArrayToVector");
+//	//std::vector<int> output(arr.length(), 1);
+//	//for (unsigned int i = 0; i < arr.length(); i++) {
+//	//	output[i] = arr[i];
+//	//}
+//	std::vector<int> result;
+//	result.assign(&(arr[0]),
+//		&(arr[0]) + arr.length());
+//	return result;
+//}
+//
+//inline std::vector<float> MFloatArrayToVector(MFloatArray &arr) {
+//	// constructs stl vector from float array
+//	// sorry if there's a more elegant way to template these
+//	DEBUGS("api.h MFloatArrayToVector")
+//	std::vector<float> output( static_cast<int>( arr.length() ), 1);
+//	for (unsigned int i = 0; i < arr.length(); i++) {
+//		output[i] = arr[i];
+//	}
+//	return output;
+//}
+
+//inline std::vector<float> MVectorArrayToVector(MVectorArray &arr) {
+//	// constructs stl vector from MVectorArray
+//	DEBUGS("api.h MVectorArrayToVector");
+//	std::vector<float> output(static_cast<int>(arr.length()) * 3, 1);
+//	for (unsigned int i = 0; i < arr.length(); i++) {
+//		output[i*3] = static_cast<float>(arr[i].x);
+//		output[i*3 + 1] = static_cast<float>(arr[i].y);
+//		output[i*3 + 2] = static_cast<float>(arr[i].z);
+//	}
+//	return output;
+//}
 
 inline MIntArray vectorToMIntArray(std::vector<int> &v) {
 	// constructs MIntArray from stl float vector
-	DEBUGS("api.h vectorToMIntArray");
-	// MIntArray output( static_cast<int>(v.size()) );
-	// for (unsigned int i = 0; i < v.size(); i++) {
-	// 	output[i] = v[i];
-	// }
 	MIntArray output( v.data(), static_cast<int>(v.size()));
 	return output;
 }
 
 inline MFloatArray vectorToMFloatArray(std::vector<float> &v) {
 	// constructs MFloatArray from stl float vector
-	DEBUGS("api.h vectorToMFloatArray");
-	// MFloatArray output( static_cast<int>(v.size()) );
-	// // static casting size_t is among the most annoying c++ I've found
-	// for (unsigned int i = 0; i < v.size(); i++) {
-	// 	output[i] = v[i];
-	// }
 	MFloatArray output( v.data(), static_cast<int>(v.size()));
 	return output;
 }
@@ -456,7 +476,6 @@ inline void addAttributes(std::vector<MObject> &attrs){
 		T::addAttribute(attrObj);
 	}
 }
-
 
 } // namespace ed
 

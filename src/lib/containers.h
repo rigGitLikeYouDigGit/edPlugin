@@ -22,12 +22,62 @@ namespace ed {
 	template <class T>
 	struct Span {
 		T* arr; 
-		uint length;
+		int length;
 
+		class iterator
+		{
+		public:
+			typedef iterator self_type;
+			typedef T value_type;
+			typedef T& reference;
+			typedef T* pointer;
+			typedef std::forward_iterator_tag iterator_category;
+			typedef int difference_type;
+			iterator(pointer ptr) : ptr_(ptr) { }
+			self_type operator++() { self_type i = *this; ptr_++; return i; }
+			self_type operator++(int junk) { ptr_++; return *this; }
+			reference operator*() { return *ptr_; }
+			pointer operator->() { return ptr_; }
+			bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
+			bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+		private:
+			pointer ptr_;
+		};
+
+		class const_iterator
+		{
+		public:
+			typedef const_iterator self_type;
+			typedef T value_type;
+			typedef T& reference;
+			typedef T* pointer;
+			typedef int difference_type;
+			typedef std::forward_iterator_tag iterator_category;
+			const_iterator(pointer ptr) : ptr_(ptr) { }
+			self_type operator++() { self_type i = *this; ptr_++; return i; }
+			self_type operator++(int junk) { ptr_++; return *this; }
+			const reference operator*() { return *ptr_; }
+			const pointer operator->() { return ptr_; }
+			bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
+			bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+		private:
+			pointer ptr_;
+		};
+				
+		T& operator[](int index) { 
+			assert(index < length);
+			return arr[index]; }
+		const T& operator[] (int index) const {
+			assert(index < length);
+			return arr[index];
+		}
 		// iterator functions
-		T* begin(Span& obj) { return obj.arr; }
-		T* end(Span& obj) { return obj.arr + obj.length; }
-		T& operator[](int index) { return arr[max(length - 1, index)]; }
+		iterator begin() { return iterator(arr); }
+		iterator end() { return iterator(arr + length); }
+		const_iterator begin() const { return const_iterator(arr); }
+		const_iterator end() const { return const_iterator(arr + length); }
+		int size() { return length; }
+
 	};
 	
 
