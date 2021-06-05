@@ -17,6 +17,7 @@ register all plugins
 #include "curveFrame.h"
 #include "multiMod.h"
 #include "tectonicNode.h"
+#include "tectonicConstraintNode.h"
 
 // END PROCEDURAL CONTROL INCLUDE
 
@@ -40,41 +41,43 @@ const char* kREQUIRED_API_VERSION = "Any";
 //};
 //std::vector<MPxNode> pluginNodes(5);
 
+//static std::unordered_set<MPxNode> pluginObjects;
 
 #define REGISTER_NODE(NODE) \
-    status = fnPlugin.registerNode( \
+    s = fnPlugin.registerNode( \
         NODE::kNODE_NAME, \
         NODE::kNODE_ID, \
         NODE::creator, \
         NODE::initialize \
     ); \
-    CHECK_MSTATUS_AND_RETURN_IT(status); \
+    CHECK_MSTATUS_AND_RETURN_IT(s); \
+    //pluginObjects.insert(NODE);\
 
 #define REGISTER_DEFORMER(NODE) \
-    status = fnPlugin.registerNode( \
+    s = fnPlugin.registerNode( \
         NODE::kNODE_NAME, \
         NODE::kNODE_ID, \
         NODE::creator, \
         NODE::initialize, \
         MPxNode::Type::kDeformerNode \
     ); \
-    CHECK_MSTATUS_AND_RETURN_IT(status); \
+    CHECK_MSTATUS_AND_RETURN_IT(s); \
 
 
 #define DEREGISTER_NODE(NODE) \
-    status = fnPlugin.deregisterNode( \
+    s = fnPlugin.deregisterNode( \
         NODE::kNODE_ID ); \
-    CHECK_MSTATUS_AND_RETURN_IT(status); \
+    CHECK_MSTATUS_AND_RETURN_IT(s); \
 
 #define REGISTER_NODE_TYPE(NODE, NODE_TYPE) \
-    status = fnPlugin.registerNode( \
+    s = fnPlugin.registerNode( \
         NODE::kNODE_NAME, \
         NODE::kNODE_ID, \
         NODE::creator, \
         NODE::initialize, \
         NODE_TYPE \
     ); \
-    CHECK_MSTATUS_AND_RETURN_IT(status); \
+    CHECK_MSTATUS_AND_RETURN_IT(s); \
  // MPxNode::kDependNode
 
 /*
@@ -92,62 +95,89 @@ MStatus initializePlugin( MObject obj ){
 	DEBUGS("initializePlugin");
 
     MFnPlugin fnPlugin( obj, kAUTHOR, kVERSION, kREQUIRED_API_VERSION);
-    MStatus status = MStatus::kSuccess;
-    int s = MPxNode::kDependNode;
+    MStatus s = MStatus::kSuccess;
+    //int s = MPxNode::kDependNode;
     /*s = MPxNode::schedulingType(;*/
     // deformers
-    //status = REGISTER_DEFORMER(EdPush);
+    //s = REGISTER_DEFORMER(EdPush);
 
  //   // gpu gubs
 
  //   // normal nodes 
- //   //status = REGISTER_NODE(MeshAnalysis);
+ //   //s = REGISTER_NODE(MeshAnalysis);
 
- //   TectonicNode::kNODE_ID = 0x00122C08;
- //   TectonicNode::kNODE_NAME = "tectonic";
- //   status = REGISTER_NODE(TectonicNode);
+
 
  //   // BEGIN PROCEDURAL CONTROL REGISTER
-    status = REGISTER_NODE(MeshToBuffers);
-	//status = REGISTER_DEFORMER(UberDeformer);
-	status = REGISTER_DEFORMER(MultiMod);
-	//status = REGISTER_NODE(DeformerNotion);
-	//status = REGISTER_NODE(MemorySource);
-	//status = REGISTER_NODE(MemorySink);
-	//status = REGISTER_NODE(CurveFrame);
-	//
-    
-    
+
+    EdPush::kNODE_ID = (0x00122C00);
+    EdPush::kNODE_NAME = ("edPush");
+    //s = REGISTER_DEFORMER(EdPush);
+
+    MeshToBuffers::kNODE_ID = (0x00122C01); 
+    MeshToBuffers::kNODE_NAME = ("meshToBuffers");
+    s = REGISTER_NODE(MeshToBuffers);
+
+	
+
+    MultiMod::kNODE_ID = (0x00122C02);
+	//status = REGISTER_DEFORMER(MultiMod);
+
+    //// memory cell
+    //MemorySource::kNODE_ID = (0x00122C04);
+    //s = REGISTER_NODE(MemorySource);
+    //MemorySink::kNODE_ID = (0x00122C05);
+    //s = REGISTER_NODE(MemorySink);
 
 
+    // tectonic
+    TectonicNode::kNODE_ID = (0x00122C08);
+    s = REGISTER_NODE(TectonicNode);
+    CHECK_MSTATUS_AND_RETURN_IT(s);
+    
+    TectonicConstraintNode::kNODE_ID = (0x00122C10);
+    s = REGISTER_NODE(TectonicConstraintNode);
+    
+    //s = REGISTER_DEFORMER(UberDeformer);
+    //s = REGISTER_NODE(DeformerNotion);
+
+    //s = REGISTER_NODE(CurveFrame);
+
+    //
 
     // END PROCEDURAL CONTROL REGISTER
 
 
-    return status;
+    return s;
 }
 
 MStatus uninitializePlugin( MObject obj ){
 
-    MStatus status;
+    MStatus s;
     MFnPlugin fnPlugin(obj);
 
     //status = DEREGISTER_NODE( EdPush );
- //   status = DEREGISTER_NODE( MeshAnalysis );
- //   // BEGIN PROCEDURAL CONTROL DEREGISTER
-    status = DEREGISTER_NODE( MeshToBuffers );
+    //status = DEREGISTER_NODE( MeshAnalysis );
+    // BEGIN PROCEDURAL CONTROL DEREGISTER
+    s = DEREGISTER_NODE( MeshToBuffers );
 	//status = DEREGISTER_NODE(UberDeformer);
 	//status = DEREGISTER_NODE(DeformerNotion);
+
+        //status = DEREGISTER_NODE(CurveFrame);
+    //status = DEREGISTER_NODE(MultiMod);
+
+
 	//status = DEREGISTER_NODE(MemorySource);
 	//status = DEREGISTER_NODE(MemorySink);
-	//status = DEREGISTER_NODE(CurveFrame);
-	status = DEREGISTER_NODE(MultiMod);
 
- //   status = DEREGISTER_NODE(TectonicNode);
-	////status = DEREGISTER_NODE(DirectDeltaMush);
+
+    s = DEREGISTER_NODE(TectonicNode);
+    s = DEREGISTER_NODE(TectonicConstraintNode);
+ // 
+	//status = DEREGISTER_NODE(DirectDeltaMush);
 	////status = fnPlugin.deregisterNode(RefDDM::kNODE_ID);
  //   // END PROCEDURAL CONTROL DEREGISTER
 
-    return status;
+    return s;
 
 }

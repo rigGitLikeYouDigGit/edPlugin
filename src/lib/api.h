@@ -115,19 +115,26 @@ BETTER_ENUM(BindState, int, off, bind, bound, live);
 BETTER_ENUM(LiveState, int, stop, playback, realtime);
 
 template<typename T>
-static MObject makeEnumAttr(char* name) {
+static MObject makeEnumAttr(char* name, T defaultVal) {
 	MObject newBind;
 	MFnEnumAttribute fn;
+	//int defaultValInt = defaultVal._to_integral();
 	newBind = fn.create(name, name, 0);
 	for (size_t index = 0; index < T::_size(); ++index) {
 		fn.addField(T::_names()[index],
 			T::_values()[index]);
 	}
+	fn.setDefault(defaultVal._to_integral());
 	fn.setKeyable(true);
 	fn.setHidden(false);
 	return newBind;
 }
 
+template<typename T>
+static MObject makeEnumAttr(char* name) {
+
+	return makeEnumAttr<T>(name, T::_from_integral(0));
+}
 
 
 static MObject makeBindAttr( char* name ){

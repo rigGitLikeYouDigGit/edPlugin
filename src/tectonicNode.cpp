@@ -28,8 +28,7 @@ using namespace ed;
 
 //MTypeId TectonicNode::kNODE_ID(0x00122C08);
 MTypeId TectonicNode::kNODE_ID(0x00000000);
-//MString TectonicNode::kNODE_NAME( "tectonic" );
-MString TectonicNode::kNODE_NAME("baseNode");
+MString TectonicNode::kNODE_NAME( "tectonic" );
 
 
 // mesh to process as tectonics
@@ -48,7 +47,7 @@ MObject TectonicNode::aBind;
 MObject TectonicNode::aSplitMode;
 
 // mode - either off, frame dependent or real time
-MObject TectonicNode::aMode;
+MObject TectonicNode::aPlaybackMode;
 
 // connections to Constraint nodes 
 MObject TectonicNode::aConstraints;
@@ -64,9 +63,12 @@ MObject TectonicNode::aResetFrame;
 * returns the index and matrix of closest plate
 */
 MObject TectonicNode::aQueryPlates;
-MObject TectonicNode::aQueryPos;
-MObject TectonicNode::aQueryIndex;
-MObject TectonicNode::aQueryMatrix;
+	MObject TectonicNode::aQueryPos;
+		MObject TectonicNode::aQueryPosX;
+		MObject TectonicNode::aQueryPosY;
+		MObject TectonicNode::aQueryPosZ;
+	MObject TectonicNode::aQueryIndex;
+	MObject TectonicNode::aQueryMatrix;
 
 
 
@@ -90,6 +92,110 @@ BETTER_ENUM(SplitMode, int,
 	polygonShell, // raw poly connectivity, superposed vertices mean welds
 	uvShell // uv connectivity, uv islands are plates
 )
+
+
+MStatus TectonicNode::initialize()
+{
+	// initialise attributes
+	MFnNumericAttribute nFn;
+	MFnGenericAttribute gFn;
+	MFnTypedAttribute tFn;
+	MFnUnitAttribute uFn;
+	MFnCompoundAttribute cFn;
+	MFnEnumAttribute eFn;
+	MFnAttribute aFn;
+	MFnMessageAttribute mFn;
+
+	MFnMeshData mData;
+	MObject defaultMesh = mData.create();
+
+	// mesh inputs
+	aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh, defaultMesh);
+	defaultMesh = mData.create();
+	aBaseMesh = tFn.create("baseMesh", "baseMesh", MFnData::kMesh, defaultMesh);
+
+	// string data for uv set
+	MFnStringData sFn;
+	MObject defaultString;
+	defaultString = sFn.create("map1");
+	aUVSet = tFn.create("uvSet", "uvSet", MFnData::kString, defaultString);
+
+	aBind = makeEnumAttr<BindState>("bind");
+	aSplitMode = makeEnumAttr<SplitMode>("splitMode");
+	//aMode = makeEnumAttr<LiveState>("mode");
+	aPlaybackMode = makeEnumAttr<LiveState>("mode", LiveState::realtime);
+
+	// constraint array
+	aConstraints = nFn.create("constraints", "constraints",
+		MFnNumericData::kBoolean);
+	nFn.setArray(true);
+	nFn.setUsesArrayDataBuilder(true);
+
+	// dynamics attributes
+	// global solver iterations
+	aGlobalIterations = nFn.create("iterations", "iterations",
+		MFnNumericData::kInt, 1);
+	// scale timestep by this value
+	aTimeStep = nFn.create("iterations", "iterations",
+		MFnNumericData::kFloat, 1.0);
+
+	//// tracks current time during playback
+	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
+	tFn.setReadable(true);
+	tFn.setWritable(true);
+
+	//// previous time value, stored to figure out timestep
+	aPrevTime = uFn.create("prevTime", "prevTime", MFnUnitAttribute::kTime, 0.0);
+	tFn.setReadable(true);
+	tFn.setWritable(false);
+
+	// frame at which to reset
+	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 1.0);
+
+	// query attributes
+	aQueryPlates = cFn.create("queryPlates", "queryPlates");
+	aQueryPos = makeXYZVectorAttr("queryPos", 
+		aQueryPos, aQueryPosX, aQueryPosY, aQueryPosZ, 
+		false);
+	aQueryIndex = nFn.create("queryIndex", "index", MFnNumericData::kInt);
+	aQueryMatrix = tFn.create("queryMatrix", "matrix", MFnMatrixData::kMatrix);
+
+	cFn.addChild(aQueryPos);
+	cFn.addChild(aQueryIndex);
+	cFn.addChild(aQueryMatrix);
+
+
+	//// outputs
+	defaultMesh = mData.create();
+	aOutMesh = tFn.create("outMesh", "outMesh", MFnData::kMesh, defaultMesh);
+	defaultMesh = mData.create();
+	aOutCutMesh = tFn.create("outCutMesh", "outCutMesh", MFnData::kMesh, defaultMesh);
+	aOutMatrices = tFn.create("outMatrices", "outMatrices",
+		MFnData::kMatrixArray);
+
+
+	std::vector<MObject> drivers = {
+		aInMesh, aBaseMesh,
+		aUVSet, aBind, aSplitMode, aPlaybackMode, 
+		aConstraints, 
+		aGlobalIterations, aTime, aPrevTime, aResetFrame, aTimeStep,
+
+		aQueryPlates, aQueryIndex, aQueryPos, aQueryMatrix,
+		
+	};
+	std::vector<MObject> driven = {
+		aOutMesh, aOutCutMesh, aOutMatrices,
+	};
+
+	addAttributes<TectonicNode>(drivers);
+	addAttributes<TectonicNode>(driven);
+
+	setAttributesAffect<TectonicNode>(drivers, driven);
+
+	return MStatus::kSuccess;
+}
+
+
 
 // topo split mode
 std::vector<TecPlate> tecMeshFromMFnMeshTopo(
@@ -193,100 +299,6 @@ std::vector<TecPlate> tecMeshFromMFnMeshUV(
 }
 
 
-MStatus TectonicNode::initialize()
-{
-    // initialise attributes
-	MFnNumericAttribute nFn;
-	MFnGenericAttribute gFn;
-	MFnTypedAttribute tFn;
-	MFnUnitAttribute uFn;
-	MFnCompoundAttribute cFn;
-	MFnEnumAttribute eFn;
-	MFnAttribute aFn;
-	MFnMessageAttribute mFn;
-
-	MFnMeshData mData;
-	MObject defaultMesh = mData.create();
-
-	// mesh inputs
-	aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh, defaultMesh);
-	defaultMesh = mData.create();
-	aBaseMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh, defaultMesh);
-
-	// string data for uv set
-	MFnStringData sFn;
-	MObject defaultString;
-	defaultString = sFn.create("map1");
-	aUVSet = tFn.create("uvSet", "uvSet", MFnData::kString, defaultString);
-
-	aBind = makeEnumAttr<BindState>("bind");
-	aSplitMode = makeEnumAttr<SplitMode>("splitMode");
-	aMode = makeEnumAttr<LiveState>("mode");
-
-	// constraint array
-	aConstraints = nFn.create("constraints", "constraints",
-		MFnNumericData::kBoolean);
-	nFn.setArray(true);
-	nFn.setUsesArrayDataBuilder(true);
-
-	// dynamics attributes
-	// global solver iterations
-	aGlobalIterations = nFn.create("iterations", "iterations",
-		MFnNumericData::kInt, 1);
-	// scale timestep by this value
-	aTimeStep = nFn.create("iterations", "iterations",
-		MFnNumericData::kFloat, 1.0);
-
-	// tracks current time during playback
-	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
-	tFn.setReadable(true);
-	tFn.setWritable(true);
-
-	// previous time value, stored to figure out timestep
-	aPrevTime = uFn.create("prevTime", "prevTime", MFnUnitAttribute::kTime, 0.0);
-	tFn.setReadable(true);
-	tFn.setWritable(false);
-
-	// attribute used to update cell - time is most convenient
-	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 1.0);
-
-	// query attributes
-	aQueryPlates = cFn.create("queryPlates", "queryPlates");
-		aQueryPos = nFn.create("pos", "pos", MFnNumericData::k3Double);
-		aQueryIndex = nFn.create("index", "index", MFnNumericData::k3Double);
-		aQueryMatrix = tFn.create("matrix", "matrix", MFnMatrixData::kMatrix);
-
-	cFn.addChild(aQueryPos);
-	cFn.addChild(aQueryIndex);
-	cFn.addChild(aQueryMatrix);
-
-
-	// outputs
-	defaultMesh = mData.create();
-	aOutMesh = tFn.create("outMesh", "outMesh", MFnData::kMesh, defaultMesh);
-	defaultMesh = mData.create();
-	aOutCutMesh = tFn.create("outCutMesh", "outCutMesh", MFnData::kMesh, defaultMesh);
-	aOutMatrices = tFn.create("outMatrices", "outMatrices",
-		MFnData::kMatrixArray);
-
-
-	std::vector<MObject> drivers = {
-		//aInMesh,
-		aInMesh, aBind, aMode, aConstraints, aGlobalIterations,
-		aUVSet,
-	};
-	std::vector<MObject> driven = {
-		aOutMesh
-	};
-
-	addAttributes<TectonicNode>(drivers);
-	addAttributes<TectonicNode>(driven);
-
-	setAttributesAffect<TectonicNode>(drivers, driven);
-
-    return MStatus::kSuccess;
-}
-
 
 MStatus TectonicNode::bind(MDataBlock& data, MStatus& s) {
 	/* run bind operations for Tectonic node
@@ -335,13 +347,13 @@ MStatus TectonicNode::compute(
 		return MS::kSuccess;
 		break;
 	case BindState::bind: // bind and set to bound, then continue
-		bind(data, s);
+		//bind(data, s);
 		data.outputValue(aBind).setInt(BindState::bound);
 		break;
 	case BindState::bound: // continue
 		break;
 	case BindState::live: // bind and continue, leave on live
-		bind(data, s);
+		//bind(data, s);
 		break;
 	}
 
@@ -372,7 +384,7 @@ MStatus TectonicNode::connectionMade(
 		return MPxNode::connectionMade(plug, otherPlug, asSrc);
 	}
 	MStatus s;
-	s = syncConnections(s);
+	//s = syncConnections(s);
 	MCHECK(s, "failure in tecNode connectionMade")
 	//getConnectedConstraints();
 	return MPxNode::connectionMade(plug, otherPlug, asSrc);
@@ -385,7 +397,7 @@ MStatus TectonicNode::connectionBroken(
 		return MPxNode::connectionBroken(plug, otherPlug, asSrc);
 	}
 	MStatus s;
-	s = syncConnections(s);
+	//s = syncConnections(s);
 	MCHECK(s, "failure in tecNode connectionBroken")
 	//getConnectedConstraints();
 	return MPxNode::connectionBroken(plug, otherPlug, asSrc);
@@ -403,19 +415,38 @@ void TectonicNode::postConstructor() {
 	this->setExistWithoutOutConnections(true);
 
 	MStatus stat;
+	MFnDependencyNode thisFn(thisMObject(), &stat);
+	//MCHECK(stat, "tecNode postConstructor unable to initialise thisFn");
+	if (stat != MStatus::kSuccess) {
+		DEBUGSL("tecNode postConstructor unable to initialise thisFn");
+		return;
+	}
+
+
 	// connect time1 by default
 	MSelectionList sel;
 	sel.add("time1");
-	MFnDependencyNode thisFn(thisMObject());
 	MObject timeObj;
 	sel.getDependNode(0, timeObj);
 	MFnDependencyNode timeFn(timeObj);
 
-	MPlug outTimePlug = timeFn.findPlug("outTime");
-	MPlug inTimePlug = thisFn.findPlug("time");
+	MPlug outTimePlug = timeFn.findPlug("outTime", true, &stat);
+	if (stat != MStatus::kSuccess) {
+		DEBUGSL("tecNode postConstructor unable to find time1.outTime");
+		return;
+	}
+	MPlug inTimePlug = thisFn.findPlug(aTime, true, &stat);
+	if (stat != MStatus::kSuccess) {
+		DEBUGSL("tecNode postConstructor unable to find this node aTime plug");
+		return;
+	}
 	MDGModifier dgMod;
 	dgMod.connect(outTimePlug, inTimePlug);
-	dgMod.doIt();
+	stat = dgMod.doIt();
+	if (stat != MStatus::kSuccess) {
+		DEBUGSL("tecNode postConstructor unable to make outTime connection");
+		return;
+	}
 }
 
 TectonicNode::TectonicNode() {};

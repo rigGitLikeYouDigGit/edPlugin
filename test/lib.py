@@ -16,8 +16,6 @@ class MayaTest(unittest.TestCase):
 	clearScene = True
 
 	def setUp(self):
-		# from maya import standalone
-		# standalone.initialize()
 		if self.clearScene:
 			cmds.file(new=1, f=1)
 
@@ -35,7 +33,6 @@ class MayaTest(unittest.TestCase):
 
 				self.assertEqual(typeName, cmds.nodeType(node),
 					msg=f"""Node {node} type is not correct""")
-
 
 			except:
 				self.fail(msg=f"""Creating node {node} raised error""")
