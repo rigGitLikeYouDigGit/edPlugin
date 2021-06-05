@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <tuple>
 #include <utility>
 //#include <span>
@@ -149,8 +150,9 @@ namespace ed {
 			//DEBUGVI(values);
 			//DEBUGS(entryLength(entryIndex));
 			Span<T> result{
-				values.data() + offsets[entryIndex],
-				entryLength(entryIndex)
+				entryLength(entryIndex),
+				values.data() + offsets[entryIndex]
+
 			};
 			/*DEBUGVI(result);*/
 			return result;

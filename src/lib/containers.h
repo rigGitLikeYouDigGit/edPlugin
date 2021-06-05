@@ -21,8 +21,9 @@ namespace ed {
 	// the simplest possible array representation
 	template <class T>
 	struct Span {
-		T* arr; 
 		int length;
+		T* arr; 
+		
 
 		class iterator
 		{

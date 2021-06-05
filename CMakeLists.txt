@@ -16,7 +16,7 @@ set(CMAKE_ARCJOVE)
 file(GLOB SOURCE_FILES "src/*.cpp" "src/*.h" "src/lib/*.cpp" "src/lib/*.h" 
 	"src/deformer/*.h" "src/deformer/*.cpp" "src/*/*.cpp" "src/*/*.h")
 #file(GLOB SOURCE_FILES "src/plugin.cpp")
-
+#
 
 
  

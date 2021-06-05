@@ -28,9 +28,21 @@ MObject MeshToBuffers::aUvCoords;
 MObject MeshToBuffers::aBind;
 
 MObject MeshToBuffers::aPointVectors;
+	MObject MeshToBuffers::aPointVectorsX;
+	MObject MeshToBuffers::aPointVectorsY;
+	MObject MeshToBuffers::aPointVectorsZ;
 MObject MeshToBuffers::aFaceVectors;
+	MObject MeshToBuffers::aFaceVectorsX;
+	MObject MeshToBuffers::aFaceVectorsY;
+	MObject MeshToBuffers::aFaceVectorsZ;
 MObject MeshToBuffers::aPointNormalVectors;
+	MObject MeshToBuffers::aPointNormalVectorsX;
+	MObject MeshToBuffers::aPointNormalVectorsY;
+	MObject MeshToBuffers::aPointNormalVectorsZ;
 MObject MeshToBuffers::aFaceNormalVectors;
+	MObject MeshToBuffers::aFaceNormalVectorsX;
+	MObject MeshToBuffers::aFaceNormalVectorsY;
+	MObject MeshToBuffers::aFaceNormalVectorsZ;
 
 MObject MeshToBuffers::aHedgeMesh;
 
@@ -40,33 +52,27 @@ MStatus MeshToBuffers::initialize()
     MFnTypedAttribute tFn;
     MFnNumericAttribute nFn;
 	//MFnEnumAttribute fn;
+	MFnUnitAttribute uFn;
+	MFnCompoundAttribute cFn;
 
 
     // main inputs
     aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh);
-    tFn.setReadable(true);
+    tFn.setReadable(false);
     tFn.setWritable(true);
-    //addAttribute(aInMesh);
 
     // outputs
 	aFaceConnects = tFn.create("faceConnects", "faceConnects", MFnData::kIntArray);
-	//addAttribute(aFaceConnects);
 
     aFaceOffsets = tFn.create("faceOffsets", "faceOffsets", MFnData::kIntArray);
-    //addAttribute( aFaceOffsets );
 
-
-    aPointPositions = tFn.create("pointPositions", "pointPositions", MFnData::kFloatArray);
-    //addAttribute( aPointPositions );
+    aPointPositions = tFn.create("pointPositionsRaw", "pointPositionsRaw", MFnData::kFloatArray);
 
 	aPointConnects = tFn.create("pointConnects", "pointConnects", MFnData::kIntArray);
-	//addAttribute(aPointConnects);
 
 	aPointOffsets = tFn.create("pointOffsets", "pointOffsets", MFnData::kIntArray);
-	//addAttribute(aPointOffsets);
 
-	aNormals = tFn.create("normals", "normals", MFnData::kFloatArray);
-	//addAttribute(aNormals);
+	aNormals = tFn.create("normalsRaw", "normalsRaw", MFnData::kFloatArray);
 
 	// uv buffers are arrays, one for each uv set of mesh
 	aUvCoords = tFn.create("uvCoords", "uvCoords", MFnData::kFloatArray);
@@ -76,14 +82,23 @@ MStatus MeshToBuffers::initialize()
 
 
     // bind
-	/*aBind = makeBindAttr("bind");*/
 	aBind = makeEnumAttr<BindState>("bind");
 
 	// vector values
-	aPointVectors = nFn.create("pointVectors", "pointVectors",
-		MFnNumericData::k3Double);
-	aFaceVectors = nFn.create("pointVectors", "pointVectors",
-		MFnNumericData::k3Double);
+
+	aPointVectors = makeXYZVectorAttr("point", aPointVectors,
+		aPointVectorsX, aPointVectorsY, aPointVectorsZ,
+		true);
+
+
+	aFaceVectors = makeXYZVectorAttr("face", aFaceVectors,
+		aFaceVectorsX, aFaceVectorsY, aFaceVectorsZ, true);
+
+	aPointNormalVectors = makeXYZVectorAttr("pointNormal", aPointNormalVectors,
+		aPointNormalVectorsX, aPointNormalVectorsY, aPointNormalVectorsZ, true);
+
+	aFaceNormalVectors = makeXYZVectorAttr("faceNormal", aFaceNormalVectors,
+		aFaceNormalVectorsX, aFaceNormalVectorsY, aFaceNormalVectorsZ, true);
 
 	vector<MObject> drivers = {
 		aInMesh, aBind
@@ -91,7 +106,11 @@ MStatus MeshToBuffers::initialize()
 	vector<MObject> driven = {
 		aFaceConnects, aFaceOffsets, aPointPositions, aPointConnects,
 		aPointOffsets, aFaceCentres, aNormals, aUvCoords,
+		aPointVectors, aFaceVectors,
+		aPointNormalVectors, aFaceNormalVectors
 	};
+
+
 
 	addAttributes<MeshToBuffers>(drivers);
 	addAttributes<MeshToBuffers>(driven);
@@ -110,6 +129,7 @@ MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
 		// face buffers
 	//DEBUGS("MTB bind")
 	int nPolys = meshFn.numPolygons();
+	int nPoints = meshFn.numVertices();
 	MIntArray allFaceVertices;
 	MIntArray faceVertexOffsets = MIntArray(nPolys); // offsets into allFaceVertices
 	int offsetIndex = 0;
@@ -146,36 +166,38 @@ MStatus MeshToBuffers::bind(MDataBlock& data, MFnMesh& meshFn, MStatus& s) {
 	faceOffsetDH.setMObject(faceOffsetObj);
 
 	// find point connections
-	//std::vector<int> faceVector = MIntArrayToVector(allFaceVertices);
 	std::vector<int> faceVector = MayaContainerToVector<int, MIntArray>(allFaceVertices);
 	
 ;	std::vector<int> faceOffsetVector = MIntArrayToVector(faceVertexOffsets);
-	//DEBUGS("faceVector");
-	//DEBUGVI(faceVector);
-	//DEBUGS("faceOffsets");
-	//DEBUGVI(faceOffsetVector);
 
-
-	//tie(pointConnects, pointOffsets) = ed::pointBufferFromFaceBuffer(faceVector, faceOffsetVector);
 	OffsetBuffer<int> result = ed::pointBufferFromFaceVectors(faceVector, faceOffsetVector);
 
 	std::vector<int> pointConnects = result.values, pointOffsets = result.offsets;
 
-	//DEBUGS("point buffer");
-	//DEBUGVI(pointConnects);
-	//DEBUGVI(pointOffsets);
-
-	/*MIntArray pointConnectsArray = vectorToMIntArray(pointConnects);*/
-	MIntArray pointConnectsArray(pointConnects.data(), pointConnects.size());
+	MIntArray pointConnectsArray(pointConnects.data(), static_cast<int>(pointConnects.size()));
 	MObject pointObj = faceData.create(pointConnectsArray);
 	MDataHandle pointConnectsDH = data.outputValue(aPointConnects);
 	pointConnectsDH.setMObject(pointObj);
 
 	//MIntArray pointOffsetArray = vectorToMIntArray(pointOffsets);
-	MIntArray pointOffsetArray(pointOffsets.data(), pointOffsets.size());
+	MIntArray pointOffsetArray(pointOffsets.data(), static_cast<int>(pointOffsets.size()));
 	MObject pointOffsetObj = faceData.create(pointOffsetArray);
 	MDataHandle pointOffsetDH = data.outputValue(aPointOffsets);
 	pointOffsetDH.setMObject(pointOffsetObj);
+
+
+	// set length of varying plugs
+	for (int i = 0; i < nPoints; i++) {
+		for (MObject obj : {aPointVectors, aPointNormalVectors}) {
+			jumpToElement(data.outputArrayValue(obj), i);
+		}
+	}
+	for (int i = 0; i < nPolys; i++) {
+		for (MObject obj : {aFaceVectors, aFaceNormalVectors}) {
+			jumpToElement(data.outputArrayValue(obj), i);
+		}
+	}
+
 	return s;
 }
 
@@ -206,13 +228,22 @@ MStatus MeshToBuffers::compute(
 
 	// positions first
 	const float * rawPoints = meshFn.getRawPoints(&s);
+	MCHECK(s, "Error in float point extraction");
 
-	//MFloatArray positions = MFloatArray( nPoints * 3, 0.0);
-	MFloatArray positions = MFloatArray( rawPoints, nPoints * 3);
-	// don't know how to do rawPoints yet
+	// getRawDoublePoints flat out does not work
+	/*const double * rawDoublePoints = meshFn.getRawDoublePoints(&s);
+	MCHECK(s, "Error in double point extraction");*/
 
+	MFloatArray positions = MFloatArray(rawPoints, nPoints * 3);
+	
+	
+	///MVectorArray positionsVec = MVectorArrayFromPtr(rawDoublePoints, nPoints);
+	MVectorArray positionsVec = MVectorArrayFromPtr(rawPoints, nPoints);
 	MFnFloatArrayData floatData;
 	MObject positionsData = floatData.create( positions );
+
+	MFnVectorArrayData vecData;
+	MObject positionsVecData = vecData.create(positionsVec);
 
 	// check bind
 	int bindVal = data.inputValue(aBind).asInt();
@@ -235,16 +266,115 @@ MStatus MeshToBuffers::compute(
 		break;
 	}
 
-
+	// DEBUGS("After MTB bind")
 	// set outputs
-	MDataHandle positionsDH = data.outputValue( aPointPositions );
-	positionsDH.setMObject( positionsData );
+	MDataHandle positionsDH = data.outputValue( aPointPositions, &s );
+	MCHECK(s, "Error extracting float positions output handle");
+	positionsDH.setMObject( positionsData);
+
+	// vector outputs
+	MArrayDataHandle positionsVecDH = data.outputArrayValue(aPointVectors, &s);
+	MCHECK(s, "Error extracting vector positions output handle");
+
+	for (int i = 0; i < nPoints; i++) {
+		jumpToElement(positionsVecDH, i);
+		//positionsVecDH.outputValue().set3Float(
+		positionsVecDH.outputValue().set3Double(
+			rawPoints[i * 3], rawPoints[i * 3 + 1], rawPoints[i * 3 + 2]
+		);
+	}
+
+	// optional outputs
+	// this could probably be more efficient by using the existing raw buffers
+	// but it's not a huge issue
+
+	
+
+	if (connectedOutputs.count(&aFaceVectors)) {
+		DEBUGS("Face vectors connected, setting outputs");
+		for (int i = 0; i < nPolys; i++) {
+			
+		}
+		// set clean
+		for (MObject* obj : (attrParentToChild[&aFaceNormalVectors])) {
+			data.setClean(*obj);
+		}
+	}
+
+	if (connectedOutputs.count(&aPointNormalVectors)) {
+		MArrayDataHandle normalsVecDH = data.outputArrayValue(aPointNormalVectors, &s);
+		MCHECK(s, "Error extracting point normal vector output handle");
+		for (int i = 0; i < nPoints; i++) {
+			jumpToElement(normalsVecDH, i);
+			MVector normal;
+			meshFn.getVertexNormal(i, false, // angle weighted
+				normal, MSpace::kObject);
+			normalsVecDH.outputValue().setMVector(normal);
+		}
+		// set clean
+		for (MObject* obj : (attrParentToChild[&aPointNormalVectors])) {
+			data.setClean(*obj);
+		}
+
+	}
+
+	if (connectedOutputs.count(&aFaceNormalVectors)) {
+		MArrayDataHandle faceNormalsVecDH = data.outputArrayValue(aPointNormalVectors, &s);
+		MCHECK(s, "Error extracting face normal vector output handle");
+		for (int i = 0; i < nPolys; i++) {
+			jumpToElement(faceNormalsVecDH, i);
+			MVector normal;
+			meshFn.getPolygonNormal(i, // angle weighted
+				normal, MSpace::kObject);
+			faceNormalsVecDH.outputValue().setMVector(normal);
+		}
+		// set clean
+		for (MObject* obj : (attrParentToChild[&aFaceNormalVectors])) {
+			data.setClean(*obj);
+		}
+	}
 
 	data.setClean(plug);
 
-
     return MS::kSuccess;
 }
+
+void MeshToBuffers::syncConnections() {
+	//DEBUGS("Sync connections")
+	attrParentToChild.clear();
+	attrParentToChild.insert(
+		{ &aPointVectors, { &aPointVectors, &aPointVectorsX, &aPointVectorsY, &aPointVectorsZ } });
+	attrParentToChild.insert(
+		{ &aFaceVectors, { &aFaceVectors, &aFaceVectorsX, &aFaceVectorsY, &aFaceVectorsZ } });
+	attrParentToChild.insert(
+		{ &aPointNormalVectors, { &aPointNormalVectors, &aPointNormalVectorsX, &aPointNormalVectorsY, &aPointNormalVectorsZ } });
+	attrParentToChild.insert(
+		{ &aFaceNormalVectors, { &aFaceNormalVectors, &aFaceNormalVectorsX, &aFaceNormalVectorsY, &aFaceNormalVectorsZ } });
+
+	MFnDependencyNode nFn(thisMObject());
+	//DEBUGS("node name " << nFn.name());
+
+	for (auto i : attrParentToChild) {
+		MPlug parentPlug = nFn.findPlug(*(i.first), true);
+		//DEBUGS("testing parentPlug" << parentPlug.info());
+		std::vector<MPlug> childPlugs = getAllChildPlugs(parentPlug);
+
+		//for (MObject* childObj : i.second) {
+			//MPlug plug = nFn.findPlug(*childObj, true);
+		for (MPlug plug: childPlugs){
+			//DEBUGS("check plug " << plug.name());
+			//DEBUGS(plug.isNull());
+			//DEBUGS(plug.info());
+			//
+			if (plug.isConnected()) {
+				//DEBUGS("is connected")
+				connectedOutputs.insert(i.first);
+			}
+		}
+	}
+
+}
+
 
 /// boiler plate
 
@@ -254,25 +384,29 @@ void MeshToBuffers::postConstructor() {
 }
 MStatus MeshToBuffers::connectionMade(
 	const MPlug& plug, const MPlug& otherPlug, bool asSrc) {
+	// asSrc - is THIS NODE'S PLUG the source of a connection
 
-	if (plug.attribute() != aInMesh) {
-		return MPxNode::connectionMade(plug, otherPlug, asSrc);
+	if (plug.attribute() == aInMesh) {
+		isConnected = true;
 	}
-	isConnected = true;
+	
+	auto result = MPxNode::connectionMade(plug, otherPlug, asSrc);
+	syncConnections();
+	return result;
 
-	return MPxNode::connectionMade(plug, otherPlug, asSrc);
 }
 
 MStatus MeshToBuffers::connectionBroken(
 	const MPlug& plug, const MPlug& otherPlug, bool asSrc) {
 
 
-	if (plug.attribute() != aInMesh) {
-		return MPxNode::connectionBroken(plug, otherPlug, asSrc);
+	if (plug.attribute() == aInMesh) {
+		isConnected = false;
 	}
-	isConnected = false;
 
-	return MPxNode::connectionBroken(plug, otherPlug, asSrc);
+	auto result = MPxNode::connectionBroken(plug, otherPlug, asSrc);
+	syncConnections();
+	return result;
 }
 
 

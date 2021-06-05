@@ -92,6 +92,7 @@ else, use
 
 #include "macro.h"
 #include "enum.h"
+#include "stdlib.h"
 
 
 
@@ -142,6 +143,123 @@ static MObject makeBindAttr( char* name ){
     return newBind;
 }
 
+//static MObject makeXYZVectorAttr(const char* name, bool isArray=false) {
+//	//creates a triple float vector attribute like "translate" on dag nodes
+//	MObject parent;
+//	MObject childX, childY, childZ;
+//	MFnNumericAttribute nFn;
+//	MFnCompoundAttribute cFn;
+//	//parent = nFn.create(name, name, MFnNumericData::k3Double);
+//	parent = cFn.create(name, name);
+//	std::string tempName = name;
+//	const char* xName = (tempName + "X").c_str();
+//	childX = nFn.create(xName, xName, MFnNumericData::kDouble);
+//	cFn.addChild(childX);
+//	const char* yName = (tempName + "Y").c_str();
+//	childY = nFn.create(yName, yName, MFnNumericData::kDouble);
+//	cFn.addChild(childY);
+//	const char* zName = (tempName + "Z").c_str();
+//	childZ = nFn.create(zName, zName, MFnNumericData::kDouble);
+//	cFn.addChild(childZ);
+//
+//	if (isArray) {
+//		cFn.setArray(true);
+//		cFn.setUsesArrayDataBuilder(true);
+//	}
+//	return parent;
+//}
+
+static std::vector<MPlug> getAllChildPlugs(MPlug& parent) {
+	// return depth-first list of all plugs under parent
+	std::vector<MPlug> result { parent };
+	//parent.evaluateNumElements();
+	if (parent.isArray()) {
+		for (unsigned int i = 0; i < parent.numElements(); i++) {
+			auto childResult = getAllChildPlugs(parent.elementByPhysicalIndex(i));
+			joinVectors(result, childResult);
+		}
+	}
+	else if (parent.isCompound()) {
+		for (unsigned int i = 0; i < parent.numChildren(); i++) {
+			auto childResult = getAllChildPlugs(parent.child(i));
+			joinVectors(result, childResult);
+		}
+	}
+	return result;
+}
+
+
+
+
+//static std::vector<MPlug> getAllChildPlugs(MPlug& parent) {
+//	// return depth-first list of all plugs under parent
+//	std::vector<MPlug> result{ parent };
+//	if (parent.isArray()) {
+//		for (int i = 0; i < parent.numElements(); i++) {
+//			auto childResult = getAllChildPlugs(parent.elementByPhysicalIndex(i));
+//			joinVectors(result, childResult);
+//		}
+//	}
+//	else if (parent.isCompound()) {
+//		for (int i = 0; i < parent.numChildren(); i++) {
+//			auto childResult = getAllChildPlugs(parent.elementByPhysicalIndex(i));
+//			joinVectors(result, childResult);
+//		}
+//	}
+//	return result;
+//}
+
+
+
+static MObject makeXYZVectorAttr(char* name, MObject & parentObj, 
+	MObject &childX, MObject& childY, MObject& childZ,
+	bool isArray = false) {
+	//creates a triple float vector attribute like "translate" on dag nodes
+	//MObject parent;
+	MFnNumericAttribute nFn;
+	MFnCompoundAttribute cFn;
+	MFnUnitAttribute uFn;
+
+	MString mName(name);
+
+	MObject objs[] = { childX, childY, childZ };
+	/*const char* names[] = { "vectorX", "vectorY", "vectorZ" };*/
+	const char* names[] = { "X", "Y", "Z" };
+	/*for (int i = 0; i < 3; i++)
+	{
+		MString childName = mName + MString(names[i]);
+		objs[i] = nFn.create(childName, childName,
+			MFnNumericData::kDouble
+		);
+	}*/
+
+	/*childX = nFn.create(names[i], names[i],
+		MFnNumericData::kDouble
+	);*/
+
+	MString childName = mName + MString("X");
+	childX = nFn.create(childName, childName, MFnNumericData::kDouble);
+	childName = mName + MString("Y");
+	childY = nFn.create(childName, childName, MFnNumericData::kDouble);
+	childName = mName + MString("Z");
+	childZ = nFn.create(childName, childName, MFnNumericData::kDouble);
+	
+	//parent = nFn.create(name, name, objs[0], objs[1], objs[2]);
+	//parentObj = nFn.create(name, name, objs[0], objs[1], objs[2]);
+	parentObj = nFn.create(name, name, childX, childY, childZ);
+
+	if (isArray) {
+		nFn.setArray(true);
+		nFn.setUsesArrayDataBuilder(true);
+	}
+	return parentObj;
+}
+
+//static MObject makeXYZVectorAttr(char* name, MObject & parentObj, bool isArray = false) {
+//	MObject childX, childY, childZ;
+//	MObject objs[] = { childX, childY, childZ };
+//	return  makeXYZVectorAttr(name, parentObj, objs, isArray);
+//}
 
 //enum SpaceMethod { naive, partitioning };
 BETTER_ENUM(SpaceMethod, int, naive, partitioning)
@@ -372,41 +490,54 @@ inline std::vector<double> MVectorArrayToVector(MVectorArray& arr) {
 }
 
 
-//inline std::vector<int> MIntArrayToVector(MIntArray &arr) {
-//	// constructs stl vector from int array
-//	//DEBUGS("api.h MIntArrayToVector");
-//	//std::vector<int> output(arr.length(), 1);
-//	//for (unsigned int i = 0; i < arr.length(); i++) {
-//	//	output[i] = arr[i];
-//	//}
-//	std::vector<int> result;
-//	result.assign(&(arr[0]),
-//		&(arr[0]) + arr.length());
-//	return result;
-//}
-//
-//inline std::vector<float> MFloatArrayToVector(MFloatArray &arr) {
-//	// constructs stl vector from float array
-//	// sorry if there's a more elegant way to template these
-//	DEBUGS("api.h MFloatArrayToVector")
-//	std::vector<float> output( static_cast<int>( arr.length() ), 1);
-//	for (unsigned int i = 0; i < arr.length(); i++) {
-//		output[i] = arr[i];
-//	}
-//	return output;
-//}
 
-//inline std::vector<float> MVectorArrayToVector(MVectorArray &arr) {
-//	// constructs stl vector from MVectorArray
-//	DEBUGS("api.h MVectorArrayToVector");
-//	std::vector<float> output(static_cast<int>(arr.length()) * 3, 1);
-//	for (unsigned int i = 0; i < arr.length(); i++) {
-//		output[i*3] = static_cast<float>(arr[i].x);
-//		output[i*3 + 1] = static_cast<float>(arr[i].y);
-//		output[i*3 + 2] = static_cast<float>(arr[i].z);
-//	}
-//	return output;
-//}
+inline MVectorArray MVectorArrayFromPtr(const float* ptr, unsigned int nVectors) {
+	// used for things like getRawPoints, getRawDoublePoints etc
+	// inefficient for now
+	MVectorArray arr(nVectors);
+	for (unsigned int i = 0; i < nVectors; i++) {
+		arr[i] = MVector(ptr[i * 3], ptr[i * 3 + 1], ptr[i * 3 + 2]);
+	}
+	return arr;
+}
+
+inline MVectorArray MVectorArrayFromPtr(const double* ptr, unsigned int nVectors) {
+	// used for things like getRawPoints, getRawDoublePoints etc
+	// inefficient for now
+	MVectorArray arr(nVectors);
+	for (unsigned int i = 0; i < nVectors; i++) {
+		arr[i] = MVector(ptr[i * 3], ptr[i * 3 + 1], ptr[i * 3 + 2]);
+	}
+	/*
+	
+	double test [4][3];
+	double *test2;
+	//const double vectors[][3];
+	double(*temp)[3] = new double[1][3];
+	//double(&(rawDoublePoints))[3] = *temp;
+	//double(&(rawDoublePoints))[3] = *temp;
+
+	double (&temp)
+	
+
+	//MFloatArray positions = MFloatArray( nPoints * 3, 0.0);
+	MFloatArray positions = MFloatArray( rawPoints, nPoints * 3);
+	MVectorArray positionsVec = MVectorArray(
+		//rawDoublePoints,
+		//test,
+		temp,
+		//static_cast<const MVector*>(&rawDoublePoints[0]), 
+		//static_cast<MVector*>(rawDoublePoints), 
+		//static_cast<MVector*>(const_cast<double*>(rawDoublePoints)), 
+		static_cast<unsigned int>(nPoints));
+	delete[] temp;
+	// don't know how to do rawPoints yet
+	
+	
+	*/
+	return arr;
+}
+
 
 inline MIntArray vectorToMIntArray(std::vector<int> &v) {
 	// constructs MIntArray from stl float vector

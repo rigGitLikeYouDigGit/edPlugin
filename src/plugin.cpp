@@ -96,7 +96,7 @@ MStatus initializePlugin( MObject obj ){
     int s = MPxNode::kDependNode;
     /*s = MPxNode::schedulingType(;*/
     // deformers
-    status = REGISTER_DEFORMER(EdPush);
+    //status = REGISTER_DEFORMER(EdPush);
 
  //   // gpu gubs
 
@@ -132,7 +132,7 @@ MStatus uninitializePlugin( MObject obj ){
     MStatus status;
     MFnPlugin fnPlugin(obj);
 
-    status = DEREGISTER_NODE( EdPush );
+    //status = DEREGISTER_NODE( EdPush );
  //   status = DEREGISTER_NODE( MeshAnalysis );
  //   // BEGIN PROCEDURAL CONTROL DEREGISTER
     status = DEREGISTER_NODE( MeshToBuffers );

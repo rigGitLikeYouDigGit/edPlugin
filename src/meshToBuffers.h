@@ -30,6 +30,15 @@ class MeshToBuffers : public MPxNode {
         // track state of input mesh connection
         bool isConnected = false;
 
+        // track status of output connections
+        std::unordered_set<MObject *> connectedOutputs; // top level attrs
+        std::map<MObject*, MObject*> attrChildToParent;
+        std::map<MObject*, std::unordered_set<MObject*>> attrParentToChild;
+
+        void syncConnections();
+
+
+
 public:
     static MTypeId kNODE_ID;
     static MString kNODE_NAME;
@@ -51,9 +60,21 @@ public:
     
     // vector values for the above
     static MObject aPointVectors;
+        static MObject aPointVectorsX;
+        static MObject aPointVectorsY;
+        static MObject aPointVectorsZ;
     static MObject aFaceVectors;
+        static MObject aFaceVectorsX;
+        static MObject aFaceVectorsY;
+        static MObject aFaceVectorsZ;
     static MObject aPointNormalVectors;
+        static MObject aPointNormalVectorsX;
+        static MObject aPointNormalVectorsY;
+        static MObject aPointNormalVectorsZ;
     static MObject aFaceNormalVectors;
+        static MObject aFaceNormalVectorsX;
+        static MObject aFaceNormalVectorsY;
+        static MObject aFaceNormalVectorsZ;
 
     // custom mesh data struct ooh it's very spooky
     static MObject aHedgeMesh;

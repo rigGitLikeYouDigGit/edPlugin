@@ -15,6 +15,8 @@ from edPlugin import MLL_PATH, MLL_RELEASE_PATH, PLUGIN_ID, MLL_DIR
 from edPlugin.test import meshanalysis, memory
 reload(memory)
 
+from edPlugin.test.lib import MayaTest
+
 from edPlugin.test import test_meshToBuffers
 reload(test_meshToBuffers)
 
@@ -50,6 +52,9 @@ def loadPlugin(path=None):
 	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin.mll", quiet=True )
 
 
+dirPath = "F:/all_projects_desktop/common/edCode/edPlugin/test"
+
+
 def runTests():
 	""" loads plugin and runs tests """
 	cmds.file(new=1, f=1)
@@ -59,10 +64,18 @@ def runTests():
 	nodes = cmds.pluginInfo(PLUGIN_ID, q=1, dependNode=1)
 	print(nodes)
 
-	for node in nodes:
-		if testMap.get(node):
-			cmds.file(new=1, f=1)
-			testMap[node].test()
+	# for node in nodes:
+	# 	if testMap.get(node):
+	# 		cmds.file(new=1, f=1)
+	# 		testMap[node].test()
+
+	MayaTest.clearScene = False
+
+	loader = unittest.TestLoader()
+	suite = loader.discover(dirPath)
+	runner = unittest.TextTestRunner()
+	runner.run(suite)
+
 
 
 	#createPluginNodes()

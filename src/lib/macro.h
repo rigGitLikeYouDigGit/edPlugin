@@ -10,6 +10,9 @@
 
  // as in "debugString"
 #define DEBUGS(info) \
+COUT << info << std::endl;
+
+#define DEBUGSL(info) \
 COUT << __FILE__ << " " << __LINE__ << " \n" << info << std::endl;
 
 // as in "debugVectorInt"
