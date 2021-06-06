@@ -27,47 +27,76 @@ MTypeId TectonicConstraintNode::kNODE_ID(0x00000000);
 MString TectonicConstraintNode::kNODE_NAME( "tectonicConstraint" );
 
 // Balance wheel signal to solver, to cast in the ConstraintData
-//MObject TectonicConstraintNode::aSolver;
-//
-//// goal point data - each has a tie of
-//// goal vector, base point vector
-//MObject TectonicConstraintNode::aGoals;
-//	MObject TectonicConstraintNode::aBasePos;
-//	MObject TectonicConstraintNode::aGoalPos;
-//
-//	// int attributes showing which point and plate connected to?
-//	MObject TectonicConstraintNode::aPointIndex;
-//	MObject TectonicConstraintNode::aPlateIndex;
-//
-//// all goals in single constraint share settings
-//
-//// spring settings
-//MObject TectonicConstraintNode::aStrength;
-//MObject TectonicConstraintNode::aDamping;
-//
-//// could use these as pistons
-//MObject TectonicConstraintNode::aTargetLength;
+MObject TectonicConstraintNode::aSolver;
+
+// goal point data - each has a tie of
+// goal vector, base point vector
+MObject TectonicConstraintNode::aGoals;
+	MObject TectonicConstraintNode::aBasePos;
+		MObject TectonicConstraintNode::aBasePosX;
+		MObject TectonicConstraintNode::aBasePosY;
+		MObject TectonicConstraintNode::aBasePosZ;
+	MObject TectonicConstraintNode::aGoalPos;
+		MObject TectonicConstraintNode::aGoalPosX;
+		MObject TectonicConstraintNode::aGoalPosY;
+		MObject TectonicConstraintNode::aGoalPosZ;
+
+	// int attributes showing which point and plate connected to?
+	MObject TectonicConstraintNode::aPointIndex;
+	MObject TectonicConstraintNode::aPlateIndex;
+
+// all goals in single constraint share settings
+
+// spring settings
+MObject TectonicConstraintNode::aStrength;
+MObject TectonicConstraintNode::aDamping;
+
+// could use these as pistons
+MObject TectonicConstraintNode::aTargetLength;
 
 MStatus TectonicConstraintNode::initialize()
 {
 
- //   // initialise attributes
- //   MFnTypedAttribute tFn;
- //   MFnNumericAttribute nFn;
+    // initialise attributes
+	MFnCompoundAttribute cFn;
+    MFnTypedAttribute tFn;
+    MFnNumericAttribute nFn;
 
-	//aSolver = nFn.create("solver", "solver",
-	//	MFnNumericData::kBoolean);
-	//nFn.setWritable(false);
+	aSolver = nFn.create("solver", "solver",
+		MFnNumericData::kBoolean);
+	nFn.setWritable(false);
 
-	//aStrength = nFn.create("strength", "strength",
-	//	MFnNumericData::kFloat);
+	// goal attributes
+	aGoals = cFn.create("goal", "goal");
+	aBasePos = makeXYZVectorAttr("basePos",
+		aBasePos, aBasePosX, aBasePosY, aBasePosZ, false);
+	aGoalPos = makeXYZVectorAttr("endPos",
+		aGoalPos, aGoalPosX, aGoalPosY, aGoalPosZ, false);
+	aPointIndex = nFn.create("pointIndex", "pointIndex",
+		MFnNumericData::kInt);
+	aPlateIndex = nFn.create("plateIndex", "plateIndex",
+		MFnNumericData::kInt);
+	cFn.setArray(true);
+	cFn.addChild(aBasePos);
+	cFn.addChild(aGoalPos);
+	cFn.addChild(aPointIndex);
+	cFn.addChild(aPlateIndex);
 
-	//std::vector<MObject> drivers { aStrength };
-	//std::vector<MObject> driven{ aSolver };
+	// dynamic control attributes
+	aStrength = nFn.create("strength", "strength",
+		MFnNumericData::kFloat);
+	aDamping = nFn.create("damping", "damping",
+		MFnNumericData::kFloat);
 
-	//setAttributesAffect<TectonicConstraintNode>(drivers, driven);
-	//addAttributes<TectonicConstraintNode>(drivers);
-	//addAttributes<TectonicConstraintNode>(driven);
+	std::vector<MObject> drivers { 
+		aGoals,
+		aStrength, aDamping };
+
+	std::vector<MObject> driven{ aSolver };
+
+	setAttributesAffect<TectonicConstraintNode>(drivers, driven);
+	addAttributes<TectonicConstraintNode>(drivers);
+	addAttributes<TectonicConstraintNode>(driven);
 
     return MStatus::kSuccess;
 }
@@ -75,10 +104,15 @@ MStatus TectonicConstraintNode::initialize()
 
 MStatus TectonicConstraintNode::compute(
 				const MPlug& plug, MDataBlock& data) {
-    // going with floats for now, can easily switch to doubles if needed
-	// initialise MFnMesh
 	//DEBUGS("TectonicConstraintNode compute")
 	MStatus s = MS::kSuccess;
+
+	// flip balance wheel switch
+	bool old = data.outputValue(aSolver).asBool();
+	data.outputValue(aSolver).setBool( !old );
+
+	
+
 
 	data.setClean(plug);
 
@@ -87,8 +121,8 @@ MStatus TectonicConstraintNode::compute(
 }
 
 void TectonicConstraintNode::postConstructor() {
-	//this->setExistWithoutInConnections(true);
-	//this->setExistWithoutOutConnections(true);
+	this->setExistWithoutInConnections(true);
+	this->setExistWithoutOutConnections(true);
 }
 
 

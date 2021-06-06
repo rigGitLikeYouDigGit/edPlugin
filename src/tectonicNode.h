@@ -19,8 +19,19 @@
 #include "tectonicConstraintNode.h"
 
 
+namespace ed {
+    // splitMode enum
+    BETTER_ENUM(SplitMode, int,
+        polygonShell, // raw poly connectivity, superposed vertices mean welds
+        uvShell // uv connectivity, uv islands are plates
+    );
+}
+
 class TectonicNode : public MPxNode {
     public:
+
+
+
         TectonicNode();
         virtual ~TectonicNode();
 
@@ -92,25 +103,32 @@ public:
     * returns the index and matrix of closest plate
     */
     static MObject aQueryPlates;
-        static MObject aQueryPos;
+        static MObject aQueryPos; // position looking up closest tectonic plate on base mesh
             static MObject aQueryPosX;
             static MObject aQueryPosY;
             static MObject aQueryPosZ;
-        static MObject aQueryIndex;
-        static MObject aQueryMatrix;
+        static MObject aQueryIndex; // can also be used to look up plate index
+        static MObject aQueryResultMatrix; // matrix of queried plate
+        // if position or index is queried, the other is populated with result
 
-    
+    static std::vector<MObject> driverMObjects;     
+
+
 
     // outputs
-    // output mesh
+    // output mesh, contiguous
     static MObject aOutMesh;
     // output cut mesh (very cool)
     static MObject aOutCutMesh;
     // matrix array attribute
     static MObject aOutMatrices;
-    
+    // int attribute to query with script, forces compute
+    static MObject aComplete;
 
+    static std::vector<MObject> drivenMObjects;
 
 };
+
+
 #endif
 	

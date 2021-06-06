@@ -26,27 +26,33 @@ public:
     static MTypeId kNODE_ID;
     static MString kNODE_NAME;
     
-    //// attribute MObjects
-    //static MObject aSolver;
+    // attribute MObjects
+    static MObject aSolver;
 
-    //// goal point data - each has a tie of
-    //// goal vector, base point vector
-    //static MObject aGoals;
-    //    static MObject aBasePos;
-    //    static MObject aGoalPos;
+    // goal point data - each has a tie of
+    // goal vector, base point vector
+    static MObject aGoals;
+        static MObject aBasePos;
+            static MObject aBasePosX;
+            static MObject aBasePosY;
+            static MObject aBasePosZ;
+        static MObject aGoalPos;
+            static MObject aGoalPosX;
+            static MObject aGoalPosY;
+            static MObject aGoalPosZ;
 
-    //    // int attributes showing which point and plate connected to?
-    //    static MObject aPointIndex;
-    //    static MObject aPlateIndex;
+        // int attributes showing which point and plate connected to?
+        static MObject aPointIndex;
+        static MObject aPlateIndex;
 
-    //// all goals in single constraint share settings
+    // all goals in single constraint share settings
  
-    //// spring settings
-    //static MObject aStrength;
-    //static MObject aDamping;
+    // spring settings
+    static MObject aStrength;
+    static MObject aDamping;
 
-    //// could use these as pistons
-    //static MObject aTargetLength;
+    // could use these as pistons
+    static MObject aTargetLength;
    
 
 };

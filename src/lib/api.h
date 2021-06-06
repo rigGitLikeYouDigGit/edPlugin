@@ -124,7 +124,13 @@ static MObject makeEnumAttr(char* name, T defaultVal) {
 		fn.addField(T::_names()[index],
 			T::_values()[index]);
 	}
-	fn.setDefault(defaultVal._to_integral());
+	//fn.setDefault(defaultVal._to_integral());
+	//fn.setDefault(static_cast<short>(defaultVal));
+	//fn.setDefault(std::find(T::_values(), T::_values() + T::_size(), defaultVal));
+	//fn.setDefault(static_cast<int>(defaultVal._to_index()));
+	fn.setDefault(static_cast<int>(defaultVal));
+	DEBUGS("setting enum default" << static_cast<int>(defaultVal)); // this works, extraction is janky
+	//fn.setDefault((defaultVal._to_index()));
 	fn.setKeyable(true);
 	fn.setHidden(false);
 	return newBind;
@@ -150,31 +156,6 @@ static MObject makeBindAttr( char* name ){
     return newBind;
 }
 
-//static MObject makeXYZVectorAttr(const char* name, bool isArray=false) {
-//	//creates a triple float vector attribute like "translate" on dag nodes
-//	MObject parent;
-//	MObject childX, childY, childZ;
-//	MFnNumericAttribute nFn;
-//	MFnCompoundAttribute cFn;
-//	//parent = nFn.create(name, name, MFnNumericData::k3Double);
-//	parent = cFn.create(name, name);
-//	std::string tempName = name;
-//	const char* xName = (tempName + "X").c_str();
-//	childX = nFn.create(xName, xName, MFnNumericData::kDouble);
-//	cFn.addChild(childX);
-//	const char* yName = (tempName + "Y").c_str();
-//	childY = nFn.create(yName, yName, MFnNumericData::kDouble);
-//	cFn.addChild(childY);
-//	const char* zName = (tempName + "Z").c_str();
-//	childZ = nFn.create(zName, zName, MFnNumericData::kDouble);
-//	cFn.addChild(childZ);
-//
-//	if (isArray) {
-//		cFn.setArray(true);
-//		cFn.setUsesArrayDataBuilder(true);
-//	}
-//	return parent;
-//}
 
 static std::vector<MPlug> getAllChildPlugs(MPlug& parent) {
 	// return depth-first list of all plugs under parent
@@ -195,26 +176,6 @@ static std::vector<MPlug> getAllChildPlugs(MPlug& parent) {
 	return result;
 }
 
-
-
-
-//static std::vector<MPlug> getAllChildPlugs(MPlug& parent) {
-//	// return depth-first list of all plugs under parent
-//	std::vector<MPlug> result{ parent };
-//	if (parent.isArray()) {
-//		for (int i = 0; i < parent.numElements(); i++) {
-//			auto childResult = getAllChildPlugs(parent.elementByPhysicalIndex(i));
-//			joinVectors(result, childResult);
-//		}
-//	}
-//	else if (parent.isCompound()) {
-//		for (int i = 0; i < parent.numChildren(); i++) {
-//			auto childResult = getAllChildPlugs(parent.elementByPhysicalIndex(i));
-//			joinVectors(result, childResult);
-//		}
-//	}
-//	return result;
-//}
 
 
 

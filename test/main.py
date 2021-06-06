@@ -20,6 +20,11 @@ from edPlugin.test.lib import MayaTest
 from edPlugin.test import test_meshToBuffers
 reload(test_meshToBuffers)
 
+from edPlugin.test import test_tectonic
+reload(test_tectonic)
+
+reload(unittest)
+
 testMap = {
 	"meshToBuffers" : test_meshToBuffers,
 }
@@ -71,10 +76,13 @@ def runTests():
 
 	MayaTest.clearScene = False
 
-	loader = unittest.TestLoader()
-	suite = loader.discover(dirPath)
-	runner = unittest.TextTestRunner()
-	runner.run(suite)
+	# loader = unittest.TestLoader()
+	# suite = loader.discover(dirPath)
+	# runner = unittest.TextTestRunner()
+	# runner.run(suite)
+
+	test = test_tectonic.TestTectonic()
+	test.test_tectonic()
 
 
 

@@ -68,8 +68,7 @@ MObject TectonicNode::aQueryPlates;
 		MObject TectonicNode::aQueryPosY;
 		MObject TectonicNode::aQueryPosZ;
 	MObject TectonicNode::aQueryIndex;
-	MObject TectonicNode::aQueryMatrix;
-
+	MObject TectonicNode::aQueryResultMatrix;
 
 
 // outputs
@@ -79,6 +78,10 @@ MObject TectonicNode::aOutMesh;
 MObject TectonicNode::aOutCutMesh;
 // matrix array attribute
 MObject TectonicNode::aOutMatrices;
+MObject TectonicNode::aComplete;
+
+std::vector<MObject> TectonicNode::driverMObjects;
+std::vector<MObject> TectonicNode::drivenMObjects;
 
 
 ////////////// begin actual code ////////////////
@@ -87,11 +90,7 @@ MObject TectonicNode::aOutMatrices;
 #define EQ(a, b) \
 	(abs(a - b) < EPS)\
 
-// splitMode enum
-BETTER_ENUM(SplitMode, int,
-	polygonShell, // raw poly connectivity, superposed vertices mean welds
-	uvShell // uv connectivity, uv islands are plates
-)
+
 
 
 MStatus TectonicNode::initialize()
@@ -110,9 +109,11 @@ MStatus TectonicNode::initialize()
 	MObject defaultMesh = mData.create();
 
 	// mesh inputs
-	aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh, defaultMesh);
-	defaultMesh = mData.create();
-	aBaseMesh = tFn.create("baseMesh", "baseMesh", MFnData::kMesh, defaultMesh);
+	//aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh, defaultMesh);
+	aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh);
+	//defaultMesh = mData.create();
+	//aBaseMesh = tFn.create("baseMesh", "baseMesh", MFnData::kMesh, defaultMesh);
+	aBaseMesh = tFn.create("baseMesh", "baseMesh", MFnData::kMesh);
 
 	// string data for uv set
 	MFnStringData sFn;
@@ -121,12 +122,12 @@ MStatus TectonicNode::initialize()
 	aUVSet = tFn.create("uvSet", "uvSet", MFnData::kString, defaultString);
 
 	aBind = makeEnumAttr<BindState>("bind");
-	aSplitMode = makeEnumAttr<SplitMode>("splitMode");
+	aSplitMode = makeEnumAttr<SplitMode>("splitMode", SplitMode::uvShell);
 	//aMode = makeEnumAttr<LiveState>("mode");
 	aPlaybackMode = makeEnumAttr<LiveState>("mode", LiveState::realtime);
 
 	// constraint array
-	aConstraints = nFn.create("constraints", "constraints",
+	aConstraints = nFn.create("constraint", "constraints",
 		MFnNumericData::kBoolean);
 	nFn.setArray(true);
 	nFn.setUsesArrayDataBuilder(true);
@@ -135,12 +136,14 @@ MStatus TectonicNode::initialize()
 	// global solver iterations
 	aGlobalIterations = nFn.create("iterations", "iterations",
 		MFnNumericData::kInt, 1);
+	nFn.setKeyable(true);
 	// scale timestep by this value
-	aTimeStep = nFn.create("iterations", "iterations",
+	aTimeStep = nFn.create("timeStep", "timeStep",
 		MFnNumericData::kFloat, 1.0);
+	nFn.setKeyable(true);
 
 	//// tracks current time during playback
-	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 0.0);
+	aTime = uFn.create("time", "time", MFnUnitAttribute::kTime, 1.0);
 	tFn.setReadable(true);
 	tFn.setWritable(true);
 
@@ -151,6 +154,7 @@ MStatus TectonicNode::initialize()
 
 	// frame at which to reset
 	aResetFrame = uFn.create("resetFrame", "resetFrame", MFnUnitAttribute::kTime, 1.0);
+	uFn.setKeyable(true);
 
 	// query attributes
 	aQueryPlates = cFn.create("queryPlates", "queryPlates");
@@ -158,39 +162,47 @@ MStatus TectonicNode::initialize()
 		aQueryPos, aQueryPosX, aQueryPosY, aQueryPosZ, 
 		false);
 	aQueryIndex = nFn.create("queryIndex", "index", MFnNumericData::kInt);
-	aQueryMatrix = tFn.create("queryMatrix", "matrix", MFnMatrixData::kMatrix);
+	aQueryResultMatrix = tFn.create("queryResultMatrix", "matrix", MFnMatrixData::kMatrix);
 
 	cFn.addChild(aQueryPos);
 	cFn.addChild(aQueryIndex);
-	cFn.addChild(aQueryMatrix);
+	cFn.addChild(aQueryResultMatrix);
+
+	cFn.setArray(true);
+	cFn.setReadable(true);
+	cFn.setWritable(true);
 
 
 	//// outputs
 	defaultMesh = mData.create();
-	aOutMesh = tFn.create("outMesh", "outMesh", MFnData::kMesh, defaultMesh);
+	//aOutMesh = tFn.create("outMesh", "outMesh", MFnData::kMesh, defaultMesh);
+	aOutMesh = tFn.create("outMesh", "outMesh", MFnData::kMesh);
 	defaultMesh = mData.create();
-	aOutCutMesh = tFn.create("outCutMesh", "outCutMesh", MFnData::kMesh, defaultMesh);
+	//aOutCutMesh = tFn.create("outCutMesh", "outCutMesh", MFnData::kMesh, defaultMesh);
+	aOutCutMesh = tFn.create("outCutMesh", "outCutMesh", MFnData::kMesh);
 	aOutMatrices = tFn.create("outMatrices", "outMatrices",
 		MFnData::kMatrixArray);
 
+	aComplete = nFn.create("complete", "complete", MFnNumericData::kInt);
 
-	std::vector<MObject> drivers = {
+	// populate static object vectors
+	drivenMObjects = {
+		aOutMesh, aOutCutMesh, aOutMatrices, aComplete,
+	};
+	driverMObjects = {
 		aInMesh, aBaseMesh,
-		aUVSet, aBind, aSplitMode, aPlaybackMode, 
-		aConstraints, 
+		aUVSet, aBind, aSplitMode, aPlaybackMode,
+		aConstraints,
 		aGlobalIterations, aTime, aPrevTime, aResetFrame, aTimeStep,
 
-		aQueryPlates, aQueryIndex, aQueryPos, aQueryMatrix,
-		
-	};
-	std::vector<MObject> driven = {
-		aOutMesh, aOutCutMesh, aOutMatrices,
+		aQueryPlates, aQueryIndex, aQueryPos, aQueryResultMatrix,
+
 	};
 
-	addAttributes<TectonicNode>(drivers);
-	addAttributes<TectonicNode>(driven);
+	addAttributes<TectonicNode>(driverMObjects);
+	addAttributes<TectonicNode>(drivenMObjects);
 
-	setAttributesAffect<TectonicNode>(drivers, driven);
+	setAttributesAffect<TectonicNode>(driverMObjects, drivenMObjects);
 
 	return MStatus::kSuccess;
 }
@@ -200,6 +212,7 @@ MStatus TectonicNode::initialize()
 // topo split mode
 std::vector<TecPlate> tecMeshFromMFnMeshTopo(
 	HalfEdgeMesh& hedgeMesh, MFnMesh& mfn, MStatus &s) {
+	DEBUGSL("tecMeshFromTopo")
 	std::vector<TecPlate> plates;
 	/*pseudocode*/
 
@@ -212,6 +225,7 @@ std::vector<TecPlate> tecMeshFromMFnMeshUV(
 	HalfEdgeMesh& hedgeMesh, MFnMesh& meshFn,
 	const char* uvSetName,
 	MStatus& s) {
+	DEBUGSL("tecMeshFromUV")
 	std::vector<TecPlate> plates;
 	/*pseudocode
 	assume conversion to triangle mesh for easier adjacency
@@ -304,16 +318,33 @@ MStatus TectonicNode::bind(MDataBlock& data, MStatus& s) {
 	/* run bind operations for Tectonic node
 	* build tectonic plates from mesh, sync with constraints etc
 	*/
+	DEBUGSL("Tectonic bind")
 
 	// extract params
 	// doubling up some because it's more readable to have in one place
-	int splitModeVal = data.inputValue(aSplitMode).asInt();
+	//int splitModeVal = data.inputValue(aSplitMode).asInt();
+	int splitModeVal = data.inputValue(aSplitMode).asShort();
+	DEBUGS("SplitModeVal " << splitModeVal);
 	MObject meshObj = data.inputValue(aInMesh).asMesh();
-	MFnMesh meshFn(meshObj);
+	if (meshObj.isNull()) {
+		DEBUGS("input mesh object invalid, returning");
+		return MS::kFailure;
+	}
+	MFnMesh meshFn(meshObj, &s);
+	MCHECK(s, "cannot initialise meshFn on meshObj");
+
+	MObject baseMeshObj = data.inputValue(aBaseMesh).asMesh();
+	MFnMesh baseMeshFn(baseMeshObj, &s);
+	MCHECK(s, "cannot initialise meshFn on baseMeshObj");
+
 	MString uvSetName = data.inputValue(aUVSet).asString();
+
+	DEBUGS("bind attributes extracted")
 
 	//HalfEdgeMesh hedgeMesh;
 	HalfEdgeMeshFromMObject(hedgeMesh, meshFn, 1);
+
+	DEBUGS("built half edge mesh")
 
 
 	// build plates
@@ -336,34 +367,79 @@ MStatus TectonicNode::compute(
 
 	MStatus s;
 
+	if (data.isClean(plug)) {
+		return MS::kSuccess;
+	}
+
+	DEBUGSL("tectonic compute");
+
 	// extract data values
-	int bindVal = data.inputValue(aBind).asInt();
+	//int bindVal = data.inputValue(aBind).asInt();
+	//int bindVal = data.inputValue(aBind).asLong();
+	int bindVal = data.inputValue(aBind).asShort();
+	DEBUGS("bind val" << bindVal);
 
 	// check bind status
 	switch (bindVal)
 	{
 	case BindState::off : // do literally nothing
+		DEBUGS("bind off");
 		data.setClean(plug);
 		return MS::kSuccess;
 		break;
 	case BindState::bind: // bind and set to bound, then continue
-		//bind(data, s);
-		data.outputValue(aBind).setInt(BindState::bound);
+		//DEBUGS("bind on, running bind");
+		bind(data, s);
+		MCHECK(s, "immediate error in tectonic bind, aborting");
+		//DEBUGS("setting bound value" << BindState::bound);
+		//data.outputValue(aBind).setInt(BindState::bound);
+		data.outputValue(aBind).setShort(BindState::bound);
+		//data.outputValue(aBind).setInt(static_cast<int>(BindState::bound));
+		//data.outputValue(aBind).setInt(2);
+		DEBUGS("set bound plug");
 		break;
 	case BindState::bound: // continue
+		//DEBUGS("bind bound");
 		break;
 	case BindState::live: // bind and continue, leave on live
-		//bind(data, s);
+		//DEBUGS("bind live");
+		bind(data, s);
 		break;
 	}
+	MCHECK(s, "error in tectonic bind, aborting");
 
 
 
 	// realtime switch
-	currentTime = static_cast<int>(std::chrono::system_clock::now().time_since_epoch().count());
-	int dt = currentTime - prevTime;
-	prevTime = currentTime;
+	//currentTime = static_cast<int>(std::chrono::system_clock::now().time_since_epoch().count());
+	//int dt = currentTime - prevTime;
+	//prevTime = currentTime;
 
+	// set clean all plugs after computation
+	//DEBUGS("set plugs clean")
+	for (MObject obj : drivenMObjects) {
+		data.setClean(obj);	}
+	//DEBUGS("driven set clean")
+	for (MObject obj : driverMObjects) {
+		MFnDependencyNode thisFn(thisMObject());
+		MPlug cleanPlug = thisFn.findPlug(obj, true, &s);
+		if (s != MS::kSuccess) {
+			DEBUGS("could not extract plug, skipping");
+			continue; }
+		data.setClean(obj);
+
+		//DEBUGS("try set " << cleanPlug.name());
+		//try {
+		//	data.setClean(obj);
+		//}
+		//catch (...) {
+		//	DEBUGS("error when setting " << cleanPlug.name());
+		//}
+		
+	}
+	//DEBUGS("set drivers clean")
+
+	DEBUGS("set plug " << plug.name() << " clean");
 	data.setClean(plug);
 
 
@@ -379,27 +455,27 @@ MStatus TectonicNode::syncConnections(MStatus& s) {
 MStatus TectonicNode::connectionMade(
 	const MPlug& plug, const MPlug& otherPlug, bool asSrc) {
 
-	// we only care about sink plug
-	if (plug.attribute() != aConstraints) {
-		return MPxNode::connectionMade(plug, otherPlug, asSrc);
-	}
-	MStatus s;
-	//s = syncConnections(s);
-	MCHECK(s, "failure in tecNode connectionMade")
-	//getConnectedConstraints();
+	//// we only care about sink plug
+	//if (plug.attribute() != aConstraints) {
+	//	return MPxNode::connectionMade(plug, otherPlug, asSrc);
+	//}
+	//MStatus s;
+	////s = syncConnections(s);
+	//MCHECK(s, "failure in tecNode connectionMade")
+	////getConnectedConstraints();
 	return MPxNode::connectionMade(plug, otherPlug, asSrc);
 }
 
 MStatus TectonicNode::connectionBroken(
 	const MPlug& plug, const MPlug& otherPlug, bool asSrc) {
 
-	if (plug.attribute() != aConstraints) {
-		return MPxNode::connectionBroken(plug, otherPlug, asSrc);
-	}
-	MStatus s;
-	//s = syncConnections(s);
-	MCHECK(s, "failure in tecNode connectionBroken")
-	//getConnectedConstraints();
+	//if (plug.attribute() != aConstraints) {
+	//	return MPxNode::connectionBroken(plug, otherPlug, asSrc);
+	//}
+	//MStatus s;
+	////s = syncConnections(s);
+	//MCHECK(s, "failure in tecNode connectionBroken")
+	////getConnectedConstraints();
 	return MPxNode::connectionBroken(plug, otherPlug, asSrc);
 }
 
