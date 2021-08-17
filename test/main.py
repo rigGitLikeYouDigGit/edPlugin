@@ -57,6 +57,28 @@ def loadPlugin(path=None):
 	cmds.loadPlugin( MLL_RELEASE_PATH, "edPlugin.mll", quiet=True )
 
 
+shaderScenePath = r"F:\all_projects_desktop\atmosphere\stars\scene.ma"
+
+def loadPluginShader():
+	unloadPlugin()
+	loadPlugin()
+	cmds.file(shaderScenePath, open=1, f=1)
+
+	# create and assign skyShader
+	skyNode = cmds.shadingNode("skyShader", asShader=1)
+	# shadeSet = cmds.sets(
+	# 	renderable=1, #noSurfaceShader=True,
+	# 	empty=1, name=skyNode + "SG")
+	#skyNode = cmds.shadingNode("pySkyShader", asShader=1)
+	cmds.select("skySphere")
+	#cmds.hyperShade(skyNode, assign=1)
+	#mel.eval("shadingNode -asShader skyShader;")
+	# mel.eval("sets -renderable true -noSurfaceShader true -empty -name skyShader1SG;")
+	# cmds.sets("skySphere", e=1, forceElement=shadeSet)
+	# print(skyNode)
+	cmds.connectAttr(skyNode+".outColor", "initialShadingGroup.surfaceShader", f=1)
+
+
 dirPath = "F:/all_projects_desktop/common/edCode/edPlugin/test"
 
 

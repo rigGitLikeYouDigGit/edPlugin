@@ -43,10 +43,226 @@ include CMakeFiles\rules.ninja
 
 build cmake_object_order_depends_target_edPlugin: phony || CMakeFiles\edPlugin.dir
 
+build CMakeFiles\edPlugin.dir\src\cameraShader.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\cameraShader.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\curveFrame.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\curveFrame.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\deformer\deformerNotion.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\deformer\deformerNotion.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\deformer
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\deformer\skinNotion.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\deformer\skinNotion.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\deformer
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\deformer\smoothNotion.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\deformer\smoothNotion.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\deformer
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\deformer\wrapNotion.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\deformer\wrapNotion.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\deformer
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\directDeltaMush.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\directDeltaMush.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\edBlendShape.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\edBlendShape.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\edPush.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\edPush.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\edShrinkWrap.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\edShrinkWrap.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\lib\containers.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\lib\containers.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\lib
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\lib\mayaTopo.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\lib\mayaTopo.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\lib
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\memorySink.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\memorySink.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\memorySource.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\memorySource.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\meshAnalysis.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\meshAnalysis.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\meshToBuffers.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\meshToBuffers.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\multiMod.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\multiMod.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
 build CMakeFiles\edPlugin.dir\src\plugin.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\plugin.cpp || cmake_object_order_depends_target_edPlugin
   DEFINES = -DedPlugin_EXPORTS
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
-  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\refDDM.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\refDDM.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\shaders\baseShader.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\shaders\baseShader.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\shaders
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\shaders\bufferOps.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\shaders\bufferOps.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src\shaders
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\skyShader.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\skyShader.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\tectonicConstraintNode.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\tectonicConstraintNode.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\tectonicNode.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\tectonicNode.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
+  OBJECT_DIR = CMakeFiles\edPlugin.dir
+  OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
+  TARGET_PDB = edPlugin.pdb
+
+build CMakeFiles\edPlugin.dir\src\uberDeformer.cpp.obj: CXX_COMPILER__edPlugin_Debug ..\..\..\src\uberDeformer.cpp || cmake_object_order_depends_target_edPlugin
+  DEFINES = -DedPlugin_EXPORTS
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  INCLUDES = -I..\..\..\include\eigen-3.3.7 -I..\..\..\include\libigl-master\include -I..\..\..\include\glm-master -I..\..\..\include -I"C:\Program Files\Autodesk\Maya2022\include"
   OBJECT_DIR = CMakeFiles\edPlugin.dir
   OBJECT_FILE_DIR = CMakeFiles\edPlugin.dir\src
   TARGET_COMPILE_PDB = CMakeFiles\edPlugin.dir\
@@ -60,10 +276,10 @@ build CMakeFiles\edPlugin.dir\src\plugin.cpp.obj: CXX_COMPILER__edPlugin_Debug .
 #############################################
 # Link the shared library edPlugin.mll
 
-build edPlugin.mll edPlugin.lib: CXX_SHARED_LIBRARY_LINKER__edPlugin_Debug CMakeFiles\edPlugin.dir\src\plugin.cpp.obj | C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMaya.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaAnim.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaFX.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaRender.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaUI.lib C$:\Program$ Files\Autodesk\Maya2022\lib\Foundation.lib C$:\Program$ Files\Autodesk\Maya2022\lib\clew.lib
+build edPlugin.mll edPlugin.lib: CXX_SHARED_LIBRARY_LINKER__edPlugin_Debug CMakeFiles\edPlugin.dir\src\cameraShader.cpp.obj CMakeFiles\edPlugin.dir\src\curveFrame.cpp.obj CMakeFiles\edPlugin.dir\src\deformer\deformerNotion.cpp.obj CMakeFiles\edPlugin.dir\src\deformer\skinNotion.cpp.obj CMakeFiles\edPlugin.dir\src\deformer\smoothNotion.cpp.obj CMakeFiles\edPlugin.dir\src\deformer\wrapNotion.cpp.obj CMakeFiles\edPlugin.dir\src\directDeltaMush.cpp.obj CMakeFiles\edPlugin.dir\src\edBlendShape.cpp.obj CMakeFiles\edPlugin.dir\src\edPush.cpp.obj CMakeFiles\edPlugin.dir\src\edShrinkWrap.cpp.obj CMakeFiles\edPlugin.dir\src\lib\containers.cpp.obj CMakeFiles\edPlugin.dir\src\lib\mayaTopo.cpp.obj CMakeFiles\edPlugin.dir\src\memorySink.cpp.obj CMakeFiles\edPlugin.dir\src\memorySource.cpp.obj CMakeFiles\edPlugin.dir\src\meshAnalysis.cpp.obj CMakeFiles\edPlugin.dir\src\meshToBuffers.cpp.obj CMakeFiles\edPlugin.dir\src\multiMod.cpp.obj CMakeFiles\edPlugin.dir\src\plugin.cpp.obj CMakeFiles\edPlugin.dir\src\refDDM.cpp.obj CMakeFiles\edPlugin.dir\src\shaders\baseShader.cpp.obj CMakeFiles\edPlugin.dir\src\shaders\bufferOps.cpp.obj CMakeFiles\edPlugin.dir\src\skyShader.cpp.obj CMakeFiles\edPlugin.dir\src\tectonicConstraintNode.cpp.obj CMakeFiles\edPlugin.dir\src\tectonicNode.cpp.obj CMakeFiles\edPlugin.dir\src\uberDeformer.cpp.obj | C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMaya.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaAnim.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaFX.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaRender.lib C$:\Program$ Files\Autodesk\Maya2022\lib\OpenMayaUI.lib C$:\Program$ Files\Autodesk\Maya2022\lib\Foundation.lib C$:\Program$ Files\Autodesk\Maya2022\lib\clew.lib
   LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /export:initializePlugin /export:uninitializePlugin
-  LINK_LIBRARIES = "C:\Program Files\Autodesk\Maya2022\lib\OpenMaya.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaAnim.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaFX.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaRender.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaUI.lib"  "C:\Program Files\Autodesk\Maya2022\lib\Foundation.lib"  "C:\Program Files\Autodesk\Maya2022\lib\clew.lib"  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  LINK_LIBRARIES = "C:\Program Files\Autodesk\Maya2022\lib\OpenMaya.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaAnim.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaFX.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaRender.lib"  "C:\Program Files\Autodesk\Maya2022\lib\OpenMayaUI.lib"  "C:\Program Files\Autodesk\Maya2022\lib\Foundation.lib"  "C:\Program Files\Autodesk\Maya2022\lib\clew.lib"  opengl32.lib  glu32.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   OBJECT_DIR = CMakeFiles\edPlugin.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
@@ -153,14 +369,14 @@ build all: phony edPlugin.mll
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | ..\..\..\CMakeLists.txt C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeCXXInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeGenericSystem.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeRCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindMaya.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindPackageHandleStandardArgs.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindPackageMessage.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\WindowsPaths.cmake CMakeCache.txt CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake
+build build.ninja: RERUN_CMAKE | ..\..\..\CMakeLists.txt C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCXXInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeGenericSystem.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeRCInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindOpenGL.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\WindowsPaths.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindMaya.cmake CMakeCache.txt CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build ..\..\..\CMakeLists.txt C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeCXXInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeGenericSystem.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeRCInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindMaya.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindPackageHandleStandardArgs.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindPackageMessage.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\Windows.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\Platform\WindowsPaths.cmake CMakeCache.txt CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake: phony
+build ..\..\..\CMakeLists.txt C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCXXInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCommonLanguageInclude.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeGenericSystem.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeInitializeConfigs.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeLanguageInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeRCInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInformation.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInitialize.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\CMakeCommonCompilerMacros.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-CXX.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindOpenGL.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-C.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-CXX.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows.cmake C$:\Program$ Files$ (x86)\Microsoft$ Visual$ Studio\2019\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\WindowsPaths.cmake C$:\Program$ Files\CMake\share\cmake-3.11\Modules\FindMaya.cmake CMakeCache.txt CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake: phony
 
 
 #############################################

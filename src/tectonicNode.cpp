@@ -95,6 +95,8 @@ std::vector<MObject> TectonicNode::drivenMObjects;
 
 MStatus TectonicNode::initialize()
 {
+	MStatus s = MS::kSuccess;
+
 	// initialise attributes
 	MFnNumericAttribute nFn;
 	MFnGenericAttribute gFn;
@@ -106,12 +108,13 @@ MStatus TectonicNode::initialize()
 	MFnMessageAttribute mFn;
 
 	MFnMeshData mData;
-	MObject defaultMesh = mData.create();
+	MObject defaultMesh = mData.create(&s);
+	MCHECK(s, "could not create default mesh object")
 
 	// mesh inputs
 	//aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh, defaultMesh);
 	aInMesh = tFn.create("inMesh", "inMesh", MFnData::kMesh);
-	//defaultMesh = mData.create();
+	defaultMesh = mData.create();
 	//aBaseMesh = tFn.create("baseMesh", "baseMesh", MFnData::kMesh, defaultMesh);
 	aBaseMesh = tFn.create("baseMesh", "baseMesh", MFnData::kMesh);
 
@@ -186,9 +189,7 @@ MStatus TectonicNode::initialize()
 	aComplete = nFn.create("complete", "complete", MFnNumericData::kInt);
 
 	// populate static object vectors
-	drivenMObjects = {
-		aOutMesh, aOutCutMesh, aOutMatrices, aComplete,
-	};
+
 	driverMObjects = {
 		aInMesh, aBaseMesh,
 		aUVSet, aBind, aSplitMode, aPlaybackMode,
@@ -197,6 +198,10 @@ MStatus TectonicNode::initialize()
 
 		aQueryPlates, aQueryIndex, aQueryPos, aQueryResultMatrix,
 
+	};
+
+	drivenMObjects = {
+	aOutMesh, aOutCutMesh, aOutMatrices, aComplete,
 	};
 
 	addAttributes<TectonicNode>(driverMObjects);
@@ -323,6 +328,7 @@ MStatus TectonicNode::bind(MDataBlock& data, MStatus& s) {
 	// extract params
 	// doubling up some because it's more readable to have in one place
 	//int splitModeVal = data.inputValue(aSplitMode).asInt();
+
 	int splitModeVal = data.inputValue(aSplitMode).asShort();
 	DEBUGS("SplitModeVal " << splitModeVal);
 	MObject meshObj = data.inputValue(aInMesh).asMesh();
@@ -367,11 +373,21 @@ MStatus TectonicNode::compute(
 
 	MStatus s;
 
+	// check for 
 	if (data.isClean(plug)) {
-		return MS::kSuccess;
-	}
+		return MS::kSuccess;}
 
 	DEBUGSL("tectonic compute");
+	MObject meshObj = data.inputValue(aInMesh).asMesh();
+	MFnMesh meshFn(meshObj);
+	if (meshObj.isNull()) {
+		DEBUGS("input mesh object invalid, returning");
+	}
+	MObject baseMeshObj = data.inputValue(aInMesh).asMesh();
+	MFnMesh baseMeshFn(baseMeshObj);
+	if (baseMeshObj.isNull()) {
+		DEBUGS("input base mesh object invalid, returning");
+	}
 
 	// extract data values
 	//int bindVal = data.inputValue(aBind).asInt();
@@ -428,14 +444,6 @@ MStatus TectonicNode::compute(
 			continue; }
 		data.setClean(obj);
 
-		//DEBUGS("try set " << cleanPlug.name());
-		//try {
-		//	data.setClean(obj);
-		//}
-		//catch (...) {
-		//	DEBUGS("error when setting " << cleanPlug.name());
-		//}
-		
 	}
 	//DEBUGS("set drivers clean")
 

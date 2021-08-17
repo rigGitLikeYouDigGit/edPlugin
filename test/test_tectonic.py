@@ -40,6 +40,8 @@ class TestTectonic(MayaTest):
 
 		cmds.connectAttr(baseMesh + "Shape.outMesh",
 		                 solver + ".inMesh")
+		cmds.connectAttr(baseMesh + "Shape.outMesh",
+		                 solver + ".baseMesh")
 
 		# test disconnection and reconnection
 		cmds.disconnectAttr(baseMesh + "Shape.outMesh",
@@ -47,8 +49,7 @@ class TestTectonic(MayaTest):
 		cmds.connectAttr(baseMesh + "Shape.outMesh",
 		                 solver + ".inMesh")
 
-		cmds.connectAttr(baseMesh + "Shape.outMesh",
-		                 solver + ".baseMesh")
+
 		cmds.connectAttr(solver + ".outMesh", outMesh + "Shape.inMesh")
 		cmds.connectAttr(solver + ".outCutMesh", cutMesh + "Shape.inMesh")
 

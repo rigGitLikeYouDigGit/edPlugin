@@ -19,6 +19,8 @@ register all plugins
 #include "tectonicNode.h"
 #include "tectonicConstraintNode.h"
 
+#include "skyShader.h"
+
 // END PROCEDURAL CONTROL INCLUDE
 
 //#include "refDDM.h"
@@ -78,7 +80,7 @@ const char* kREQUIRED_API_VERSION = "Any";
         NODE::initialize, \
         NODE_TYPE \
     ); \
-    CHECK_MSTATUS_AND_RETURN_IT(s); \
+    MCHECK(s, "failed to register node type " << NODE::kNODE_NAME); \
  // MPxNode::kDependNode
 
 /*
@@ -88,6 +90,12 @@ thanks mate
 //
 //MTypeId TectonicNode::kNODE_ID(0x00122C08);
 //MString TectonicNode::kNODE_NAME("tectonic");
+
+static MString sCustomSpriteShaderRegistrantId("customSpriteShaderRegistrantId");
+static MString sCustomSpriteShaderDrawdbClassification("drawdb/shader/surface/customSpriteShader");
+
+static const MString svp2BlinnShaderRegistrantId("vp2BlinnShaderRegistrantId");
+
 
 MStatus initializePlugin( MObject obj ){
 	DEBUGS("");
@@ -138,13 +146,40 @@ MStatus initializePlugin( MObject obj ){
     
     TectonicConstraintNode::kNODE_ID = (0x00122C10);
     s = REGISTER_NODE(TectonicConstraintNode);
+
+    // sky shader
+    
+    const MString& swatchName = MHWShaderSwatchGenerator::initialize();
+    //const MString& swatchName = "test";
+    const MString UserClassify("shader/surface/utility/:drawdb/shader/surface/vp2BlinnShader:swatch/" + swatchName);
+
+    s = fnPlugin.registerNode(
+        SkyHWShader::kNODE_NAME, 
+        SkyHWShader::kNODE_ID,
+        SkyHWShader::creator, 
+        SkyHWShader::initialize,
+        MPxNode::kHardwareShader,
+        &UserClassify
+    );
+    if (!s) {
+        s.perror("registerNode");
+        return s;
+    }
+
+    // Register a shader override for this node
+    MHWRender::MDrawRegistry::registerShaderOverrideCreator(
+        "drawdb/shader/surface/vp2BlinnShader",
+        svp2BlinnShaderRegistrantId,
+        SkyShaderOverride::creator);
+    if (s != MS::kSuccess) return s;
+ 
     
     //s = REGISTER_DEFORMER(UberDeformer);
     //s = REGISTER_NODE(DeformerNotion);
 
     //s = REGISTER_NODE(CurveFrame);
 
-    //
+    
 
     // END PROCEDURAL CONTROL REGISTER
 
@@ -178,6 +213,30 @@ MStatus uninitializePlugin( MObject obj ){
 	//status = DEREGISTER_NODE(DirectDeltaMush);
 	////status = fnPlugin.deregisterNode(RefDDM::kNODE_ID);
  //   // END PROCEDURAL CONTROL DEREGISTER
+
+        // Unregister the shader node
+    /*fnPlugin.deregisterNode(SkyHWShader::id);*/
+    fnPlugin.deregisterNode(SkyHWShader::kNODE_ID);
+    if (!s) {
+        s.perror("deregisterNode");
+        return s;
+    }
+
+    // Deregister the shader override
+    s = MHWRender::MDrawRegistry::deregisterShaderOverrideCreator(
+        "drawdb/shader/surface/vp2BlinnShader", svp2BlinnShaderRegistrantId);
+    if (s != MS::kSuccess) return s;
+
+    //s = DEREGISTER_NODE(SkyShaderHw);
+
+    //s = MHWRender::MDrawRegistry::deregisterShaderOverrideCreator(
+    //    sCustomSpriteShaderDrawdbClassification,
+    //    sCustomSpriteShaderRegistrantId
+    //);
+    //MCHECK(s, "failed to deregister sky render override");
+
+    //s = SkyShaderOverride::deregisterShadeFragments();
+    //MCHECK(s, "failed to deregister sky shader fragments");
 
     return s;
 

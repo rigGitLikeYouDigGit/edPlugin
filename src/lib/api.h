@@ -90,6 +90,16 @@ else, use
 #include <maya/MTime.h>
 
 
+#include <maya/MDrawContext.h>
+#include <maya/MDrawRegistry.h>
+#include <maya/MFragmentManager.h>
+#include <maya/MPxHardwareShader.h>
+#include <maya/MPxShaderOverride.h>
+#include <maya/MRenderUtilities.h>
+#include <maya/MShaderManager.h>
+#include <maya/MStateManager.h>
+
+
 #include "macro.h"
 #include "enum.h"
 #include "stdlib.h"

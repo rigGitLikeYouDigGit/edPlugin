@@ -223,11 +223,17 @@ MAYA_clew_LIBRARY:FILEPATH=C:/Program Files/Autodesk/Maya2022/lib/clew.lib
 //The directory containing a CMake configuration file for Maya.
 Maya_DIR:PATH=Maya_DIR-NOTFOUND
 
+//OpenGL library for win32
+OPENGL_gl_LIBRARY:STRING=opengl32
+
+//GLU library for win32
+OPENGL_glu_LIBRARY:STRING=glu32
+
 //Value Computed by CMake
 edPlugin_BINARY_DIR:STATIC=F:/all_projects_desktop/common/edCode/edPlugin/out/build/x64-Debug
 
 //Dependencies for the target
-edPlugin_LIB_DEPENDS:STATIC=general;C:/Program Files/Autodesk/Maya2022/lib/OpenMaya.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaAnim.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaFX.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaRender.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaUI.lib;general;C:/Program Files/Autodesk/Maya2022/lib/Foundation.lib;general;C:/Program Files/Autodesk/Maya2022/lib/clew.lib;
+edPlugin_LIB_DEPENDS:STATIC=general;C:/Program Files/Autodesk/Maya2022/lib/OpenMaya.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaAnim.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaFX.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaRender.lib;general;C:/Program Files/Autodesk/Maya2022/lib/OpenMayaUI.lib;general;C:/Program Files/Autodesk/Maya2022/lib/Foundation.lib;general;C:/Program Files/Autodesk/Maya2022/lib/clew.lib;general;opengl32;general;glu32;
 
 //Value Computed by CMake
 edPlugin_SOURCE_DIR:STATIC=F:/all_projects_desktop/common/edCode/edPlugin
@@ -367,6 +373,8 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Maya
 FIND_PACKAGE_MESSAGE_DETAILS_Maya:INTERNAL=[C:/Program Files/Autodesk/Maya2022/include][C:/Program Files/Autodesk/Maya2022/lib/OpenMaya.lib][v()]
+//Details about finding OpenGL
+FIND_PACKAGE_MESSAGE_DETAILS_OpenGL:INTERNAL=[opengl32][c ][v()]
 //ADVANCED property for variable: MAYA_Foundation_LIBRARY
 MAYA_Foundation_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: MAYA_INCLUDE_DIR
@@ -383,4 +391,8 @@ MAYA_OpenMayaRender_LIBRARY-ADVANCED:INTERNAL=1
 MAYA_OpenMayaUI_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: MAYA_clew_LIBRARY
 MAYA_clew_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: OPENGL_gl_LIBRARY
+OPENGL_gl_LIBRARY-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: OPENGL_glu_LIBRARY
+OPENGL_glu_LIBRARY-ADVANCED:INTERNAL=1
 
