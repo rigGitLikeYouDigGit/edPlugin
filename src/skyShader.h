@@ -14,23 +14,11 @@
 #include "lib/json.h"
 
 
+#include <maya/MIOStream.h>
+#include <math.h>
+#include <cstdlib>
+#include "lib/shader.h"
 
-
-
-#ifndef DEBUGS
-// as in "debugString"
-#define COUT MStreamUtils::stdOutStream()
-#define CERR MStreamUtils::stdErrorStream()
-#define DEBUGS(info) \
-COUT << info << std::endl;
-#endif
-#ifndef MCHECK
-#define MCHECK(stat,msg)             \
-        if ( MS::kSuccess != stat ) {   \
-                cerr << __LINE__ << msg;            \
-                return MS::kFailure;    \
-        }
-#endif // !DEBUGS
 
 
 //#include <maya/MGlobal.h>
@@ -80,7 +68,6 @@ COUT << info << std::endl;
 //#include <maya/MGLFunctionTable.h>
 //
 
-#include "lib/shader.h"
 
 //GLEW_ARB_vertex_program
 
@@ -148,18 +135,10 @@ public:
 
 	//Line line = Line(vec3(0, 0, 0), vec3(2, 2, 2));
 
-	// maya-specific GL function table
-	//MGLFunctionTable* mGL;
-
-	//
 // Constructor. Simply initialize shader instances for usage.
 // 
 	SkyShaderOverride(const MObject& obj);
 
-	//{
-	//	//line;
-	//	//mGL = NULL;
-	//}
 	// Release the textured and non-textured mode shaders.
 	~SkyShaderOverride();
 
@@ -181,6 +160,9 @@ public:
 	{
 		return false;
 	}
+
+	bool overridesDrawState() { return true; }
+	bool overridesNonMaterialItems() { return true; }
 
 
 	// 3. Draw Phase

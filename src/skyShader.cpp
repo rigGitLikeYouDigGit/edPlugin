@@ -6,20 +6,15 @@ in a planet (or gas toroid)
 
 */
 
-#include "skyShader.h"
 
 
-
-#include <maya/MIOStream.h>
-#include <math.h>
-#include <cstdlib>
-#include "lib/api.h"
 
 
 #include "skyShader.h"
 
 
 using namespace ed;
+using namespace glm;
 
 // Node id
 MTypeId SkyHWShader::id(0x00081102);
@@ -34,16 +29,118 @@ MObject  SkyHWShader::aNonTexturedColor;
 MObject  SkyHWShader::aNonTexturedTransparency;
 
 
-
-
 MTypeId SkyHWShader::kNODE_ID(0x00081102);
 MString SkyHWShader::kNODE_NAME("skyShader");
 
 static std::vector<MObject> driverMObjects;
 static std::vector<MObject> drivenMObjects;
 
-using glm::mat4;
-using glm::vec3;
+
+
+// positions for square face
+float quadVertices[] = {
+	// positions     // colors
+	-0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+	 0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+	-0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
+
+	-0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+	 0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+	 0.05f,  0.05f,  0.0f, 1.0f, 1.0f
+};
+
+const char* starVertPath = "F:/all_projects_desktop/common/edCode/edPlugin/src/shaders/starShaderVertex.glsl";
+const char* starFragPath = "F:/all_projects_desktop/common/edCode/edPlugin/src/shaders/starShaderFragment.glsl";
+
+// set up gl stuff
+unsigned int setupGL() {
+
+	// build vector array of coord and magnitude for buffer
+	const int nEntries = 4;
+
+	typedef vec3 entryType;
+
+	entryType* starEntries;
+	starEntries = new entryType[nEntries];
+
+	unsigned int coordVBO;
+	glGenBuffers(1, &coordVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, coordVBO);
+	glBufferData(GL_ARRAY_BUFFER, nEntries * sizeof(entryType), &starEntries[0], GL_STATIC_DRAW);
+	// GL_STATIC_DRAW is just a hint for memory optimisations, doesn't do much
+
+	for (unsigned int i = 0; i < nEntries; i++)
+	{
+		// load data from star data array
+		starEntries[i] = vec3(starData[3 * i], starData[3 * i + 1], starData[3 * i + 2]);
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind local reference to coord buffer
+
+
+	// build buffers for quad vertex positions
+	unsigned int quadVAO, quadVBO; // VAO is thin interface class describing data held in actual buffer VBO
+	glGenVertexArrays(1, &quadVAO); // initialise new vertex array helper object
+	glGenBuffers(1, &quadVBO); // initialise new vertex buffer storage
+	glBindVertexArray(quadVAO); // bind array helper to be worked on
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO); // bind buffer storage to be worked on
+	// populate
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+	// specify how to read (involved
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	/* -attribute index 0 - this corresponds to setting layout = 0 in GLSL. 2 attrs can be read from different offsets on the same buffer
+	* -2 components (pos x and pos y)
+	* -components are GL_FLOAT
+	* -components should not be normalised (whatever that does)
+	* -size of ENTIRE ENTRY in bytes is 5 * sizeof floats long (including any other indexed attributes)
+	* -THIS ATTRIBUTE starts at index 0 (hoping the ridiculous void pointer isn't needed)
+	*/
+
+	glEnableVertexAttribArray(1); // 2nd attribute, colour is vec3 contained in same buffer entry
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	// also load in the coord instance data as separate buffer
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, coordVBO); // open coord buffer to work on
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(entryType), (void*)0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // close coord buffer
+
+	glVertexAttribDivisor(2, 1);
+	/* marks coord buffer at attr index 2 as instanced
+	* every 1 instances (every full render of the main vertex buffer), coord buffer advances by 1 entry
+	*/
+
+	// shader initialisation ////////////////
+
+	// set up define variables for GLSL files
+	std::map<std::string, std::string> defineMap;
+
+	defineMap["N_ENTRIES"] = nEntries;
+
+	auto defineBlock = formatDefines(defineMap); // not needed here but useful to test
+
+	// load shader files
+	std::string vertShaderS = fileToChar(starVertPath);
+	vertShaderS = defineBlock + vertShaderS;
+
+	std::string fragShaderS = fileToChar(starFragPath);
+	fragShaderS = defineBlock + fragShaderS;
+
+	// create shader objects
+	uint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &vertShaderS.c_str(), NULL);
+
+	return coordVBO;
+}
+
+unsigned int teardownGL(unsigned int buffer){
+	// delete the held buffer
+	glDeleteBuffers(1, &buffer);
+	return buffer;
+}
+
+
 class Line {
 
 	int shaderProgram;
@@ -95,8 +192,8 @@ public:
 		glLinkProgram(shaderProgram);
 		// check for linking errors
 
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
+		//glDeleteShader(vertexShader);
+		//glDeleteShader(fragmentShader);
 
 		vertices = {
 			 start.x, start.y, start.z,
@@ -340,8 +437,10 @@ bool SkyShaderOverride::draw(MHWRender::MDrawContext& context,
 	MMatrix worldViewMat = context.getMatrix(MFrameContext::kViewMtx).inverse();
 
 	Line newLine(vec3(0, 0, 0), vec3(2, 2, 2));
+	mat4 newMat(2.0);
+	newLine.setMVP(newMat);
 	
-	newLine.setMVP(mmatrixToMat4(worldViewMat));
+	//newLine.setMVP(mmatrixToMat4(worldViewMat));
 	newLine.draw();
 
 	//DEBUGS("skyShader draw");
